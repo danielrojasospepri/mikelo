@@ -1,0 +1,14 @@
+# Ignorar toda la carpeta temp y su contenido
+/temp/*
+
+# Ignorar la carpeta logs y su contenido
+/logs/*
+
+# Ignorar la carpeta AdminLTE y su contenido
+/AdminLTE/*
+
+# Ignorar el archivo de configuración
+/api/config.php
+
+# Mantener los archivos .gitkeep
+!.gitkeep

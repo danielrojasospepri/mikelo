@@ -1,0 +1,24 @@
+.content-wrapper {
+    min-height: 100vh;
+}
+
+#buscarProducto {
+    margin-bottom: 1rem;
+}
+
+.table th {
+    background-color: #f4f6f9;
+}
+
+.cantidad-input {
+    width: 80px;
+}
+
+.peso-input {
+    width: 80px;
+}
+
+.btn-agregar {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}

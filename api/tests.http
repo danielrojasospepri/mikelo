@@ -1,0 +1,57 @@
+### Variables globales
+@baseUrl = http://localhost/mikelo/api
+@contentType = application/json
+
+### Test de conexión básica
+GET {{baseUrl}}/test
+Content-Type: {{contentType}}
+
+### Prueba de Creación de Movimiento
+POST {{baseUrl}}/movimientos
+Content-Type: {{contentType}}
+
+{
+    "ubicacion_origen": 1,
+    "ubicacion_destino": 2
+}
+
+### Prueba de Búsqueda de Productos
+GET {{baseUrl}}/productos/buscar?q=producto
+Content-Type: {{contentType}}
+
+### Prueba de Agregar Item a un Movimiento
+# Reemplazar {id} con el ID del movimiento creado
+POST {{baseUrl}}/movimientos/1/items
+Content-Type: {{contentType}}
+
+{
+    "producto_id": 1,
+    "cantidad": 5,
+    "cantidad_peso": 2.5
+}
+
+### Prueba de Búsqueda de Productos con término corto (debe fallar)
+GET {{baseUrl}}/productos/buscar?q=a
+Content-Type: {{contentType}}
+
+### Prueba de Creación de Movimiento sin destino (debe fallar)
+POST {{baseUrl}}/movimientos
+Content-Type: {{contentType}}
+
+{
+    "ubicacion_origen": 1
+}
+
+### Prueba de Agregar Item sin producto_id (debe fallar)
+POST {{baseUrl}}/movimientos/1/items
+Content-Type: {{contentType}}
+
+{
+    "cantidad": 5
+}
+
+### Prueba de OPTIONS para verificar CORS
+OPTIONS {{baseUrl}}/movimientos
+Content-Type: {{contentType}}
+Origin: http://localhost
+Access-Control-Request-Method: POST
