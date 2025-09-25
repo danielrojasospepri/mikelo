@@ -79,7 +79,7 @@ $app->get('/productos/buscar', function (Request $request, Response $response) u
 
 $app->get('/productos/nuevos', function (Request $request, Response $response) use ($db) {
     $controller = new ProductoController($db);
-    return $controller->buscarNuevos($request, $response);
+    return $controller->buscar($request, $response);
 });
 
 $app->post('/movimientos', function (Request $request, Response $response) use ($db) {
@@ -90,6 +90,24 @@ $app->post('/movimientos', function (Request $request, Response $response) use (
 $app->post('/movimientos/{id}/items', function (Request $request, Response $response, $args) use ($db) {
     $controller = new MovimientoController($db);
     return $controller->agregarItem($request, $response, $args);
+});
+
+// Nueva ruta para obtener movimientos por fecha para el depósito
+$app->get('/movimientos/deposito/{fecha}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->obtenerMovimientosDeposito($request, $response, $args);
+});
+
+// Nueva ruta para búsqueda de movimientos con filtros
+$app->get('/movimientos/buscar', function (Request $request, Response $response) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->buscarMovimientos($request, $response);
+});
+
+// Ruta para verificar duplicados
+$app->post('/movimientos/verificar-duplicado', function (Request $request, Response $response) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->verificarDuplicado($request, $response);
 });
 
 $app->run();

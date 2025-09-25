@@ -61,4 +61,53 @@ class MovimientoController {
             return responseJson($response, ['error' => $e->getMessage()], 500);
         }
     }
+
+    public function obtenerMovimientosDeposito(Request $request, Response $response, $args) {
+        try {
+            $fecha = $args['fecha'] ?? date('Y-m-d');
+            $movimientos = $this->movimiento->obtenerMovimientosDeposito($fecha);
+            return responseJson($response, ['movimientos' => $movimientos]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function buscarMovimientos(Request $request, Response $response) {
+        $params = $request->getQueryParams();
+        $fechaDesde = $params['fecha_desde'] ?? null;
+        $fechaHasta = $params['fecha_hasta'] ?? null;
+        $ubicacion = $params['ubicacion'] ?? null;
+        $estado = $params['estado'] ?? null;
+
+        try {
+            $movimientos = $this->movimiento->buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado);
+            return responseJson($response, ['movimientos' => $movimientos]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function verificarDuplicado(Request $request, Response $response) {
+        $data = json_decode($request->getBody()->getContents(), true);
+        
+        if (!isset($data['producto_id']) || !isset($data['cantidad']) || !isset($data['peso']) || !isset($data['fecha'])) {
+            return responseJson($response, ['error' => 'Faltan datos requeridos'], 400);
+        }
+
+        try {
+            $duplicado = $this->movimiento->verificarDuplicado(
+                $data['producto_id'],
+                $data['cantidad'],
+                $data['peso'],
+                $data['fecha']
+            );
+            
+            return responseJson($response, [
+                'duplicado' => $duplicado,
+                'mensaje' => $duplicado ? 'Se encontró un registro similar' : 'No hay registros similares'
+            ]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
 }

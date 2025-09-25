@@ -1,109 +1,462 @@
-let timeoutBusqueda = null;
+let timeoutBusqueda = 1000;
+let fechaActual = new Date().toISOString().split("T")[0];
+let productoSeleccionado = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('buscarProducto').addEventListener('input', buscarProductos);
+document.addEventListener("DOMContentLoaded", function () {
+  // Eventos de búsqueda
+  document
+    .getElementById("buscarProducto")
+    .addEventListener("input", buscarProductos);
+  document
+    .getElementById("limpiarBusqueda")
+    .addEventListener("click", limpiarBusqueda);
+
+  // Eventos de formulario
+  document
+    .getElementById("btnGuardar")
+    .addEventListener("click", guardarRegistro);
+  document
+    .getElementById("btnCancelar")
+    .addEventListener("click", cancelarSeleccion);
+
+  // Cargar registros del día
+  cargarRegistrosDelDia();
 });
 
 function buscarProductos(e) {
-    const termino = e.target.value;
-    
-    if (timeoutBusqueda) {
-        clearTimeout(timeoutBusqueda);
-    }
-    
-    if (termino.length < 2) return;
-    
-    timeoutBusqueda = setTimeout(() => {
-        fetch(`api/productos/buscar?q=${encodeURIComponent(termino)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.productos) {
-                    mostrarResultadosBusqueda(data.productos);
-                } else {
-                    mostrarMensaje(data.error || 'Error al buscar productos', 'error');
-                }
-            })
-            .catch(error => {
-                mostrarMensaje('Error de conexión', 'error');
-                console.error('Error:', error);
-            });
-    }, 300);
+  const termino = e.target.value.trim();
+
+  if (timeoutBusqueda) {
+    clearTimeout(timeoutBusqueda);
+  }
+
+  // Ocultar resultados si el término de búsqueda está vacío
+  if (termino.length < 2) {
+    document.getElementById("resultadosBusqueda").style.display = "none";
+    return;
+  }
+
+  if (termino.length >= 10) {
+    /// identifico lectura de cod de barras
+    document.getElementById("resultadosBusqueda").style.display = "none";
+    buscarProductosCodBarras(e);
+    return;
+  }
+
+  timeoutBusqueda = setTimeout(() => {
+    document.getElementById("resultadosBusqueda").style.display = "block";
+    document.getElementById("resultadosTable").innerHTML =
+      '<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+
+    fetch(`api/productos/nuevos?q=${encodeURIComponent(termino)}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Error en la respuesta del servidor: " + response.status
+          );
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.productos) {
+          mostrarResultadosBusqueda(data.productos);
+        } else {
+          document.getElementById("resultadosTable").innerHTML =
+            '<tr><td colspan="3" class="text-center">No se encontraron productos</td></tr>';
+          mostrarMensaje("No se encontraron productos", "warning");
+        }
+      })
+      .catch((error) => {
+        document.getElementById("resultadosTable").innerHTML =
+          '<tr><td colspan="3" class="text-center text-danger">Error al buscar productos</td></tr>';
+        mostrarMensaje("Error: " + error.message, "error");
+        console.error("Error:", error);
+      });
+  }, 300);
+}
+
+function buscarProductosCodBarras(e) {
+  const termino = e.target.value.trim();
+
+  if (timeoutBusqueda) {
+    clearTimeout(timeoutBusqueda);
+  }
+
+  // Ocultar resultados si el término de búsqueda está vacío
+  if (termino.length < 10) {
+    document.getElementById("resultadosBusqueda").style.display = "none";
+    return;
+  }
+  // extraigo del string termino los dos primeros caracteres en una variable tipoCB, luego 5 caracteres en la variable codigoCB y por ultimo los restantes caracteres en una variable cntCB
+  const tipoCB = termino.substring(0, 2);
+  const codigoCB = termino.substring(2, 7).replace(/^0+/, ""); // a codCB tle debo quitar solo los ceros que tenga adelante
+  const cntCB = termino.substring(7, 12);
+  console.log("Tipo:", tipoCB);
+  console.log("Código:", codigoCB);
+  console.log("Cantidad:", cntCB);
+
+  timeoutBusqueda = setTimeout(() => {
+    document.getElementById("resultadosBusqueda").style.display = "block";
+    document.getElementById("resultadosTable").innerHTML =
+      '<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+
+    fetch(`api/productos/nuevos?q=${encodeURIComponent(codigoCB)}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Error en la respuesta del servidor: " + response.status
+          );
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.productos) {
+          //valido si hay solo 1 producto en data.productos
+          if (Array.isArray(data.productos) && data.productos.length === 1) {
+            // Solo hay un producto
+            console.log(data.productos[0]["descripcion"]);
+            seleccionarProducto(
+              JSON.parse(JSON.stringify(data.productos[0]))
+            );
+
+            setTimeout(() => {
+              if (tipoCB == "21") {
+                ///  imprime peso
+                document.getElementById("pesoProducto").value =
+                  parseFloat(cntCB) / 1000; // lo paso a kg
+              }
+              if (tipoCB == "20") {
+                ///  imprime unidades
+                document.getElementById("cantidadProducto").value =
+                  parseFloat(cntCB) / 1000; // revisar si estan declarados con fracciones las unidades
+              }
+            }, 100);
+          } else {
+            // Hay múltiples productos
+            mostrarResultadosBusqueda(data.productos);
+          }
+        } else {
+          document.getElementById("resultadosTable").innerHTML =
+            '<tr><td colspan="3" class="text-center">No se encontraron productos</td></tr>';
+          mostrarMensaje("No se encontraron productos", "warning");
+        }
+      })
+      .catch((error) => {
+        document.getElementById("resultadosTable").innerHTML =
+          '<tr><td colspan="3" class="text-center text-danger">Error al buscar productos</td></tr>';
+        mostrarMensaje("Error: " + error.message, "error");
+        console.error("Error:", error);
+      });
+  }, 300);
 }
 
 function mostrarResultadosBusqueda(productos) {
-    const tabla = document.getElementById('itemsTable');
-    tabla.innerHTML = '';
-    
-    productos.forEach(producto => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${producto.codigo}</td>
-            <td>${producto.descripcion}</td>
-            <td><input type="number" class="form-control cantidad-input" value="1" min="0" step="1"></td>
-            <td><input type="number" class="form-control peso-input" value="0" min="0" step="0.001"></td>
+  const tabla = document.getElementById("resultadosTable");
+  tabla.innerHTML = "";
+
+  if (productos.length === 0) {
+    tabla.innerHTML =
+      '<tr><td colspan="3" class="text-center">No se encontraron productos</td></tr>';
+    return;
+  }
+
+  productos.forEach((producto) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+            <td>${producto.codigo || "-"}</td>
+            <td>${producto.descripcion || "-"}</td>
             <td>
-                <button class="btn btn-primary btn-sm btn-agregar" onclick="altaProducto(${producto.id}, this)">
-                    Alta
+                <button class="btn btn-primary btn-sm" onclick="seleccionarProducto(${JSON.stringify(
+                  producto
+                ).replace(/"/g, "&quot;")})">
+                    <i class="fas fa-check"></i> Seleccionar
                 </button>
             </td>
         `;
-        tabla.appendChild(tr);
-    });
+    tabla.appendChild(tr);
+  });
 }
 
 function altaProducto(productoId, btnElement) {
-    const tr = btnElement.closest('tr');
-    const cantidad = tr.querySelector('.cantidad-input').value;
-    const peso = tr.querySelector('.peso-input').value;
-    
-    // Primero creamos el movimiento
-    const dataMovimiento = {
-        ubicacion_destino: 1 // ID del depósito central
-    };
+  const tr = btnElement.closest("tr");
+  const cantidad = tr.querySelector(".cantidad-input").value;
+  const peso = tr.querySelector(".peso-input").value;
 
-    fetch('api/movimientos', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(dataMovimiento)
-    })
-    .then(response => response.json())
-    .then(movimientoData => {
-        if (movimientoData.id) {
-            // Si el movimiento se creó exitosamente, agregamos el ítem
-            const dataItem = {
-                producto_id: productoId,
-                cantidad: cantidad,
-                cantidad_peso: peso
-            };
+  // Primero creamos el movimiento
+  const dataMovimiento = {
+    ubicacion_destino: 1, // ID del depósito central
+  };
 
-            return fetch(`api/movimientos/${movimientoData.id}/items`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(dataItem)
-            }).then(response => response.json());
-        } else {
-            throw new Error(movimientoData.error || 'Error al crear el movimiento');
-        }
+  fetch("api/movimientos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(dataMovimiento),
+  })
+    .then((response) => response.json())
+    .then((movimientoData) => {
+      if (movimientoData.id) {
+        // Si el movimiento se creó exitosamente, agregamos el ítem
+        const dataItem = {
+          producto_id: productoId,
+          cantidad: cantidad,
+          cantidad_peso: peso,
+        };
+
+        return fetch(`api/movimientos/${movimientoData.id}/items`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataItem),
+        }).then((response) => response.json());
+      } else {
+        throw new Error(movimientoData.error || "Error al crear el movimiento");
+      }
     })
-    .then(itemData => {
-        if (itemData.id) {
-            tr.remove();
-            mostrarMensaje('Producto dado de alta exitosamente', 'success');
-        } else {
-            mostrarMensaje(itemData.error || 'Error al agregar el item', 'error');
-        }
+    .then((itemData) => {
+      if (itemData.id) {
+        tr.remove();
+        mostrarMensaje("Producto dado de alta exitosamente", "success");
+        document.getElementById("buscarProducto").value = "";
+        document.getElementById("resultadosBusqueda").style.display = "none";
+        cargarMovimientosDeposito(); // Actualizar la lista de movimientos
+      } else {
+        mostrarMensaje(itemData.error || "Error al agregar el item", "error");
+      }
     })
-    .catch(error => {
-        mostrarMensaje('Error: ' + error.message, 'error');
-        console.error('Error:', error);
+    .catch((error) => {
+      mostrarMensaje("Error: " + error.message, "error");
+      console.error("Error:", error);
     });
 }
 
-function mostrarMensaje(mensaje, tipo) {
-    // Usar toastr o implementar tu propio sistema de notificaciones
-    alert(mensaje);
+function mostrarMensaje(mensaje, tipo = "info") {
+  Swal.fire({
+    title:
+      tipo === "error"
+        ? "Error"
+        : tipo === "warning"
+        ? "Advertencia"
+        : "Información",
+    text: mensaje,
+    icon: tipo,
+    confirmButtonText: "Aceptar",
+  });
+}
+
+function seleccionarProducto(producto) {
+  productoSeleccionado = producto;
+
+  console.log('Producto seleccionado:');
+  console.log(typeof productoSeleccionado);
+  console.log(productoSeleccionado);
+
+  // Llenar el formulario
+  document.getElementById("codigoProducto").value = producto.codigo || "";
+  document.getElementById("descripcionProducto").value =
+    producto.descripcion || "";
+  document.getElementById("cantidadProducto").value = "1";
+  document.getElementById("pesoProducto").value = "0";
+
+  // Mostrar sección de producto seleccionado y ocultar resultados
+  document.getElementById("productoSeleccionado").style.display = "block";
+  document.getElementById("resultadosBusqueda").style.display = "none";
+  document.getElementById("buscarProducto").value = "";
+}
+
+function limpiarBusqueda() {
+  document.getElementById("buscarProducto").value = "";
+  document.getElementById("resultadosBusqueda").style.display = "none";
+}
+
+function cancelarSeleccion() {
+  productoSeleccionado = null;
+  document.getElementById("productoSeleccionado").style.display = "none";
+  document.getElementById("altaProductoForm").reset();
+}
+
+async function verificarRegistroDuplicado(producto_id, cantidad, peso) {
+  try {
+    const response = await fetch(`api/movimientos/verificar-duplicado`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        producto_id: producto_id,
+        cantidad: cantidad,
+        peso: peso,
+        fecha: fechaActual,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al verificar duplicados");
+    }
+
+    const data = await response.json();
+    return data.duplicado || false;
+  } catch (error) {
+    console.error("Error al verificar duplicados:", error);
+    return false;
+  }
+}
+
+async function guardarRegistro() {
+  if (!productoSeleccionado) {
+    mostrarMensaje("No hay producto seleccionado", "error");
+    return;
+  }
+
+  const cantidad = parseInt(document.getElementById("cantidadProducto").value);
+  const peso = parseFloat(document.getElementById("pesoProducto").value);
+
+  if (cantidad < 1) {
+    mostrarMensaje("La cantidad debe ser mayor a 0", "error");
+    return;
+  }
+
+  if (peso < 0) {
+    mostrarMensaje("El peso no puede ser negativo", "error");
+    return;
+  }
+
+  // Verificar duplicados
+  const duplicado = await verificarRegistroDuplicado(
+    productoSeleccionado.id,
+    cantidad,
+    peso
+  );
+
+  if (duplicado) {
+    const confirmar = await Swal.fire({
+      title: "¡Registro duplicado!",
+      text: "Ya existe un registro con los mismos datos hoy. ¿Desea continuar?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, registrar",
+      cancelButtonText: "No, cancelar",
+    });
+
+    if (!confirmar.isConfirmed) {
+      return;
+    }
+  }
+
+  // Crear el movimiento
+  try {
+    const responseMovimiento = await fetch("api/movimientos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ubicacion_destino: 1, // ID del depósito central
+      }),
+    });
+
+    if (!responseMovimiento.ok) {
+      throw new Error("Error al crear el movimiento");
+    }
+
+    const movimientoData = await responseMovimiento.json();
+
+    // Agregar el ítem al movimiento
+    const responseItem = await fetch(
+      `api/movimientos/${movimientoData.id}/items`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          producto_id: productoSeleccionado.id,
+          cantidad: cantidad,
+          cantidad_peso: peso,
+        }),
+      }
+    );
+
+    if (!responseItem.ok) {
+      throw new Error("Error al agregar el item");
+    }
+
+    const itemData = await responseItem.json();
+
+    // Mostrar mensaje de éxito
+    await Swal.fire({
+      title: "¡Registro exitoso!",
+      html: `
+                <p>Se registró correctamente:</p>
+                <ul>
+                    <li><strong>Producto:</strong> ${productoSeleccionado.descripcion}</li>
+                    <li><strong>Cantidad:</strong> ${cantidad}</li>
+                    <li><strong>Peso:</strong> ${peso} kg</li>
+                </ul>
+            `,
+      icon: "success",
+    });
+
+    // Limpiar formulario y actualizar registros
+    cancelarSeleccion();
+    cargarRegistrosDelDia();
+  } catch (error) {
+    mostrarMensaje("Error: " + error.message, "error");
+    console.error("Error:", error);
+  }
+}
+
+function cargarRegistrosDelDia() {
+  const tabla = document.getElementById("registrosDiaTable");
+  tabla.innerHTML =
+    '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando registros...</td></tr>';
+
+  fetch(`api/movimientos/deposito/${fechaActual}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Error al cargar los registros");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.movimientos && data.movimientos.length > 0) {
+        tabla.innerHTML = "";
+        data.movimientos.forEach((movimiento) => {
+          const fecha = new Date(movimiento.fechaAlta);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+                        <td>${fecha.toLocaleTimeString()}</td>
+                        <td>${movimiento.codigo || "-"}</td>
+                        <td>${movimiento.descripcion || "-"}</td>
+                        <td>${movimiento.cnt}</td>
+                        <td>${movimiento.cnt_peso} kg</td>
+                    `;
+          tabla.appendChild(tr);
+        });
+      } else {
+        tabla.innerHTML =
+          '<tr><td colspan="5" class="text-center">No hay registros para hoy</td></tr>';
+      }
+    })
+    .catch((error) => {
+      tabla.innerHTML =
+        '<tr><td colspan="5" class="text-center text-danger">Error al cargar los registros</td></tr>';
+      mostrarMensaje(
+        "Error al cargar los registros: " + error.message,
+        "error"
+      );
+      console.error("Error:", error);
+    });
 }

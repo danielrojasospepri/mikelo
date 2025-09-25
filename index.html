@@ -64,62 +64,72 @@
             <!-- Main content -->
             <section class="content">
                 <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">Nuevo Movimiento</h3>
-                                </div>
-                                <div class="card-body">
-                                    <form id="movimientoForm">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Ubicación Origen</label>
-                                                    <select class="form-control" id="ubicacionOrigen">
-                                                        <option value="">Seleccione...</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Ubicación Destino</label>
-                                                    <select class="form-control" id="ubicacionDestino" required>
-                                                        <option value="">Seleccione...</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">Crear Movimiento</button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            <div class="card" id="itemsCard" style="display: none;">
-                                <div class="card-header">
-                                    <h3 class="card-title">Agregar Items</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row mb-3">
-                                        <div class="col">
-                                            <input type="text" class="form-control" id="buscarProducto" placeholder="Buscar producto...">
-                                        </div>
+                    <!-- Filtros -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Filtros de búsqueda</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Fecha Desde</label>
+                                        <input type="date" class="form-control" id="fechaDesde">
                                     </div>
-                                    <table class="table table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th>Código</th>
-                                                <th>Descripción</th>
-                                                <th>Cantidad</th>
-                                                <th>Peso</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="itemsTable">
-                                        </tbody>
-                                    </table>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Fecha Hasta</label>
+                                        <input type="date" class="form-control" id="fechaHasta">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Ubicación</label>
+                                        <select class="form-control" id="ubicacion">
+                                            <option value="">Todas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Estado</label>
+                                        <select class="form-control" id="estado">
+                                            <option value="">Todos</option>
+                                            <option value="1">Nuevo</option>
+                                            <option value="2">Enviado</option>
+                                            <option value="3">Cancelado</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de movimientos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Movimientos</h3>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha/Hora</th>
+                                        <th>Origen</th>
+                                        <th>Destino</th>
+                                        <th>Código</th>
+                                        <th>Descripción</th>
+                                        <th>Cantidad</th>
+                                        <th>Peso</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movimientosTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
@@ -129,6 +139,6 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
-    <script src="js/js.js"></script>
+    <script src="js/index.js"></script>
 </body>
 </html>
