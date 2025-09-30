@@ -2,6 +2,8 @@ let timeoutBusqueda = 1000;
 let fechaActual = new Date().toISOString().split("T")[0];
 let productoSeleccionado = null;
 
+let html5QrcodeScanner = null;
+
 document.addEventListener("DOMContentLoaded", function () {
   // Eventos de búsqueda
   document
@@ -10,6 +12,9 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("limpiarBusqueda")
     .addEventListener("click", limpiarBusqueda);
+  document
+    .getElementById("btnEscanearQR")
+    .addEventListener("click", iniciarEscaneoQR);
 
   // Eventos de formulario
   document
@@ -18,6 +23,14 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("btnCancelar")
     .addEventListener("click", cancelarSeleccion);
+
+  // Evento para detener el escáner cuando se cierra el modal
+  $('#qrModal').on('hidden.bs.modal', function () {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.clear();
+      html5QrcodeScanner = null;
+    }
+  });
 
   // Cargar registros del día
   cargarRegistrosDelDia();
@@ -138,7 +151,7 @@ function buscarProductosCodBarras(e) {
               if (tipoCB == "20") {
                 ///  imprime unidades
                 document.getElementById("cantidadProducto").value =
-                  parseFloat(cntCB) / 1000; // revisar si estan declarados con fracciones las unidades
+                  parseFloat(cntCB); // revisar si estan declarados con fracciones las unidades
               }
             }, 100);
           } else {
@@ -416,6 +429,51 @@ async function guardarRegistro() {
     mostrarMensaje("Error: " + error.message, "error");
     console.error("Error:", error);
   }
+}
+
+function iniciarEscaneoQR() {
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.clear();
+  }
+
+  html5QrcodeScanner = new Html5QrcodeScanner(
+    "qr-reader",
+    { 
+      fps: 10,
+      qrbox: { width: 300, height: 100 }, // Más ancho y menos alto para códigos de barras
+      formatsToSupport: [ 
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.ITF
+      ],
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
+    }
+  );
+
+  html5QrcodeScanner.render((decodedText, decodedResult) => {
+    // Al escanear un código exitosamente
+    console.log(`Código escaneado: ${decodedText}`);
+    
+    // Detener el escáner
+    html5QrcodeScanner.clear();
+    
+    // Cerrar el modal
+    $('#qrModal').modal('hide');
+    
+    // Colocar el código en el campo de búsqueda y disparar la búsqueda
+    const inputBusqueda = document.getElementById("buscarProducto");
+    inputBusqueda.value = decodedText;
+    buscarProductos({ target: inputBusqueda });
+  });
+
+  // Mostrar el modal
+  $('#qrModal').modal('show');
 }
 
 function cargarRegistrosDelDia() {

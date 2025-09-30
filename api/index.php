@@ -4,6 +4,9 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Configurar zona horaria para Buenos Aires
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/comun.php';
 
@@ -16,6 +19,7 @@ use App\Controller\UbicacionController;
 
 $app = AppFactory::create();
 $app->setBasePath('/mikelo/api');
+// $app->setBasePath('/mikelo/api');
 $app->addBodyParsingMiddleware();
 
 // Agregar middleware para debug de rutas
