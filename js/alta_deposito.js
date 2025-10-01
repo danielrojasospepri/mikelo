@@ -16,6 +16,14 @@ document.addEventListener("DOMContentLoaded", function () {
     .getElementById("btnEscanearQR")
     .addEventListener("click", iniciarEscaneoQR);
 
+  // Cargar contenedores al inicio
+  cargarContenedores();
+
+  // Evento para actualizar peso total cuando se selecciona un contenedor
+  document
+    .getElementById("contenedorProducto")
+    .addEventListener("change", actualizarPesoTotal);
+
   // Eventos de formulario
   document
     .getElementById("btnGuardar")
@@ -269,6 +277,42 @@ function mostrarMensaje(mensaje, tipo = "info") {
   });
 }
 
+function cargarContenedores() {
+  fetch('api/contenedores')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const select = document.getElementById('contenedorProducto');
+        select.innerHTML = '<option value="">Sin contenedor</option>';
+        data.contenedores.forEach(contenedor => {
+          select.innerHTML += `<option value="${contenedor.id}" data-peso="${contenedor.peso}">${contenedor.nombre}</option>`;
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error al cargar contenedores:', error);
+      mostrarMensaje('Error al cargar los contenedores', 'error');
+    });
+}
+
+function actualizarPesoTotal() {
+  const pesoProductoInput = document.getElementById('pesoProducto');
+  const contenedorSelect = document.getElementById('contenedorProducto');
+  const opcionSeleccionada = contenedorSelect.options[contenedorSelect.selectedIndex];
+
+  // Obtener el peso bruto actual
+  const pesoBruto = parseFloat(pesoProductoInput.value) || 0;
+
+  // Si hay un contenedor seleccionado, mostrar el peso bruto + peso del contenedor
+  if (opcionSeleccionada && opcionSeleccionada.value) {
+    const pesoContenedor = parseFloat(opcionSeleccionada.dataset.peso) || 0;
+    const pesoTotal = pesoBruto + pesoContenedor;
+    document.getElementById('pesoTotalDisplay').textContent = `Peso Total: ${pesoTotal.toFixed(3)} kg`;
+  } else {
+    document.getElementById('pesoTotalDisplay').textContent = `Peso Total: ${pesoBruto.toFixed(3)} kg`;
+  }
+}
+
 function seleccionarProducto(producto) {
   productoSeleccionado = producto;
 
@@ -398,6 +442,7 @@ async function guardarRegistro() {
           producto_id: productoSeleccionado.id,
           cantidad: cantidad,
           cantidad_peso: peso,
+          id_contenedor: document.getElementById('contenedorProducto').value || null
         }),
       }
     );

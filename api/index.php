@@ -16,6 +16,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Controller\ProductoController;
 use App\Controller\MovimientoController;
 use App\Controller\UbicacionController;
+use App\Controller\EnvioController;
 
 $app = AppFactory::create();
 $app->setBasePath('/mikelo/api');
@@ -86,6 +87,19 @@ $app->get('/productos/nuevos', function (Request $request, Response $response) u
     return $controller->buscar($request, $response);
 });
 
+$app->get('/contenedores', function (Request $request, Response $response) use ($db) {
+    $sql = "SELECT id, nombre, peso FROM contenedores WHERE activo = 1 ORDER BY nombre";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $contenedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $response->getBody()->write(json_encode([
+        'success' => true,
+        'contenedores' => $contenedores
+    ]));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 $app->post('/movimientos', function (Request $request, Response $response) use ($db) {
     $controller = new MovimientoController($db);
     return $controller->crear($request, $response);
@@ -112,6 +126,55 @@ $app->get('/movimientos/buscar', function (Request $request, Response $response)
 $app->post('/movimientos/verificar-duplicado', function (Request $request, Response $response) use ($db) {
     $controller = new MovimientoController($db);
     return $controller->verificarDuplicado($request, $response);
+});
+
+// Rutas para envíos
+// Primero las rutas estáticas
+$app->get('/envios/productos-disponibles', function (Request $request, Response $response) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->obtenerProductosDisponibles($request, $response);
+});
+
+$app->get('/envios/contenedores', function (Request $request, Response $response) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->obtenerContenedores($request, $response);
+});
+
+$app->get('/envios/pdf', function (Request $request, Response $response) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->exportarPDF($request, $response);
+});
+
+$app->get('/envios/excel', function (Request $request, Response $response) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->exportarExcel($request, $response);
+});
+
+// Luego las rutas básicas
+$app->post('/envios', function (Request $request, Response $response) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->crear($request, $response);
+});
+
+$app->get('/envios', function (Request $request, Response $response) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->listar($request, $response);
+});
+
+// Finalmente las rutas con parámetros variables
+$app->get('/envios/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->obtenerDetalle($request, $response, $args);
+});
+
+$app->get('/envios/{id}/pdf', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->exportarPDF($request, $response, $args);
+});
+
+$app->get('/envios/{id}/excel', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->exportarExcel($request, $response, $args);
 });
 
 $app->run();
