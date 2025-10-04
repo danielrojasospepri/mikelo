@@ -794,6 +794,10 @@ $(document).ready(function() {
         cancelarEnvio();
     });
 
+    $('#btnImprimirDetalle').click(function() {
+        imprimirDetalle();
+    });
+
     function confirmarEnvio() {
         if (!window.envioSeleccionadoId) {
             mostrarError('No hay envío seleccionado');
@@ -811,7 +815,7 @@ $(document).ready(function() {
             if (result.isConfirmed) {
                 $.ajax({
                     url: `api/envios/${window.envioSeleccionadoId}/confirmar`,
-                    method: 'POST'
+                    method: 'PUT'
                 })
                 .done(function(response) {
                     if (response.success) {
@@ -852,7 +856,9 @@ $(document).ready(function() {
             if (result.isConfirmed) {
                 $.ajax({
                     url: `api/envios/${window.envioSeleccionadoId}/cancelar`,
-                    method: 'POST'
+                    method: 'PUT',
+                    data: JSON.stringify({ motivo: 'Cancelado por usuario' }),
+                    contentType: 'application/json'
                 })
                 .done(function(response) {
                     if (response.success) {
@@ -882,6 +888,57 @@ $(document).ready(function() {
             case 'cancelado': return 'danger';
             default: return 'secondary';
         }
+    }
+
+    function imprimirDetalle() {
+        if (!window.envioSeleccionadoId) {
+            mostrarError('No hay envío seleccionado');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Generando PDF...',
+            text: 'Por favor espere mientras se genera el documento',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Generar PDF del envío específico
+        $.ajax({
+            url: `api/envios/${window.envioSeleccionadoId}/pdf`,
+            method: 'GET'
+        })
+        .done(function(response) {
+            Swal.close();
+            if (response.success) {
+                // Abrir el PDF en una nueva ventana para imprimir
+                const pdfWindow = window.open(response.url, '_blank');
+                
+                // Intentar imprimir automáticamente cuando se cargue el PDF
+                pdfWindow.onload = function() {
+                    setTimeout(() => {
+                        pdfWindow.print();
+                    }, 1000);
+                };
+
+                Swal.fire({
+                    title: 'PDF Generado',
+                    text: 'El documento se ha abierto en una nueva ventana. Puede imprimirlo desde allí.',
+                    icon: 'success',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            } else {
+                mostrarError(response.error || 'Error al generar el PDF');
+            }
+        })
+        .fail(function(xhr) {
+            Swal.close();
+            console.error('Error al generar PDF:', xhr);
+            mostrarError('Error al generar el PDF: ' + (xhr.responseJSON?.error || xhr.statusText));
+        });
     }
 
     function mostrarError(mensaje) {

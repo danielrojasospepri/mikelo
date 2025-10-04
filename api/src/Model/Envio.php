@@ -936,14 +936,14 @@ class Envio {
             $stmt->execute([$idEnvio]);
             $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            // Cambiar estado de todos los items a CANCELADO (3)
+            // Cambiar estado de todos los items a CANCELADO (4)
             foreach ($items as $item) {
                 $stmt = $this->db->prepare("
                     INSERT INTO estados_items_movimientos (
-                        id_estados, id_movimientos_items, fecha_alta, usuario_alta, observaciones
-                    ) VALUES (3, ?, NOW(), ?, ?)
+                        id_estados, id_movimientos_items, fecha_alta, usuario_alta
+                    ) VALUES (4, ?, NOW(), ?)
                 ");
-                $stmt->execute([$item['id'], $_SESSION['usuario'] ?? 'sistema', $motivo]);
+                $stmt->execute([$item['id'], $_SESSION['usuario'] ?? 'sistema']);
             }
 
             $this->db->commit();

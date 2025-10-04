@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Botón Imprimir - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Test del Botón Imprimir Detalle</h1>
+    
+    <div style="margin: 20px;">
+        <h3>Simular impresión de envío</h3>
+        <input type="number" id="envioId" placeholder="ID del envío" value="17" style="padding: 5px; margin: 5px;">
+        <br><br>
+        <button onclick="imprimirDetalle()" style="padding: 10px; margin: 5px; background-color: blue; color: white;">
+            🖨️ Imprimir Detalle
+        </button>
+    </div>
+    
+    <div id="resultados" style="margin: 20px;">
+        <h3>Resultados:</h3>
+        <div id="contenidoResultados"></div>
+    </div>
+
+    <script>
+        // Variable global para simular el envío seleccionado
+        window.envioSeleccionadoId = null;
+
+        function imprimirDetalle() {
+            // Obtener ID del input
+            const envioId = document.getElementById('envioId').value;
+            if (!envioId) {
+                Swal.fire('Error', 'Ingrese un ID de envío', 'error');
+                return;
+            }
+
+            // Simular selección del envío
+            window.envioSeleccionadoId = envioId;
+
+            Swal.fire({
+                title: 'Generando PDF...',
+                text: 'Por favor espere mientras se genera el documento',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Generar PDF del envío específico
+            $.ajax({
+                url: `api/envios/${window.envioSeleccionadoId}/pdf`,
+                method: 'GET'
+            })
+            .done(function(response) {
+                Swal.close();
+                if (response.success) {
+                    // Abrir el PDF en una nueva ventana para imprimir
+                    const pdfWindow = window.open(response.url, '_blank');
+                    
+                    // Intentar imprimir automáticamente cuando se cargue el PDF
+                    pdfWindow.onload = function() {
+                        setTimeout(() => {
+                            pdfWindow.print();
+                        }, 1000);
+                    };
+
+                    Swal.fire({
+                        title: 'PDF Generado',
+                        text: 'El documento se ha abierto en una nueva ventana. Puede imprimirlo desde allí.',
+                        icon: 'success',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+
+                    document.getElementById('contenidoResultados').innerHTML = 
+                        '<p style="color: green;">✅ PDF generado y abierto para imprimir</p>' +
+                        '<p><strong>URL:</strong> ' + response.url + '</p>';
+                } else {
+                    Swal.fire('Error', response.error || 'Error al generar el PDF', 'error');
+                    document.getElementById('contenidoResultados').innerHTML = 
+                        '<p style="color: red;">❌ Error al generar PDF</p>';
+                }
+            })
+            .fail(function(xhr) {
+                Swal.close();
+                console.error('Error al generar PDF:', xhr);
+                Swal.fire('Error', 'Error al generar el PDF: ' + (xhr.responseJSON?.error || xhr.statusText), 'error');
+                document.getElementById('contenidoResultados').innerHTML = 
+                    '<p style="color: red;">❌ Error de conexión al generar PDF</p>';
+            });
+        }
+    </script>
+</body>
+</html>

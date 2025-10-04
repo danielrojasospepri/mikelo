@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Botones Envío - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Test de Botones Confirmar/Cancelar Envío</h1>
+    
+    <div style="margin: 20px;">
+        <h3>Simular acciones de envío</h3>
+        <input type="number" id="envioId" placeholder="ID del envío" value="17" style="padding: 5px; margin: 5px;">
+        <br><br>
+        <button onclick="confirmarEnvio()" style="padding: 10px; margin: 5px; background-color: green; color: white;">Confirmar Envío</button>
+        <button onclick="cancelarEnvio()" style="padding: 10px; margin: 5px; background-color: red; color: white;">Cancelar Envío</button>
+    </div>
+    
+    <div id="resultados" style="margin: 20px;">
+        <h3>Resultados:</h3>
+        <div id="contenidoResultados"></div>
+    </div>
+
+    <script>
+        function confirmarEnvio() {
+            const envioId = document.getElementById('envioId').value;
+            if (!envioId) {
+                Swal.fire('Error', 'Ingrese un ID de envío', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Confirmar envío?',
+                text: 'Esta acción marcará el envío como enviado y no se podrá deshacer.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `api/envios/${envioId}/confirmar`,
+                        method: 'PUT'
+                    })
+                    .done(function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Envío confirmado',
+                                text: 'El envío ha sido marcado como enviado.',
+                                icon: 'success'
+                            });
+                            document.getElementById('contenidoResultados').innerHTML = 
+                                '<p style="color: green;">✅ Envío confirmado exitosamente</p>';
+                        } else {
+                            Swal.fire('Error', response.error || 'Error al confirmar el envío', 'error');
+                        }
+                    })
+                    .fail(function(xhr) {
+                        Swal.fire('Error', 'Error al confirmar el envío: ' + (xhr.responseJSON?.error || xhr.statusText), 'error');
+                    });
+                }
+            });
+        }
+
+        function cancelarEnvio() {
+            const envioId = document.getElementById('envioId').value;
+            if (!envioId) {
+                Swal.fire('Error', 'Ingrese un ID de envío', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Cancelar envío?',
+                text: 'Esta acción cancelará el envío y devolverá los productos al stock.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No cancelar',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `api/envios/${envioId}/cancelar`,
+                        method: 'PUT',
+                        data: JSON.stringify({ motivo: 'Cancelado por usuario de prueba' }),
+                        contentType: 'application/json'
+                    })
+                    .done(function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Envío cancelado',
+                                text: 'El envío ha sido cancelado y los productos devueltos al stock.',
+                                icon: 'success'
+                            });
+                            document.getElementById('contenidoResultados').innerHTML = 
+                                '<p style="color: red;">❌ Envío cancelado exitosamente</p>';
+                        } else {
+                            Swal.fire('Error', response.error || 'Error al cancelar el envío', 'error');
+                        }
+                    })
+                    .fail(function(xhr) {
+                        Swal.fire('Error', 'Error al cancelar el envío: ' + (xhr.responseJSON?.error || xhr.statusText), 'error');
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
