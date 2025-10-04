@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Directo Envíos</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f0f8ff;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Test Directo de Funciones de Envíos</h1>
+    <p>Replica exacta de las funciones de envíos.js para diagnosticar el problema.</p>
+    
+    <button id="btnExportarPDF">📄 Exportar Lista PDF</button>
+    <button id="btnExportarExcel">📊 Exportar Lista Excel</button>
+    <button onclick="exportarDetalle(5, 'pdf')">📋 Detalle PDF (ID: 5)</button>
+    <button onclick="exportarDetalle(5, 'excel')">📈 Detalle Excel (ID: 5)</button>
+    
+    <div id="log" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; font-family: monospace;"></div>
+
+    <script>
+        // Log function
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            document.getElementById('log').innerHTML += `[${timestamp}] ${message}<br>`;
+            console.log(message);
+        }
+        
+        // Funciones copiadas exactamente de envios.js
+        function exportarLista(formato) {
+            log(`Iniciando exportarLista(${formato})`);
+            
+            // Mostrar loading
+            Swal.fire({
+                title: `Generando ${formato.toUpperCase()}...`,
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            log(`Haciendo fetch a: api/envios/${formato}`);
+            
+            fetch(`api/envios/${formato}`)
+                .then(response => {
+                    log(`Response recibida: ${response.status} ${response.statusText}`);
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Error en la respuesta del servidor');
+                })
+                .then(data => {
+                    log(`Data recibida: ${JSON.stringify(data)}`);
+                    Swal.close();
+                    if (data.success) {
+                        log(`Iniciando descarga de: ${data.archivo}`);
+                        
+                        // Descarga automática
+                        const link = document.createElement('a');
+                        link.href = data.archivo;
+                        link.download = data.archivo.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        log(`Descarga completada exitosamente`);
+                        Swal.fire('Éxito', `${formato.toUpperCase()} descargado exitosamente`, 'success');
+                    } else {
+                        throw new Error(data.error || `Error al generar ${formato.toUpperCase()}`);
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    log(`Error capturado: ${error.message}`);
+                    console.error('Error:', error);
+                    Swal.fire('Error', `Error al generar ${formato.toUpperCase()}: ` + error.message, 'error');
+                });
+        }
+
+        function exportarDetalle(id, formato) {
+            log(`Iniciando exportarDetalle(${id}, ${formato})`);
+            
+            // Mostrar loading
+            Swal.fire({
+                title: `Generando ${formato.toUpperCase()}...`,
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            log(`Haciendo fetch a: api/envios/${id}/${formato}`);
+            
+            fetch(`api/envios/${id}/${formato}`)
+                .then(response => {
+                    log(`Response recibida: ${response.status} ${response.statusText}`);
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Error en la respuesta del servidor');
+                })
+                .then(data => {
+                    log(`Data recibida: ${JSON.stringify(data)}`);
+                    Swal.close();
+                    if (data.success) {
+                        log(`Iniciando descarga de: ${data.archivo}`);
+                        
+                        // Descarga automática
+                        const link = document.createElement('a');
+                        link.href = data.archivo;
+                        link.download = data.archivo.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        log(`Descarga completada exitosamente`);
+                        Swal.fire('Éxito', `${formato.toUpperCase()} descargado exitosamente`, 'success');
+                    } else {
+                        throw new Error(data.error || `Error al generar ${formato.toUpperCase()}`);
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    log(`Error capturado: ${error.message}`);
+                    console.error('Error:', error);
+                    Swal.fire('Error', `Error al generar ${formato.toUpperCase()}: ` + error.message, 'error');
+                });
+        }
+        
+        // Event listeners exactos como en envios.js
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DOM cargado, configurando event listeners...');
+            
+            document.getElementById('btnExportarPDF').addEventListener('click', function() {
+                log('Click en btnExportarPDF detectado');
+                exportarLista('pdf');
+            });
+
+            document.getElementById('btnExportarExcel').addEventListener('click', function() {
+                log('Click en btnExportarExcel detectado');
+                exportarLista('excel');
+            });
+            
+            log('Event listeners configurados correctamente');
+        });
+    </script>
+</body>
+</html>

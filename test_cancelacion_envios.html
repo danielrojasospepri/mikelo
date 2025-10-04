@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Test Cancelación de Envíos - Liberación de Stock</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f0f8ff;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+        button:hover { 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .danger { background: linear-gradient(45deg, #f44336, #d32f2f); }
+        .info { background: linear-gradient(45deg, #2196F3, #1976D2); }
+        .warning { background: linear-gradient(45deg, #ff9800, #f57c00); }
+        
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { background: #e8f5e8; border: 1px solid #4CAF50; }
+        .error { background: #ffebee; border: 1px solid #f44336; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background-color: #f2f2f2; }
+        
+        .flow {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Test: Cancelación de Envíos y Liberación de Stock</h1>
+        
+        <div class="flow">
+            <h3>📋 Flujo de Prueba:</h3>
+            <ol>
+                <li><strong>Estado inicial:</strong> Verificar productos disponibles</li>
+                <li><strong>Crear envío:</strong> Seleccionar productos (los saca del stock)</li>
+                <li><strong>Verificar impacto:</strong> Productos ya no disponibles</li>
+                <li><strong>Cancelar envío:</strong> Con motivo específico</li>
+                <li><strong>Verificar liberación:</strong> Productos vuelven al stock</li>
+            </ol>
+        </div>
+        
+        <div class="test-case">
+            <h3>📊 Paso 1: Estado Inicial del Stock</h3>
+            <button class="info" onclick="verificarProductosDisponibles()">Ver Productos Disponibles</button>
+            <div id="resultadoInicial"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>📋 Paso 2: Lista de Envíos Actuales</h3>
+            <button class="info" onclick="listarEnvios()">Ver Envíos Existentes</button>
+            <div id="resultadoEnvios"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>❌ Paso 3: Cancelar Envío (Liberar Stock)</h3>
+            <p>Selecciona un envío de la lista anterior para cancelar:</p>
+            <input type="number" id="envioId" placeholder="ID del envío" style="padding: 8px; margin: 5px;">
+            <input type="text" id="motivoCancelacion" placeholder="Motivo de cancelación" style="padding: 8px; margin: 5px; width: 200px;">
+            <br>
+            <button class="danger" onclick="cancelarEnvio()">❌ Cancelar Envío</button>
+            <div id="resultadoCancelacion"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>✅ Paso 4: Verificar Liberación del Stock</h3>
+            <button class="info" onclick="verificarProductosLiberados()">🔄 Verificar Productos Liberados</button>
+            <div id="resultadoLiberacion"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>🧪 Paso 5: Test Completo Automatizado</h3>
+            <p><strong>⚠️ Nota:</strong> Este test requiere que exista al menos un envío en estado ENVIADO para cancelar.</p>
+            <button class="warning" onclick="testCompletoAutomatizado()">🚀 Ejecutar Test Completo</button>
+            <div id="resultadoCompleto"></div>
+        </div>
+    </div>
+
+    <script>
+        let productosAntes = [];
+        
+        async function verificarProductosDisponibles() {
+            try {
+                const response = await fetch('api/envios/productos-disponibles');
+                const data = await response.json();
+                
+                productosAntes = data.data || [];
+                
+                let html = `
+                    <div class="result success">
+                        <strong>✅ Productos Disponibles (${productosAntes.length}):</strong><br>
+                        <table>
+                            <tr>
+                                <th>ID Item</th>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Peso</th>
+                                <th>Estado</th>
+                            </tr>
+                `;
+                
+                productosAntes.forEach(producto => {
+                    html += `
+                        <tr>
+                            <td>${producto.id_movimiento_item}</td>
+                            <td>${producto.codigo}</td>
+                            <td>${producto.descripcion}</td>
+                            <td>${producto.cnt}</td>
+                            <td>${producto.cnt_peso}kg</td>
+                            <td>${producto.estado_actual}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</table></div>';
+                document.getElementById('resultadoInicial').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('resultadoInicial').innerHTML = `
+                    <div class="result error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        async function listarEnvios() {
+            try {
+                const response = await fetch('api/envios');
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    let html = `
+                        <div class="result success">
+                            <strong>📋 Envíos Existentes (${data.data.length}):</strong><br>
+                            <table>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Origen</th>
+                                    <th>Destino</th>
+                                    <th>Estado</th>
+                                    <th>Items</th>
+                                </tr>
+                    `;
+                    
+                    data.data.forEach(envio => {
+                        html += `
+                            <tr style="background-color: ${envio.ultimo_estado === 'ENVIADO' ? '#fff3e0' : '#f5f5f5'}">
+                                <td><strong>${envio.id}</strong></td>
+                                <td>${envio.fechaAlta}</td>
+                                <td>${envio.origen}</td>
+                                <td>${envio.destino}</td>
+                                <td>${envio.ultimo_estado}</td>
+                                <td>${envio.cantidad_items}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</table>';
+                    html += '<p><strong>💡 Tip:</strong> Los envíos en estado ENVIADO (fondo amarillo) pueden ser cancelados.</p>';
+                    html += '</div>';
+                    
+                    document.getElementById('resultadoEnvios').innerHTML = html;
+                } else {
+                    throw new Error('No se pudieron obtener los envíos');
+                }
+                
+            } catch (error) {
+                document.getElementById('resultadoEnvios').innerHTML = `
+                    <div class="result error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        async function cancelarEnvio() {
+            const envioId = document.getElementById('envioId').value;
+            const motivo = document.getElementById('motivoCancelacion').value;
+            
+            if (!envioId || !motivo) {
+                Swal.fire('Error', 'Debe ingresar el ID del envío y el motivo', 'error');
+                return;
+            }
+            
+            try {
+                Swal.fire({
+                    title: '⏳ Cancelando Envío...',
+                    text: 'Liberando productos al stock...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                
+                const response = await fetch(`api/envios/${envioId}/cancelar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ motivo: motivo })
+                });
+                
+                const data = await response.json();
+                Swal.close();
+                
+                if (data.success) {
+                    document.getElementById('resultadoCancelacion').innerHTML = `
+                        <div class="result success">
+                            <strong>✅ Envío ${envioId} cancelado exitosamente</strong><br>
+                            <strong>Motivo:</strong> ${motivo}<br>
+                            <strong>Resultado:</strong> ${data.mensaje}<br>
+                            <br>
+                            <em>Los productos de este envío han sido liberados y deberían estar disponibles nuevamente en el stock.</em>
+                        </div>
+                    `;
+                    
+                    Swal.fire('✅ Cancelado', 'Envío cancelado y productos liberados', 'success');
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                Swal.close();
+                document.getElementById('resultadoCancelacion').innerHTML = `
+                    <div class="result error">❌ Error al cancelar: ${error.message}</div>
+                `;
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+        
+        async function verificarProductosLiberados() {
+            try {
+                const response = await fetch('api/envios/productos-disponibles');
+                const data = await response.json();
+                
+                const productosDespues = data.data || [];
+                const diferencia = productosDespues.length - productosAntes.length;
+                
+                let html = `
+                    <div class="result ${diferencia > 0 ? 'success' : 'error'}">
+                        <strong>🔄 Comparación de Stock:</strong><br>
+                        <strong>Antes:</strong> ${productosAntes.length} productos disponibles<br>
+                        <strong>Después:</strong> ${productosDespues.length} productos disponibles<br>
+                        <strong>Diferencia:</strong> ${diferencia > 0 ? '+' : ''}${diferencia} productos<br>
+                        <br>
+                `;
+                
+                if (diferencia > 0) {
+                    html += `<strong>✅ ¡Éxito! Se liberaron ${diferencia} productos al stock.</strong>`;
+                } else if (diferencia === 0) {
+                    html += `<strong>⚠️ No hay diferencia. Es posible que no se haya cancelado ningún envío.</strong>`;
+                } else {
+                    html += `<strong>❌ Advertencia: Se perdieron ${Math.abs(diferencia)} productos.</strong>`;
+                }
+                
+                html += '<br><br><strong>Productos Actuales:</strong><table>';
+                html += '<tr><th>ID</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Estado</th></tr>';
+                
+                productosDespues.forEach(producto => {
+                    const esNuevo = !productosAntes.find(p => p.id_movimiento_item === producto.id_movimiento_item);
+                    html += `
+                        <tr style="background-color: ${esNuevo ? '#e8f5e8' : 'white'}">
+                            <td>${producto.id_movimiento_item}</td>
+                            <td>${producto.codigo}</td>
+                            <td>${producto.descripcion}</td>
+                            <td>${producto.cnt}</td>
+                            <td>${producto.estado_actual}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</table>';
+                html += '<p><em>Los productos con fondo verde son los que se liberaron al cancelar el envío.</em></p>';
+                html += '</div>';
+                
+                document.getElementById('resultadoLiberacion').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('resultadoLiberacion').innerHTML = `
+                    <div class="result error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        async function testCompletoAutomatizado() {
+            document.getElementById('resultadoCompleto').innerHTML = `
+                <div class="result info">⏳ Ejecutando test completo automatizado...</div>
+            `;
+            
+            let resultado = '';
+            
+            try {
+                // Paso 1: Stock inicial
+                resultado += '<strong>📊 Paso 1: Stock inicial</strong><br>';
+                await verificarProductosDisponibles();
+                resultado += `✅ Stock inicial: ${productosAntes.length} productos<br><br>`;
+                
+                // Paso 2: Buscar envío para cancelar
+                resultado += '<strong>📋 Paso 2: Buscar envío ENVIADO</strong><br>';
+                const enviosResponse = await fetch('api/envios');
+                const enviosData = await enviosResponse.json();
+                
+                const envioEnviado = enviosData.data.find(e => e.ultimo_estado === 'ENVIADO');
+                
+                if (!envioEnviado) {
+                    throw new Error('No hay envíos en estado ENVIADO para cancelar');
+                }
+                
+                resultado += `✅ Encontrado envío ${envioEnviado.id} en estado ENVIADO<br><br>`;
+                
+                // Paso 3: Cancelar envío
+                resultado += '<strong>❌ Paso 3: Cancelar envío</strong><br>';
+                const cancelResponse = await fetch(`api/envios/${envioEnviado.id}/cancelar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ motivo: 'Test automatizado - Verificación de liberación de stock' })
+                });
+                
+                const cancelData = await cancelResponse.json();
+                if (!cancelData.success) {
+                    throw new Error(cancelData.error);
+                }
+                
+                resultado += `✅ Envío ${envioEnviado.id} cancelado exitosamente<br><br>`;
+                
+                // Paso 4: Verificar liberación
+                resultado += '<strong>🔄 Paso 4: Verificar liberación</strong><br>';
+                await verificarProductosLiberados();
+                
+                const stockResponse = await fetch('api/envios/productos-disponibles');
+                const stockData = await stockResponse.json();
+                const productosDespues = stockData.data || [];
+                const diferencia = productosDespues.length - productosAntes.length;
+                
+                resultado += `✅ Stock después: ${productosDespues.length} productos<br>`;
+                resultado += `✅ Productos liberados: ${diferencia}<br><br>`;
+                
+                if (diferencia > 0) {
+                    resultado += '<strong>🎉 ¡TEST EXITOSO! Los productos se liberaron correctamente al cancelar el envío.</strong>';
+                } else {
+                    resultado += '<strong>⚠️ TEST INCOMPLETO: No se detectaron productos liberados.</strong>';
+                }
+                
+                document.getElementById('resultadoCompleto').innerHTML = `
+                    <div class="result success">
+                        <strong>🧪 Resultado del Test Automatizado:</strong><br><br>
+                        ${resultado}
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('resultadoCompleto').innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Test Falló:</strong><br><br>
+                        ${resultado}<br>
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

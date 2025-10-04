@@ -752,6 +752,9 @@ $(document).ready(function() {
             });
     }
 
+    // Exponer la función exportarDetalle globalmente para los botones HTML
+    window.exportarDetalle = exportarDetalle;
+
     // Funciones de gestión de envíos
     window.verDetalleEnvio = function(id) {
         console.log('verDetalleEnvio called with id:', id);
@@ -1012,6 +1015,15 @@ $(document).ready(function() {
             Swal.close();
             console.error('Error al generar PDF:', xhr);
             mostrarError('Error al generar el PDF: ' + (xhr.responseJSON?.error || xhr.statusText));
+        });
+    }
+
+    function mostrarExito(mensaje) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Éxito',
+            text: mensaje,
+            timer: 3000
         });
     }
 

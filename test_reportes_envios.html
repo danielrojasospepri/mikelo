@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Reportes Envíos</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f0f8ff;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .error { background: #ffebee; border-color: #f44336; }
+        .success { background: #e8f5e8; border-color: #4CAF50; }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test Reportes Envíos</h1>
+        <p>Diagnóstico de problemas con los reportes PDF y Excel de envíos.</p>
+        
+        <div class="test-case">
+            <h3>📋 Test 1: Exportar Lista PDF</h3>
+            <button onclick="testListaPDF()">Probar Lista PDF</button>
+            <div id="resultado1"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>📊 Test 2: Exportar Lista Excel</h3>
+            <button onclick="testListaExcel()">Probar Lista Excel</button>
+            <div id="resultado2"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>📄 Test 3: Exportar Detalle PDF (ID: 5)</h3>
+            <button onclick="testDetallePDF()">Probar Detalle PDF</button>
+            <div id="resultado3"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>📈 Test 4: Exportar Detalle Excel (ID: 5)</h3>
+            <button onclick="testDetalleExcel()">Probar Detalle Excel</button>
+            <div id="resultado4"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>🔍 Test 5: Verificar Archivos Generados</h3>
+            <button onclick="verificarArchivos()">Verificar Archivos</button>
+            <div id="resultado5"></div>
+        </div>
+        
+        <div class="log" id="consoleLog">
+            <strong>Consola de Logs:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        // Función para agregar logs
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const log = document.getElementById('consoleLog');
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            log.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Función para mostrar loading
+        function showLoading(formato) {
+            Swal.fire({
+                title: `Generando ${formato.toUpperCase()}...`,
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+        
+        // Función para descarga automática
+        function descargarArchivo(archivo, formato) {
+            const link = document.createElement('a');
+            link.href = archivo;
+            link.download = archivo.split('/').pop();
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            addLog(`Descarga iniciada: ${archivo}`, 'success');
+        }
+        
+        async function testListaPDF() {
+            addLog('Iniciando test de Lista PDF...');
+            showLoading('PDF');
+            
+            try {
+                const response = await fetch('api/envios/pdf');
+                addLog(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addLog(`Response data: ${JSON.stringify(data)}`);
+                
+                Swal.close();
+                
+                if (data.success) {
+                    descargarArchivo(data.archivo, 'PDF');
+                    document.getElementById('resultado1').innerHTML = `
+                        <div class="success">
+                            ✅ <strong>Éxito:</strong> PDF generado correctamente<br>
+                            <strong>Archivo:</strong> ${data.archivo}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                Swal.close();
+                addLog(`Error: ${error.message}`, 'error');
+                document.getElementById('resultado1').innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testListaExcel() {
+            addLog('Iniciando test de Lista Excel...');
+            showLoading('Excel');
+            
+            try {
+                const response = await fetch('api/envios/excel');
+                addLog(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addLog(`Response data: ${JSON.stringify(data)}`);
+                
+                Swal.close();
+                
+                if (data.success) {
+                    descargarArchivo(data.archivo, 'Excel');
+                    document.getElementById('resultado2').innerHTML = `
+                        <div class="success">
+                            ✅ <strong>Éxito:</strong> Excel generado correctamente<br>
+                            <strong>Archivo:</strong> ${data.archivo}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                Swal.close();
+                addLog(`Error: ${error.message}`, 'error');
+                document.getElementById('resultado2').innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testDetallePDF() {
+            addLog('Iniciando test de Detalle PDF (ID: 5)...');
+            showLoading('PDF');
+            
+            try {
+                const response = await fetch('api/envios/5/pdf');
+                addLog(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addLog(`Response data: ${JSON.stringify(data)}`);
+                
+                Swal.close();
+                
+                if (data.success) {
+                    descargarArchivo(data.archivo, 'PDF');
+                    document.getElementById('resultado3').innerHTML = `
+                        <div class="success">
+                            ✅ <strong>Éxito:</strong> PDF detalle generado correctamente<br>
+                            <strong>Archivo:</strong> ${data.archivo}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                Swal.close();
+                addLog(`Error: ${error.message}`, 'error');
+                document.getElementById('resultado3').innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testDetalleExcel() {
+            addLog('Iniciando test de Detalle Excel (ID: 5)...');
+            showLoading('Excel');
+            
+            try {
+                const response = await fetch('api/envios/5/excel');
+                addLog(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addLog(`Response data: ${JSON.stringify(data)}`);
+                
+                Swal.close();
+                
+                if (data.success) {
+                    descargarArchivo(data.archivo, 'Excel');
+                    document.getElementById('resultado4').innerHTML = `
+                        <div class="success">
+                            ✅ <strong>Éxito:</strong> Excel detalle generado correctamente<br>
+                            <strong>Archivo:</strong> ${data.archivo}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                Swal.close();
+                addLog(`Error: ${error.message}`, 'error');
+                document.getElementById('resultado4').innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function verificarArchivos() {
+            addLog('Verificando archivos generados...');
+            
+            const archivos = [
+                'temp/envios_2025-10-04.pdf',
+                'temp/envios_2025-10-04.xlsx',
+                'temp/envio_5.pdf',
+                'temp/envio_5.xlsx'
+            ];
+            
+            let resultados = '<h4>Estado de Archivos:</h4>';
+            
+            for (const archivo of archivos) {
+                try {
+                    const response = await fetch(archivo, { method: 'HEAD' });
+                    const existe = response.ok;
+                    const estado = existe ? '✅ Existe' : '❌ No existe';
+                    const tamaño = existe ? response.headers.get('content-length') || 'Desconocido' : '-';
+                    
+                    resultados += `
+                        <div style="margin: 5px 0; padding: 8px; border-radius: 3px; background: ${existe ? '#e8f5e8' : '#ffebee'}">
+                            <strong>${archivo}:</strong> ${estado} ${existe ? `(${tamaño} bytes)` : ''}
+                        </div>
+                    `;
+                    
+                    addLog(`${archivo}: ${estado}`, existe ? 'success' : 'error');
+                    
+                } catch (error) {
+                    resultados += `
+                        <div style="margin: 5px 0; padding: 8px; border-radius: 3px; background: #ffebee">
+                            <strong>${archivo}:</strong> ❌ Error al verificar
+                        </div>
+                    `;
+                    addLog(`Error verificando ${archivo}: ${error.message}`, 'error');
+                }
+            }
+            
+            document.getElementById('resultado5').innerHTML = resultados;
+        }
+        
+        // Agregar log inicial
+        addLog('Sistema de diagnóstico iniciado');
+    </script>
+</body>
+</html>

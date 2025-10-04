@@ -930,13 +930,15 @@ class Envio {
 
             // Obtener todos los items del envío
             $stmt = $this->db->prepare("
-                SELECT id FROM movimientos_items 
+                SELECT id, id_movimientos_items_origen 
+                FROM movimientos_items 
                 WHERE id_movimientos = ?
             ");
             $stmt->execute([$idEnvio]);
             $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            // Cambiar estado de todos los items a CANCELADO (4)
+            // Cambiar estado de todos los items del envío a CANCELADO (4)
+            // MANTENER EL HISTORIAL COMPLETO
             foreach ($items as $item) {
                 $stmt = $this->db->prepare("
                     INSERT INTO estados_items_movimientos (
@@ -945,6 +947,23 @@ class Envio {
                 ");
                 $stmt->execute([$item['id'], $_SESSION['usuario'] ?? 'sistema']);
             }
+
+            // SOLUCIÓN ÓPTIMA: En lugar de eliminar registros, limpiar las referencias
+            // Esto mantiene el historial completo pero libera los productos al stock
+            
+            // Para cada item del envío cancelado, limpiar su id_movimientos_items_origen
+            // Esto hace que el producto original vuelva a estar disponible
+            $stmt = $this->db->prepare("
+                UPDATE movimientos_items 
+                SET id_movimientos_items_origen = NULL 
+                WHERE id_movimientos = ?
+            ");
+            $stmt->execute([$idEnvio]);
+
+            // Los productos ahora vuelven al stock porque:
+            // 1. El query de productos disponibles busca items con id_movimientos_items_origen IS NULL
+            // 2. El query también verifica que NO sean referenciados por otros items
+            // 3. Al limpiar las referencias, los productos originales vuelven a cumplir ambas condiciones
 
             $this->db->commit();
             return true;

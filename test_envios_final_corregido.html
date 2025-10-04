@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ Test Final - Reportes Envíos Corregidos</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #e8f5e8;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .success { 
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        .info {
+            background: #f0f8ff;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Reportes de Envíos - CORREGIDOS</h1>
+        
+        <div class="info">
+            <h3>🔧 Problema Identificado y Solucionado:</h3>
+            <p><strong>Causa:</strong> Función <code>mostrarExito()</code> no estaba definida en envios.js</p>
+            <p><strong>Síntoma:</strong> Los reportes no funcionaban sin mostrar error</p>
+            <p><strong>Solución:</strong> ✅ Función agregada correctamente</p>
+        </div>
+        
+        <h2>🧪 Pruebas Finales:</h2>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testListaPDF()">📄 Test Lista PDF</button>
+            <button onclick="testListaExcel()">📊 Test Lista Excel</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testDetallePDF()">📋 Test Detalle PDF</button>
+            <button onclick="testDetalleExcel()">📈 Test Detalle Excel</button>
+        </div>
+        
+        <div style="margin: 30px 0;">
+            <button class="success" onclick="abrirEnvios()">🚀 Ir a Envíos (Funcional)</button>
+        </div>
+        
+        <div id="resultado" style="margin-top: 20px; padding: 15px; border-radius: 8px; display: none;"></div>
+    </div>
+
+    <script>
+        // Función mostrarExito corregida (ahora incluida en envios.js)
+        function mostrarExito(mensaje) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: mensaje,
+                timer: 3000
+            });
+        }
+
+        function mostrarError(mensaje) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: mensaje
+            });
+        }
+        
+        async function testListaPDF() {
+            try {
+                const response = await fetch('api/envios/pdf');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Simular descarga
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    mostrarExito('Lista PDF generada y descargada exitosamente');
+                    mostrarResultado('✅ Lista PDF: FUNCIONA CORRECTAMENTE', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                mostrarError('Error en Lista PDF: ' + error.message);
+                mostrarResultado('❌ Lista PDF: ERROR', 'error');
+            }
+        }
+        
+        async function testListaExcel() {
+            try {
+                const response = await fetch('api/envios/excel');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    mostrarExito('Lista Excel generada y descargada exitosamente');
+                    mostrarResultado('✅ Lista Excel: FUNCIONA CORRECTAMENTE', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                mostrarError('Error en Lista Excel: ' + error.message);
+                mostrarResultado('❌ Lista Excel: ERROR', 'error');
+            }
+        }
+        
+        async function testDetallePDF() {
+            try {
+                const response = await fetch('api/envios/5/pdf');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    mostrarExito('Detalle PDF generado y descargado exitosamente');
+                    mostrarResultado('✅ Detalle PDF: FUNCIONA CORRECTAMENTE', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                mostrarError('Error en Detalle PDF: ' + error.message);
+                mostrarResultado('❌ Detalle PDF: ERROR', 'error');
+            }
+        }
+        
+        async function testDetalleExcel() {
+            try {
+                const response = await fetch('api/envios/5/excel');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    mostrarExito('Detalle Excel generado y descargado exitosamente');
+                    mostrarResultado('✅ Detalle Excel: FUNCIONA CORRECTAMENTE', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                mostrarError('Error en Detalle Excel: ' + error.message);
+                mostrarResultado('❌ Detalle Excel: ERROR', 'error');
+            }
+        }
+        
+        function mostrarResultado(mensaje, tipo) {
+            const div = document.getElementById('resultado');
+            div.style.display = 'block';
+            div.style.background = tipo === 'success' ? '#e8f5e8' : '#ffebee';
+            div.style.border = tipo === 'success' ? '1px solid #4CAF50' : '1px solid #f44336';
+            div.innerHTML = `<strong>${mensaje}</strong>`;
+        }
+        
+        function abrirEnvios() {
+            window.open('envios.html', '_blank');
+        }
+    </script>
+</body>
+</html>
