@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Download Fix - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; border: none; border-radius: 3px; color: white; }
+        .btn-pdf { background: #dc3545; }
+        .btn-excel { background: #28a745; }
+    </style>
+</head>
+<body>
+    <h1>Test de Descarga Corregida - Mikelo</h1>
+    
+    <div class="test-section">
+        <h3>Test de las Funciones Corregidas</h3>
+        <p>Estas son las mismas funciones que ahora están en envios.js:</p>
+        
+        <button class="btn-pdf" onclick="exportarDetalle(11, 'pdf')">📄 Remito 11 PDF</button>
+        <button class="btn-excel" onclick="exportarDetalle(11, 'excel')">📊 Remito 11 Excel</button>
+        <button class="btn-pdf" onclick="exportarLista('pdf')">📄 Lista PDF</button>
+        <button class="btn-excel" onclick="exportarLista('excel')">📊 Lista Excel</button>
+    </div>
+
+    <script>
+        function exportarDetalle(id, formato) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Generando archivo...',
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch(`api/envios/${id}/${formato}`)
+                .then(response => response.json())
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        // Descargar el archivo usando la URL retornada
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.download = data.url.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Archivo generado',
+                            text: 'El archivo se ha descargado exitosamente',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        mostrarError(data.error || 'Error al generar el archivo');
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    mostrarError('Error de conexión: ' + error.message);
+                });
+        }
+
+        function exportarLista(formato) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Generando reporte...',
+                text: 'Por favor espere mientras se genera el reporte',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch(`api/envios/${formato}`)
+                .then(response => response.json())
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        // Descargar el archivo usando la URL retornada
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.download = data.url.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Reporte generado',
+                            text: 'El reporte se ha descargado exitosamente',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        mostrarError(data.error || 'Error al generar el reporte');
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    mostrarError('Error de conexión: ' + error.message);
+                });
+        }
+
+        function mostrarError(mensaje) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: mensaje
+            });
+        }
+    </script>
+</body>
+</html>

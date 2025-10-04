@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Depósito - Control de Stock</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/logo-1681247675350.png">
+    <link rel="shortcut icon" type="image/png" href="img/logo-1681247675350.png">
+    <!-- Agregar diferentes tamaños para mejor compatibilidad -->
+    <link rel="apple-touch-icon" sizes="180x180" href="img/logo-1681247675350.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/logo-1681247675350.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/logo-1681247675350.png">
+    <!-- Estilos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light" style="background-color: #ffffff;">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Sidebar Container -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="index.html" class="brand-link">
+                <img src="img/logo-1681247675350.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link">
+                                <i class="nav-icon fas fa-exchange-alt"></i>
+                                <p>Movimientos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="alta_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Alta en Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="envios.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Envíos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="stock_deposito.html" class="nav-link active">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Content Header -->
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1>Stock en Depósito</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="index.html">Inicio</a></li>
+                                <li class="breadcrumb-item active">Stock Depósito</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- Filtros -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Filtros de búsqueda</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Producto</label>
+                                        <input type="text" class="form-control" id="filtroProducto" placeholder="Código o descripción...">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Contenedor</label>
+                                        <select class="form-control" id="filtroContenedor">
+                                            <option value="">Todos</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Fecha Desde</label>
+                                        <input type="date" class="form-control" id="fechaDesde">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Fecha Hasta</label>
+                                        <input type="date" class="form-control" id="fechaHasta">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-secondary" id="btnFiltrar">
+                                        <i class="fas fa-search"></i> Filtrar
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="btnLimpiar">
+                                        <i class="fas fa-eraser"></i> Limpiar
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="btnExportarPDF">
+                                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="btnExportarExcel">
+                                        <i class="fas fa-file-excel"></i> Exportar Excel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tarjetas de resumen -->
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="totalProductos">0</h3>
+                                    <p>Productos Distintos</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-cube"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3 id="totalUnidades">0</h3>
+                                    <p>Total Unidades</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3 id="totalKilos">0</h3>
+                                    <p>Total Kilos</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-weight-hanging"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3 id="totalKilosNetos">0</h3>
+                                    <p>Total Kilos Netos</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-balance-scale"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de stock agrupado -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Stock Agrupado por Producto</h3>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descripción</th>
+                                        <th>Total Unidades</th>
+                                        <th>Total Peso Bruto</th>
+                                        <th>Total Peso Neto</th>
+                                        <th>Contenedores</th>
+                                        <th>Fecha Más Antigua</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal Detalle de Bandejas -->
+    <div class="modal fade" id="modalDetalleBandejas" tabindex="-1" role="dialog" aria-labelledby="modalDetalleBandejasLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDetalleBandejasLabel">Detalle de Bandejas</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Producto:</strong> <span id="detalleProductoCodigo"></span> - <span id="detalleProductoDescripcion"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Resumen:</strong> <span id="detalleResumen"></span></p>
+                        </div>
+                    </div>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAllBandejas" title="Seleccionar todas">
+                                    </th>
+                                    <th>Fecha Fabricación</th>
+                                    <th>Contenedor</th>
+                                    <th>Cantidad</th>
+                                    <th>Peso Bruto</th>
+                                    <th>Peso Contenedor</th>
+                                    <th>Peso Neto</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleBandejasTable">
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>Totales:</th>
+                                    <th></th>
+                                    <th></th>
+                                    <th id="detalleTotalCantidad"></th>
+                                    <th id="detalleTotalPesoBruto"></th>
+                                    <th id="detalleTotalPesoContenedor"></th>
+                                    <th id="detalleTotalPesoNeto"></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" id="btnCambiarContenedor">
+                        <i class="fas fa-box"></i> Cambiar Contenedor
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btnDarDeBaja">
+                        <i class="fas fa-trash"></i> Dar de Baja
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cambiar Contenedor -->
+    <div class="modal fade" id="modalCambiarContenedor" tabindex="-1" role="dialog" aria-labelledby="modalCambiarContenedorLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCambiarContenedorLabel">Cambiar Contenedor</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nuevo Contenedor</label>
+                        <select class="form-control" id="nuevoContenedor" required>
+                            <option value="">Seleccione contenedor...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo del Cambio</label>
+                        <textarea class="form-control" id="motivoCambio" rows="3" placeholder="Ingrese el motivo del cambio de contenedor..." required></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Bandejas seleccionadas:</strong> <span id="cantidadBandejasSeleccionadas">0</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmarCambioContenedor">Cambiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dar de Baja -->
+    <div class="modal fade" id="modalDarDeBaja" tabindex="-1" role="dialog" aria-labelledby="modalDarDeBajaLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDarDeBajaLabel">Dar de Baja Productos</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Motivo de la Baja</label>
+                        <textarea class="form-control" id="motivoBaja" rows="4" placeholder="Ingrese el motivo de la baja (ej: producto vencido, dañado, etc.)" required></textarea>
+                    </div>
+                    <div class="alert alert-warning">
+                        <strong>¡Atención!</strong> Esta acción dará de baja <span id="cantidadBandejasSeleccionadasBaja">0</span> bandejas. Esta acción no se puede deshacer.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmarBaja">Confirmar Baja</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="js/stock_deposito.js"></script>
+</body>
+</html>

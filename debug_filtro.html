@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Filtro - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Debug Filtro de Productos</h1>
+    
+    <div>
+        <input type="text" id="filtroInput" placeholder="Ingrese filtro...">
+        <button onclick="probarFiltro()">Probar Filtro</button>
+        <button onclick="probarSinFiltro()">Probar Sin Filtro</button>
+    </div>
+    
+    <div id="resultados" style="margin-top: 20px;">
+        <h3>Resultados:</h3>
+        <div id="contenidoResultados"></div>
+    </div>
+
+    <script>
+        function probarFiltro() {
+            const filtro = document.getElementById('filtroInput').value;
+            console.log('Probando con filtro:', filtro);
+            
+            $.get(`api/envios/productos-disponibles?filtro=${encodeURIComponent(filtro)}`)
+            .done(function(response) {
+                console.log('Respuesta con filtro:', response);
+                mostrarResultados(`Con filtro "${filtro}":`, response.data);
+            })
+            .fail(function(xhr) {
+                console.error('Error con filtro:', xhr);
+                mostrarResultados('Error:', ['Error en la consulta']);
+            });
+        }
+        
+        function probarSinFiltro() {
+            console.log('Probando sin filtro');
+            
+            $.get('api/envios/productos-disponibles')
+            .done(function(response) {
+                console.log('Respuesta sin filtro:', response);
+                mostrarResultados('Sin filtro:', response.data);
+            })
+            .fail(function(xhr) {
+                console.error('Error sin filtro:', xhr);
+                mostrarResultados('Error:', ['Error en la consulta']);
+            });
+        }
+        
+        function mostrarResultados(titulo, datos) {
+            let html = `<h4>${titulo} (${datos.length} resultados)</h4>`;
+            html += '<ul>';
+            datos.forEach(function(item) {
+                html += `<li>${item.codigo} - ${item.descripcion} (Cantidad: ${item.cnt})</li>`;
+            });
+            html += '</ul>';
+            
+            document.getElementById('contenidoResultados').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

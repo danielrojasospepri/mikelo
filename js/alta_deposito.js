@@ -284,7 +284,7 @@ function cargarContenedores() {
       if (data.success) {
         const select = document.getElementById('contenedorProducto');
         select.innerHTML = '<option value="">Sin contenedor</option>';
-        data.contenedores.forEach(contenedor => {
+        data.data.forEach(contenedor => {
           select.innerHTML += `<option value="${contenedor.id}" data-peso="${contenedor.peso}">${contenedor.nombre}</option>`;
         });
       }
@@ -300,16 +300,16 @@ function actualizarPesoTotal() {
   const contenedorSelect = document.getElementById('contenedorProducto');
   const opcionSeleccionada = contenedorSelect.options[contenedorSelect.selectedIndex];
 
-  // Obtener el peso bruto actual
+  // Obtener el peso bruto especificado (que ya incluye el contenedor)
   const pesoBruto = parseFloat(pesoProductoInput.value) || 0;
 
-  // Si hay un contenedor seleccionado, mostrar el peso bruto + peso del contenedor
+  // Si hay un contenedor seleccionado, mostrar el peso neto (peso bruto - peso del contenedor)
   if (opcionSeleccionada && opcionSeleccionada.value) {
     const pesoContenedor = parseFloat(opcionSeleccionada.dataset.peso) || 0;
-    const pesoTotal = pesoBruto + pesoContenedor;
-    document.getElementById('pesoTotalDisplay').textContent = `Peso Total: ${pesoTotal.toFixed(3)} kg`;
+    const pesoNeto = pesoBruto - pesoContenedor;
+    document.getElementById('pesoTotalDisplay').textContent = `Peso Neto: ${pesoNeto.toFixed(3)} kg (Bruto: ${pesoBruto.toFixed(3)} kg - Contenedor: ${pesoContenedor.toFixed(3)} kg)`;
   } else {
-    document.getElementById('pesoTotalDisplay').textContent = `Peso Total: ${pesoBruto.toFixed(3)} kg`;
+    document.getElementById('pesoTotalDisplay').textContent = `Peso Neto: ${pesoBruto.toFixed(3)} kg (Sin contenedor)`;
   }
 }
 
@@ -453,6 +453,13 @@ async function guardarRegistro() {
 
     const itemData = await responseItem.json();
 
+    // Obtener información del contenedor para el mensaje
+    const contenedorSelect = document.getElementById('contenedorProducto');
+    const opcionSeleccionada = contenedorSelect.options[contenedorSelect.selectedIndex];
+    const contenedorInfo = opcionSeleccionada && opcionSeleccionada.value 
+      ? `<li><strong>Contenedor:</strong> ${opcionSeleccionada.text}</li>` 
+      : `<li><strong>Contenedor:</strong> Sin contenedor</li>`;
+
     // Mostrar mensaje de éxito
     await Swal.fire({
       title: "¡Registro exitoso!",
@@ -461,7 +468,8 @@ async function guardarRegistro() {
                 <ul>
                     <li><strong>Producto:</strong> ${productoSeleccionado.descripcion}</li>
                     <li><strong>Cantidad:</strong> ${cantidad}</li>
-                    <li><strong>Peso:</strong> ${peso} kg</li>
+                    <li><strong>Peso Bruto:</strong> ${peso} kg</li>
+                    ${contenedorInfo}
                 </ul>
             `,
       icon: "success",

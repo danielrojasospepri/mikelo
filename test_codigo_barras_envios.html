@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Código de Barras Envíos</title>
+    <link rel="stylesheet" href="AdminLTE/src/assets/bootstrap/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Test Código de Barras para Envíos</h2>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Simular Código de Barras: 2100111001359</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Análisis del código:</strong></p>
+                <ul>
+                    <li><strong>Tipo:</strong> 21 (Peso)</li>
+                    <li><strong>Código producto:</strong> 00111 → 111</li>
+                    <li><strong>Peso:</strong> 01359 → 1.359 kg</li>
+                </ul>
+                
+                <button class="btn btn-primary" onclick="testCodigoBarras()">Probar código de barras</button>
+                <button class="btn btn-secondary" onclick="testBusquedaTexto()">Probar búsqueda por texto</button>
+            </div>
+        </div>
+        
+        <div id="resultado" class="mt-4">
+            <!-- Aquí se mostrará el resultado -->
+        </div>
+    </div>
+
+    <script>
+    function testCodigoBarras() {
+        const codigo = '2100111001359';
+        $('#resultado').html('<div class="alert alert-info">Procesando código de barras: ' + codigo + '</div>');
+        
+        // Simular el procesamiento del código de barras
+        try {
+            const tipo = codigo.substring(0, 2);
+            const codigoProducto = parseInt(codigo.substring(2, 7)).toString();
+            const cantidadRaw = codigo.substring(7, 12);
+            
+            let cantidad, peso;
+            
+            if (tipo === '20') {
+                cantidad = parseInt(cantidadRaw) / 1000;
+                peso = null;
+            } else if (tipo === '21') {
+                cantidad = null;
+                peso = parseInt(cantidadRaw) / 1000;
+            } else {
+                throw new Error('Tipo de código no reconocido: ' + tipo);
+            }
+            
+            mostrarAnalisis({
+                tipo,
+                codigoProducto,
+                cantidad,
+                peso,
+                codigoOriginal: codigo
+            });
+            
+            // Buscar productos que coincidan
+            buscarProductoPorCodigo(codigoProducto, cantidad, peso);
+            
+        } catch (error) {
+            $('#resultado').html('<div class="alert alert-danger">Error: ' + error.message + '</div>');
+        }
+    }
+    
+    function testBusquedaTexto() {
+        const filtro = 'CHANTILLY';
+        $('#resultado').html('<div class="alert alert-info">Buscando productos con filtro: ' + filtro + '</div>');
+        
+        $.get('api/envios/productos-disponibles?filtro=' + encodeURIComponent(filtro))
+        .done(function(response) {
+            if (response.success) {
+                mostrarProductos(response.data, 'Resultados de búsqueda por texto');
+            } else {
+                $('#resultado').html('<div class="alert alert-danger">Error en la búsqueda</div>');
+            }
+        })
+        .fail(function(xhr) {
+            $('#resultado').html('<div class="alert alert-danger">Error de conexión: ' + xhr.statusText + '</div>');
+        });
+    }
+    
+    function mostrarAnalisis(analisis) {
+        let html = '<div class="alert alert-success"><h6>Código procesado exitosamente:</h6>';
+        html += '<ul>';
+        html += '<li><strong>Tipo:</strong> ' + analisis.tipo + (analisis.tipo === '20' ? ' (Cantidad)' : ' (Peso)') + '</li>';
+        html += '<li><strong>Código producto:</strong> ' + analisis.codigoProducto + '</li>';
+        if (analisis.cantidad !== null) {
+            html += '<li><strong>Cantidad:</strong> ' + analisis.cantidad + '</li>';
+        }
+        if (analisis.peso !== null) {
+            html += '<li><strong>Peso:</strong> ' + analisis.peso + ' kg</li>';
+        }
+        html += '</ul></div>';
+        
+        $('#resultado').append(html);
+    }
+    
+    function buscarProductoPorCodigo(codigo, cantidad, peso) {
+        let url = 'api/envios/productos-disponibles?codigo=' + encodeURIComponent(codigo);
+        if (cantidad !== null) {
+            url += '&cantidad=' + cantidad;
+        }
+        if (peso !== null) {
+            url += '&peso=' + peso;
+        }
+        
+        $.get(url)
+        .done(function(response) {
+            if (response.success && response.data && response.data.length > 0) {
+                const productos = response.data;
+                if (productos.length === 1) {
+                    mostrarProductos(productos, 'Producto encontrado (selección automática)');
+                    $('#resultado').append('<div class="alert alert-success">✅ El producto se seleccionaría automáticamente</div>');
+                } else {
+                    mostrarProductos(productos, 'Múltiples productos encontrados (selección manual)');
+                    $('#resultado').append('<div class="alert alert-warning">⚠️ Múltiples productos - se mostraría lista para selección manual</div>');
+                }
+            } else {
+                $('#resultado').append('<div class="alert alert-warning">❌ No se encontraron productos con ese código</div>');
+            }
+        })
+        .fail(function(xhr) {
+            $('#resultado').append('<div class="alert alert-danger">Error buscando producto: ' + xhr.statusText + '</div>');
+        });
+    }
+    
+    function mostrarProductos(productos, titulo) {
+        let html = '<div class="card mt-3"><div class="card-header"><h6>' + titulo + '</h6></div>';
+        html += '<div class="card-body"><table class="table table-sm">';
+        html += '<thead><tr><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Peso</th><th>Contenedor</th></tr></thead>';
+        html += '<tbody>';
+        
+        productos.forEach(function(producto) {
+            html += '<tr>';
+            html += '<td>' + producto.codigo + '</td>';
+            html += '<td>' + producto.descripcion + '</td>';
+            html += '<td>' + producto.cnt + '</td>';
+            html += '<td>' + producto.cnt_peso + ' kg</td>';
+            html += '<td>' + (producto.contenedor || 'Sin contenedor') + '</td>';
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div></div>';
+        $('#resultado').append(html);
+    }
+    </script>
+</body>
+</html>

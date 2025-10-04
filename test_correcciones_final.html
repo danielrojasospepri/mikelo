@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Final - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { margin: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Final - Correcciones Mikelo</h1>
+        
+        <div class="test-section">
+            <h3>1. ✅ Test Modal de Detalle Corregido</h3>
+            <p>Probar que el modal de detalle ahora funciona correctamente:</p>
+            <button class="btn btn-info" onclick="verDetalleEnvio(11)">
+                <i class="fas fa-eye"></i> Ver Detalle Envío 11
+            </button>
+            <div id="testModalResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 📄 Test PDF Optimizado (Formato A4 Compacto)</h3>
+            <p>Probar el nuevo formato PDF optimizado para A4:</p>
+            <button class="btn btn-primary" onclick="exportarDetalle(11, 'pdf')">
+                📄 Descargar Remito PDF Optimizado
+            </button>
+            <p><small>Verificar: cabecera más pequeña, origen/destino lado a lado, formato compacto</small></p>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 📊 Test Excel Mantiene Formato</h3>
+            <p>Verificar que Excel mantiene el formato profesional:</p>
+            <button class="btn btn-success" onclick="exportarDetalle(11, 'excel')">
+                📊 Descargar Remito Excel
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 📋 Test Lista PDF Compacto</h3>
+            <p>Verificar formato compacto en listas:</p>
+            <button class="btn btn-primary" onclick="exportarLista('pdf')">
+                📄 Lista PDF Compacta
+            </button>
+            <button class="btn btn-success" onclick="exportarLista('excel')">
+                📊 Lista Excel
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3>5. 🔧 Logs de Debugging</h3>
+            <p>Abrir consola del navegador (F12) para ver logs de depuración</p>
+            <div id="debugLogs" class="result">
+                <p>Los logs aparecerán en la consola del navegador.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle de Envío -->
+    <div class="modal fade" id="modalDetalleEnvio" tabindex="-1" role="dialog" aria-labelledby="modalDetalleEnvioLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDetalleEnvioLabel">Detalle de Envío</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Fecha:</strong> <span id="detalleEnvioFecha"></span></p>
+                            <p><strong>Destino:</strong> <span id="detalleEnvioDestino"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Estado:</strong> <span id="detalleEnvioEstado"></span></p>
+                            <p><strong>Usuario:</strong> <span id="detalleEnvioUsuario"></span></p>
+                        </div>
+                    </div>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descripción</th>
+                                    <th>Contenedor</th>
+                                    <th>Cantidad</th>
+                                    <th>Peso Bruto</th>
+                                    <th>Peso Neto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleEnvioProductosTable">
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">Totales:</th>
+                                    <th id="detalleTotalCantidad"></th>
+                                    <th id="detalleTotalPesoBruto"></th>
+                                    <th id="detalleTotalPesoNeto"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funciones corregidas (copiadas del envios.js actualizado)
+        
+        window.verDetalleEnvio = function(id) {
+            console.log('verDetalleEnvio called with id:', id);
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Cargando detalle...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.get(`api/envios/${id}`)
+            .done(function(response) {
+                console.log('Response received:', response);
+                Swal.close();
+                
+                if (response.success) {
+                    mostrarDetalleEnvio(response.data);
+                    $('#modalDetalleEnvio').modal('show');
+                    
+                    // Actualizar resultado del test
+                    $('#testModalResult').html('<div class="alert alert-success">✅ Modal funcionando correctamente!</div>');
+                } else {
+                    mostrarError(response.error || 'Error al cargar el detalle del envío');
+                }
+            })
+            .fail(function(xhr) {
+                console.error('Error in verDetalleEnvio:', xhr);
+                Swal.close();
+                mostrarError('Error al cargar el detalle del envío: ' + (xhr.responseJSON?.error || xhr.statusText));
+                $('#testModalResult').html('<div class="alert alert-danger">❌ Error en modal: ' + xhr.statusText + '</div>');
+            });
+        };
+
+        function mostrarDetalleEnvio(data) {
+            console.log('mostrarDetalleEnvio called with data:', data);
+            
+            let envio = data.envio;
+            let productos = data.productos;
+
+            // Rellenar información del envío
+            $('#detalleEnvioFecha').text(envio.fechaAlta || envio.fecha_alta);
+            $('#detalleEnvioDestino').text(envio.destino);
+            $('#detalleEnvioEstado').html(`<span class="badge badge-info">NUEVO</span>`);
+            $('#detalleEnvioUsuario').text(envio.usuario_alta || 'Sistema');
+
+            // Calcular totales
+            let totalCantidad = 0;
+            let totalPesoBruto = 0;
+            let totalPesoNeto = 0;
+
+            let productosHtml = '';
+            productos.forEach(function(producto) {
+                // Convertir a números para cálculos
+                const cantidad = parseFloat(producto.cnt) || 0;
+                const pesoBruto = parseFloat(producto.cnt_peso) || 0;
+                const pesoContenedor = parseFloat(producto.peso_contenedor) || 0;
+                // Si no hay contenedor (peso_contenedor es null), el peso neto = peso bruto
+                const pesoNeto = producto.peso_contenedor !== null ? (pesoBruto - pesoContenedor) : pesoBruto;
+
+                totalCantidad += cantidad;
+                totalPesoBruto += pesoBruto;
+                totalPesoNeto += pesoNeto;
+
+                productosHtml += `
+                    <tr>
+                        <td>${producto.codigo}</td>
+                        <td>${producto.descripcion}</td>
+                        <td>${producto.contenedor || '-'}</td>
+                        <td>${cantidad.toFixed(3)}</td>
+                        <td>${pesoBruto.toFixed(3)} kg</td>
+                        <td>${pesoNeto.toFixed(3)} kg</td>
+                    </tr>
+                `;
+            });
+
+            $('#detalleEnvioProductosTable').html(productosHtml);
+            
+            // Mostrar totales
+            $('#detalleTotalCantidad').text(totalCantidad.toFixed(3));
+            $('#detalleTotalPesoBruto').text(totalPesoBruto.toFixed(3) + ' kg');
+            $('#detalleTotalPesoNeto').text(totalPesoNeto.toFixed(3) + ' kg');
+        }
+
+        function exportarDetalle(id, formato) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Generando archivo...',
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch(`api/envios/${id}/${formato}`)
+                .then(response => response.json())
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        // Descargar el archivo usando la URL retornada
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.download = data.url.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Archivo generado',
+                            text: `El archivo ${formato.toUpperCase()} se ha descargado exitosamente`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        mostrarError(data.error || 'Error al generar el archivo');
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    mostrarError('Error de conexión: ' + error.message);
+                });
+        }
+
+        function exportarLista(formato) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Generando reporte...',
+                text: 'Por favor espere mientras se genera el reporte',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch(`api/envios/${formato}`)
+                .then(response => response.json())
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        // Descargar el archivo usando la URL retornada
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.download = data.url.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Reporte generado',
+                            text: `El reporte ${formato.toUpperCase()} se ha descargado exitosamente`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        mostrarError(data.error || 'Error al generar el reporte');
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    mostrarError('Error de conexión: ' + error.message);
+                });
+        }
+
+        function mostrarError(mensaje) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: mensaje
+            });
+        }
+
+        // Test automático al cargar la página
+        $(document).ready(function() {
+            console.log('🧪 Página de test cargada');
+            console.log('📋 Para probar:');
+            console.log('1. Hacer clic en "Ver Detalle" para probar el modal');
+            console.log('2. Hacer clic en PDF para probar formato compacto');
+            console.log('3. Verificar que no aparece JSON sino descarga directa');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Barcode Integration - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Test de Integración - Sistema de Códigos de Barras</h1>
+    
+    <div class="test-section">
+        <h3>1. Test de Parsing de Código de Barras</h3>
+        <input type="text" id="testBarcode" placeholder="Ej: 200001000500" value="200001000500">
+        <button onclick="testBarcodeParser()">Parsear Código</button>
+        <div id="parseResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Test de API - Productos Disponibles</h3>
+        <button onclick="testProductosDisponibles()">Cargar Todos</button>
+        <button onclick="testProductosConFiltro()">Con Filtro (código: 1)</button>
+        <div id="apiResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Test de Búsqueda por Código de Barras</h3>
+        <input type="text" id="searchBarcode" placeholder="Ej: 200001000500" value="200001000500">
+        <button onclick="testBarcodeSearch()">Buscar Producto</button>
+        <div id="searchResult" class="result"></div>
+    </div>
+
+    <script>
+        // Función de parsing de código de barras (copiada del sistema)
+        function parseBarcode(barcode) {
+            console.log('Parseando código:', barcode);
+            
+            if (barcode.length < 12) {
+                throw new Error('Código de barras muy corto. Mínimo 12 caracteres.');
+            }
+            
+            const tipo = barcode.substring(0, 2);
+            const codigoProducto = parseInt(barcode.substring(2, 7));
+            const cantidadPeso = parseInt(barcode.substring(7, 12));
+            
+            console.log('Tipo:', tipo, 'Código:', codigoProducto, 'Cantidad/Peso:', cantidadPeso);
+            
+            if (tipo !== '20' && tipo !== '21') {
+                throw new Error('Tipo de código inválido. Debe ser 20 (unidades) o 21 (peso).');
+            }
+            
+            return {
+                tipo: tipo,
+                codigoProducto: codigoProducto,
+                cantidadPeso: cantidadPeso,
+                esUnidades: tipo === '20',
+                esPeso: tipo === '21'
+            };
+        }
+
+        function testBarcodeParser() {
+            const barcode = document.getElementById('testBarcode').value;
+            const resultDiv = document.getElementById('parseResult');
+            
+            try {
+                const parsed = parseBarcode(barcode);
+                resultDiv.innerHTML = `
+                    <strong>✅ Parsing exitoso:</strong><br>
+                    Tipo: ${parsed.tipo} (${parsed.esUnidades ? 'Unidades' : 'Peso'})<br>
+                    Código de Producto: ${parsed.codigoProducto}<br>
+                    ${parsed.esUnidades ? 'Cantidad' : 'Peso'}: ${parsed.cantidadPeso} ${parsed.esUnidades ? 'unidades' : 'kg'}<br>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+            }
+        }
+
+        function testProductosDisponibles() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '⏳ Cargando...';
+            
+            fetch('/mikelo/api/envios/productos-disponibles')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.innerHTML = `
+                            <strong>✅ API exitosa:</strong><br>
+                            Productos encontrados: ${data.data.length}<br>
+                            <pre>${JSON.stringify(data.data.slice(0, 3), null, 2)}</pre>
+                            ${data.data.length > 3 ? '... (mostrando solo los primeros 3)' : ''}
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<strong>❌ Error API:</strong> ${data.error || 'Error desconocido'}`;
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<strong>❌ Error de conexión:</strong> ${error.message}`;
+                });
+        }
+
+        function testProductosConFiltro() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '⏳ Cargando con filtro...';
+            
+            fetch('/mikelo/api/envios/productos-disponibles?codigo=1')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.innerHTML = `
+                            <strong>✅ API con filtro exitosa:</strong><br>
+                            Productos con código 1: ${data.data.length}<br>
+                            <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<strong>❌ Error API:</strong> ${data.error || 'Error desconocido'}`;
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<strong>❌ Error de conexión:</strong> ${error.message}`;
+                });
+        }
+
+        function testBarcodeSearch() {
+            const barcode = document.getElementById('searchBarcode').value;
+            const resultDiv = document.getElementById('searchResult');
+            
+            try {
+                const parsed = parseBarcode(barcode);
+                resultDiv.innerHTML = '⏳ Buscando producto...';
+                
+                let url = `/mikelo/api/envios/productos-disponibles?codigo=${parsed.codigoProducto}`;
+                if (parsed.esPeso) {
+                    url += `&peso=${parsed.cantidadPeso}`;
+                } else {
+                    url += `&cantidad=${parsed.cantidadPeso}`;
+                }
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.data.length > 0) {
+                                resultDiv.innerHTML = `
+                                    <strong>✅ Productos encontrados:</strong><br>
+                                    Cantidad: ${data.data.length}<br>
+                                    <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                                `;
+                            } else {
+                                resultDiv.innerHTML = `
+                                    <strong>⚠️ Sin resultados:</strong><br>
+                                    No se encontraron productos que coincidan con:<br>
+                                    - Código: ${parsed.codigoProducto}<br>
+                                    - ${parsed.esUnidades ? 'Cantidad' : 'Peso'}: ${parsed.cantidadPeso}
+                                `;
+                            }
+                        } else {
+                            resultDiv.innerHTML = `<strong>❌ Error API:</strong> ${data.error || 'Error desconocido'}`;
+                        }
+                    })
+                    .catch(error => {
+                        resultDiv.innerHTML = `<strong>❌ Error de conexión:</strong> ${error.message}`;
+                    });
+                    
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>❌ Error de parsing:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

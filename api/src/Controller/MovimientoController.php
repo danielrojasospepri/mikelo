@@ -50,7 +50,8 @@ class MovimientoController {
                 $data['producto_id'],
                 $data['cantidad'],
                 $data['cantidad_peso'] ?? 0,
-                $data['movimiento_item_origen_id'] ?? null
+                $data['movimiento_item_origen_id'] ?? null,
+                $data['id_contenedor'] ?? null
             );
             
             return responseJson($response, [
@@ -78,9 +79,10 @@ class MovimientoController {
         $fechaHasta = $params['fecha_hasta'] ?? null;
         $ubicacion = $params['ubicacion'] ?? null;
         $estado = $params['estado'] ?? null;
+        $producto = $params['producto'] ?? null;
 
         try {
-            $movimientos = $this->movimiento->buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado);
+            $movimientos = $this->movimiento->buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado, $producto);
             return responseJson($response, ['movimientos' => $movimientos]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
@@ -105,6 +107,48 @@ class MovimientoController {
             return responseJson($response, [
                 'duplicado' => $duplicado,
                 'mensaje' => $duplicado ? 'Se encontró un registro similar' : 'No hay registros similares'
+            ]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarPDF(Request $request, Response $response) {
+        $params = $request->getQueryParams();
+        $filtros = [
+            'fecha_desde' => $params['fecha_desde'] ?? null,
+            'fecha_hasta' => $params['fecha_hasta'] ?? null,
+            'ubicacion' => $params['ubicacion'] ?? null,
+            'estado' => $params['estado'] ?? null,
+            'producto' => $params['producto'] ?? null
+        ];
+
+        try {
+            $rutaArchivo = $this->movimiento->exportarPDF($filtros);
+            return responseJson($response, [
+                'success' => true,
+                'url' => $rutaArchivo
+            ]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarExcel(Request $request, Response $response) {
+        $params = $request->getQueryParams();
+        $filtros = [
+            'fecha_desde' => $params['fecha_desde'] ?? null,
+            'fecha_hasta' => $params['fecha_hasta'] ?? null,
+            'ubicacion' => $params['ubicacion'] ?? null,
+            'estado' => $params['estado'] ?? null,
+            'producto' => $params['producto'] ?? null
+        ];
+
+        try {
+            $rutaArchivo = $this->movimiento->exportarExcel($filtros);
+            return responseJson($response, [
+                'success' => true,
+                'url' => $rutaArchivo
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);

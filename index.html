@@ -58,6 +58,12 @@
                                 <p>Envíos</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="stock_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
                     </ul>
                 </nav>
               
@@ -84,22 +90,30 @@
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Filtros de búsqueda</h3>
+                            <div class="card-tools">
+                                <button class="btn btn-primary btn-sm" onclick="exportarPDF()">
+                                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="exportarExcel()">
+                                    <i class="fas fa-file-excel"></i> Exportar Excel
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="form-group">
                                         <label>Fecha Desde</label>
                                         <input type="date" class="form-control" id="fechaDesde">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="form-group">
                                         <label>Fecha Hasta</label>
                                         <input type="date" class="form-control" id="fechaHasta">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="form-group">
                                         <label>Ubicación</label>
                                         <select class="form-control" id="ubicacion">
@@ -107,7 +121,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="form-group">
                                         <label>Estado</label>
                                         <select class="form-control" id="estado">
@@ -117,6 +131,22 @@
                                             <option value="3">Cancelado</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Producto (Código o Descripción)</label>
+                                        <input type="text" class="form-control" id="producto" placeholder="Buscar por código o descripción...">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <button class="btn btn-info" onclick="buscarMovimientos()">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <button class="btn btn-secondary ml-2" onclick="limpiarFiltros()">
+                                        <i class="fas fa-times"></i> Limpiar
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -155,6 +185,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="js/index.js"></script>
 </body>

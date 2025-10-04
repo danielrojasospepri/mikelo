@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Exportadores - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .btn-pdf { background: #dc3545; color: white; border: none; border-radius: 3px; }
+        .btn-excel { background: #28a745; color: white; border: none; border-radius: 3px; }
+        .btn-test { background: #007bff; color: white; border: none; border-radius: 3px; }
+        input, select { padding: 8px; margin: 5px; width: 200px; }
+        .downloads { margin-top: 20px; }
+        .download-link { display: inline-block; margin: 5px; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; text-decoration: none; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Test de Exportadores - Sistema Mikelo</h1>
+    
+    <div class="test-section">
+        <h3>1. Verificar API de Envíos</h3>
+        <button class="btn-test" onclick="testAPI()">Cargar Lista de Envíos</button>
+        <div id="apiResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Exportar Lista de Envíos</h3>
+        <p>Estos exportadores generan la lista completa de envíos:</p>
+        
+        <label>Fecha Desde:</label>
+        <input type="date" id="fechaDesde"><br>
+        
+        <label>Fecha Hasta:</label>
+        <input type="date" id="fechaHasta"><br>
+        
+        <label>Destino:</label>
+        <select id="destino">
+            <option value="">Todos</option>
+            <option value="1">Depósito Central</option>
+            <option value="2">Sucursal Norte</option>
+            <option value="3">Sucursal Sur</option>
+        </select><br>
+        
+        <label>Estado:</label>
+        <select id="estado">
+            <option value="">Todos</option>
+            <option value="1">NUEVO</option>
+            <option value="2">ENVIADO</option>
+            <option value="3">RECIBIDO</option>
+            <option value="4">CANCELADO</option>
+        </select><br>
+        
+        <button class="btn-pdf" onclick="exportarListaPDF()">📄 Exportar Lista PDF</button>
+        <button class="btn-excel" onclick="exportarListaExcel()">📊 Exportar Lista Excel</button>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Exportar Remito Individual</h3>
+        <p>Estos exportadores generan el remito de un envío específico:</p>
+        
+        <label>ID del Envío:</label>
+        <input type="number" id="envioId" value="11" min="1"><br>
+        
+        <button class="btn-pdf" onclick="exportarRemitoPDF()">📄 Exportar Remito PDF</button>
+        <button class="btn-excel" onclick="exportarRemitoExcel()">📊 Exportar Remito Excel</button>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Test de URLs Directas</h3>
+        <p>Links directos para probar las URLs:</p>
+        <div class="downloads">
+            <a href="/mikelo/api/envios/pdf" target="_blank" class="download-link">📄 Lista PDF</a>
+            <a href="/mikelo/api/envios/excel" target="_blank" class="download-link">📊 Lista Excel</a>
+            <a href="/mikelo/api/envios/11/pdf" target="_blank" class="download-link">📄 Remito 11 PDF</a>
+            <a href="/mikelo/api/envios/11/excel" target="_blank" class="download-link">📊 Remito 11 Excel</a>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Archivos Generados Recientemente</h3>
+        <div id="archivosGenerados" class="result">
+            <p>Los archivos se guardan en: <code>/mikelo/temp/</code></p>
+        </div>
+    </div>
+
+    <script>
+        function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '⏳ Cargando envíos...';
+            
+            fetch('/mikelo/api/envios')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.innerHTML = `
+                            <strong>✅ API funcionando correctamente</strong><br>
+                            Total de envíos: ${data.data.length}<br>
+                            <details>
+                                <summary>Ver primeros 3 envíos</summary>
+                                <pre>${JSON.stringify(data.data.slice(0, 3), null, 2)}</pre>
+                            </details>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<strong>❌ Error:</strong> ${data.error}`;
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<strong>❌ Error de conexión:</strong> ${error.message}`;
+                });
+        }
+
+        function exportarListaPDF() {
+            const filtros = construirFiltros();
+            window.open(`/mikelo/api/envios/pdf?${filtros}`, '_blank');
+            mostrarMensaje('PDF de lista enviado al navegador', 'success');
+        }
+
+        function exportarListaExcel() {
+            const filtros = construirFiltros();
+            window.open(`/mikelo/api/envios/excel?${filtros}`, '_blank');
+            mostrarMensaje('Excel de lista enviado al navegador', 'success');
+        }
+
+        function exportarRemitoPDF() {
+            const envioId = document.getElementById('envioId').value;
+            if (!envioId) {
+                mostrarMensaje('Debe ingresar un ID de envío', 'error');
+                return;
+            }
+            window.open(`/mikelo/api/envios/${envioId}/pdf`, '_blank');
+            mostrarMensaje(`Remito PDF del envío ${envioId} enviado al navegador`, 'success');
+        }
+
+        function exportarRemitoExcel() {
+            const envioId = document.getElementById('envioId').value;
+            if (!envioId) {
+                mostrarMensaje('Debe ingresar un ID de envío', 'error');
+                return;
+            }
+            window.open(`/mikelo/api/envios/${envioId}/excel`, '_blank');
+            mostrarMensaje(`Remito Excel del envío ${envioId} enviado al navegador`, 'success');
+        }
+
+        function construirFiltros() {
+            const filtros = {};
+            
+            if (document.getElementById('fechaDesde').value) {
+                filtros.fechaDesde = document.getElementById('fechaDesde').value;
+            }
+            if (document.getElementById('fechaHasta').value) {
+                filtros.fechaHasta = document.getElementById('fechaHasta').value;
+            }
+            if (document.getElementById('destino').value) {
+                filtros.destino = document.getElementById('destino').value;
+            }
+            if (document.getElementById('estado').value) {
+                filtros.estado = document.getElementById('estado').value;
+            }
+            
+            return Object.keys(filtros)
+                .map(key => `${key}=${filtros[key]}`)
+                .join('&');
+        }
+
+        function mostrarMensaje(mensaje, tipo) {
+            Swal.fire({
+                icon: tipo,
+                title: tipo === 'success' ? 'Éxito' : 'Error',
+                text: mensaje,
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+
+        // Cargar datos iniciales
+        document.addEventListener('DOMContentLoaded', function() {
+            testAPI();
+        });
+    </script>
+</body>
+</html>

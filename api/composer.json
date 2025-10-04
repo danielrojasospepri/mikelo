@@ -2,7 +2,9 @@
     "require": {
         "slim/slim": "^4.11",
         "slim/psr7": "^1.6",
-        "php-di/php-di": "^6.4"
+        "php-di/php-di": "^6.4",
+        "mpdf/mpdf": "^8.2",
+        "phpoffice/phpspreadsheet": "^1.30"
     },
     "autoload": {
         "psr-4": {

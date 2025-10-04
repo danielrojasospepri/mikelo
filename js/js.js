@@ -152,3 +152,166 @@ function mostrarMensaje(mensaje, tipo) {
     // Usar toastr o implementar tu propio sistema de notificaciones
     alert(mensaje);
 }
+
+// Variables globales para envios.html
+let envioSeleccionadoId = null;
+
+// Función para mostrar/ocultar botones según el estado del envío
+function actualizarBotonesConfirmacion(estado) {
+    const btnConfirmar = document.getElementById('btnConfirmarEnvio');
+    const btnCancelar = document.getElementById('btnCancelarEnvio');
+    
+    if (btnConfirmar && btnCancelar) {
+        if (estado === 'NUEVO') {
+            btnConfirmar.style.display = 'inline-block';
+            btnCancelar.style.display = 'inline-block';
+        } else {
+            btnConfirmar.style.display = 'none';
+            btnCancelar.style.display = 'none';
+        }
+    }
+}
+
+// Función para confirmar envío
+function confirmarEnvio(envioId) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¿Confirmar envío?',
+            text: 'Esta acción marcará el envío como ENVIADO',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, confirmar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                enviarConfirmacion(envioId);
+            }
+        });
+    } else {
+        if (confirm('¿Confirmar envío? Esta acción marcará el envío como ENVIADO')) {
+            enviarConfirmacion(envioId);
+        }
+    }
+}
+
+// Función auxiliar para enviar confirmación
+function enviarConfirmacion(envioId) {
+    fetch(`api/envios/${envioId}/confirmar`, {
+        method: 'PUT'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('¡Confirmado!', 'El envío ha sido confirmado', 'success');
+            } else {
+                alert('El envío ha sido confirmado');
+            }
+            // Actualizar estado en la interfaz
+            document.getElementById('detalleEnvioEstado').textContent = 'ENVIADO';
+            actualizarBotonesConfirmacion('ENVIADO');
+            // Recargar tabla de envíos si existe
+            if (typeof cargarEnvios === 'function') {
+                cargarEnvios();
+            }
+        } else {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', data.error || 'No se pudo confirmar el envío', 'error');
+            } else {
+                alert(data.error || 'No se pudo confirmar el envío');
+            }
+        }
+    })
+    .catch(error => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Error de conexión', 'error');
+        } else {
+            alert('Error de conexión');
+        }
+    });
+}
+
+// Función para cancelar envío
+function cancelarEnvio(envioId) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¿Cancelar envío?',
+            text: 'Esta acción marcará el envío como CANCELADO',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                enviarCancelacion(envioId);
+            }
+        });
+    } else {
+        if (confirm('¿Cancelar envío? Esta acción marcará el envío como CANCELADO')) {
+            enviarCancelacion(envioId);
+        }
+    }
+}
+
+// Función auxiliar para enviar cancelación
+function enviarCancelacion(envioId) {
+    fetch(`api/envios/${envioId}/cancelar`, {
+        method: 'PUT'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('¡Cancelado!', 'El envío ha sido cancelado', 'success');
+            } else {
+                alert('El envío ha sido cancelado');
+            }
+            // Actualizar estado en la interfaz
+            document.getElementById('detalleEnvioEstado').textContent = 'CANCELADO';
+            actualizarBotonesConfirmacion('CANCELADO');
+            // Recargar tabla de envíos si existe
+            if (typeof cargarEnvios === 'function') {
+                cargarEnvios();
+            }
+        } else {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', data.error || 'No se pudo cancelar el envío', 'error');
+            } else {
+                alert(data.error || 'No se pudo cancelar el envío');
+            }
+        }
+    })
+    .catch(error => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Error de conexión', 'error');
+        } else {
+            alert('Error de conexión');
+        }
+    });
+}
+
+// Event listeners para botones de confirmar/cancelar envío
+document.addEventListener('DOMContentLoaded', function() {
+    const btnConfirmarEnvio = document.getElementById('btnConfirmarEnvio');
+    const btnCancelarEnvio = document.getElementById('btnCancelarEnvio');
+    
+    if (btnConfirmarEnvio) {
+        btnConfirmarEnvio.addEventListener('click', function() {
+            if (envioSeleccionadoId) {
+                confirmarEnvio(envioSeleccionadoId);
+            }
+        });
+    }
+    
+    if (btnCancelarEnvio) {
+        btnCancelarEnvio.addEventListener('click', function() {
+            if (envioSeleccionadoId) {
+                cancelarEnvio(envioSeleccionadoId);
+            }
+        });
+    }
+});

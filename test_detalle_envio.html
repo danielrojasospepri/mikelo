@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Detalle Envío</title>
+    <link rel="stylesheet" href="AdminLTE/src/assets/bootstrap/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Test Detalle de Envío</h2>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <button class="btn btn-primary" onclick="testEnvio(45)">Ver Envío 45 (Con contenedor)</button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-secondary" onclick="testEnvio(11)">Ver Envío 11 (Sin contenedor)</button>
+            </div>
+        </div>
+        
+        <div id="resultado" class="mt-4">
+            <!-- Aquí se mostrará el resultado -->
+        </div>
+    </div>
+
+    <script>
+    function testEnvio(id) {
+        $('#resultado').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+        
+        $.get(`api/envios/${id}`)
+        .done(function(response) {
+            if (response.success) {
+                mostrarDetalle(response.data);
+            } else {
+                $('#resultado').html(`<div class="alert alert-danger">Error: ${response.error}</div>`);
+            }
+        })
+        .fail(function(xhr) {
+            $('#resultado').html(`<div class="alert alert-danger">Error de conexión: ${xhr.statusText}</div>`);
+        });
+    }
+    
+    function mostrarDetalle(data) {
+        let envio = data.envio;
+        let productos = data.productos;
+        
+        let html = `
+            <div class="card">
+                <div class="card-header">
+                    <h5>Envío #${envio.id} - ${envio.destino}</h5>
+                    <small>Fecha: ${envio.fechaAlta} | Estado: ${envio.ultimo_estado}</small>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Contenedor</th>
+                                <th>Cantidad</th>
+                                <th>Peso Bruto</th>
+                                <th>Peso Neto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        productos.forEach(function(producto) {
+            const cantidad = parseFloat(producto.cnt) || 0;
+            const pesoBruto = parseFloat(producto.cnt_peso) || 0;
+            const pesoContenedor = parseFloat(producto.peso_contenedor) || 0;
+            const pesoNeto = producto.peso_contenedor !== null ? (pesoBruto - pesoContenedor) : pesoBruto;
+            
+            html += `
+                <tr>
+                    <td>${producto.codigo}</td>
+                    <td>${producto.descripcion}</td>
+                    <td><strong>${producto.contenedor || 'Sin contenedor'}</strong></td>
+                    <td>${cantidad.toFixed(3)}</td>
+                    <td>${pesoBruto.toFixed(3)} kg</td>
+                    <td>${pesoNeto.toFixed(3)} kg</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <h6>Datos Raw del API:</h6>
+                <pre class="bg-light p-2">${JSON.stringify(data, null, 2)}</pre>
+            </div>
+        `;
+        
+        $('#resultado').html(html);
+    }
+    </script>
+</body>
+</html>

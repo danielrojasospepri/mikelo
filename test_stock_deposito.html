@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stock Depósito</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Test API Stock Depósito</h1>
+    
+    <div>
+        <h2>1. Probar API de Stock Agrupado</h2>
+        <button onclick="testStockAgrupado()">Test Stock Agrupado</button>
+        <div id="resultStock"></div>
+    </div>
+
+    <div>
+        <h2>2. Probar API de Detalle Bandejas</h2>
+        <input type="number" id="idProducto" placeholder="ID Producto" value="1">
+        <button onclick="testDetalleBandejas()">Test Detalle Bandejas</button>
+        <div id="resultBandejas"></div>
+    </div>
+
+    <div>
+        <h2>3. Probar Exportadores</h2>
+        <button onclick="testExportPDF()">Test Export PDF</button>
+        <button onclick="testExportExcel()">Test Export Excel</button>
+        <div id="resultExport"></div>
+    </div>
+
+    <script>
+        function testStockAgrupado() {
+            fetch('api/stock-deposito')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('resultStock').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    document.getElementById('resultStock').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                });
+        }
+
+        function testDetalleBandejas() {
+            const idProducto = document.getElementById('idProducto').value;
+            fetch(`api/stock-deposito/${idProducto}/bandejas`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('resultBandejas').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    document.getElementById('resultBandejas').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                });
+        }
+
+        function testExportPDF() {
+            fetch('api/stock-deposito/pdf')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('resultExport').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    if (data.success) {
+                        window.open(data.url, '_blank');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('resultExport').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                });
+        }
+
+        function testExportExcel() {
+            fetch('api/stock-deposito/excel')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('resultExport').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    if (data.success) {
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.download = data.url.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('resultExport').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                });
+        }
+    </script>
+</body>
+</html>

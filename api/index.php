@@ -17,6 +17,7 @@ use App\Controller\ProductoController;
 use App\Controller\MovimientoController;
 use App\Controller\UbicacionController;
 use App\Controller\EnvioController;
+use App\Controller\StockDepositoController;
 
 $app = AppFactory::create();
 $app->setBasePath('/mikelo/api');
@@ -88,14 +89,14 @@ $app->get('/productos/nuevos', function (Request $request, Response $response) u
 });
 
 $app->get('/contenedores', function (Request $request, Response $response) use ($db) {
-    $sql = "SELECT id, nombre, peso FROM contenedores WHERE activo = 1 ORDER BY nombre";
+    $sql = "SELECT id, nombre, peso FROM contenedores ORDER BY nombre";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $contenedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $response->getBody()->write(json_encode([
         'success' => true,
-        'contenedores' => $contenedores
+        'data' => $contenedores
     ]));
     return $response->withHeader('Content-Type', 'application/json');
 });
@@ -126,6 +127,48 @@ $app->get('/movimientos/buscar', function (Request $request, Response $response)
 $app->post('/movimientos/verificar-duplicado', function (Request $request, Response $response) use ($db) {
     $controller = new MovimientoController($db);
     return $controller->verificarDuplicado($request, $response);
+});
+
+// Rutas de exportación para movimientos
+$app->get('/movimientos/pdf', function (Request $request, Response $response) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->exportarPDF($request, $response);
+});
+
+$app->get('/movimientos/excel', function (Request $request, Response $response) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->exportarExcel($request, $response);
+});
+
+// Rutas para stock de depósito
+$app->get('/stock-deposito', function (Request $request, Response $response) use ($db) {
+    $controller = new StockDepositoController($db);
+    return $controller->obtenerStock($request, $response);
+});
+
+$app->get('/stock-deposito/pdf', function (Request $request, Response $response) use ($db) {
+    $controller = new StockDepositoController($db);
+    return $controller->exportarPDF($request, $response);
+});
+
+$app->get('/stock-deposito/excel', function (Request $request, Response $response) use ($db) {
+    $controller = new StockDepositoController($db);
+    return $controller->exportarExcel($request, $response);
+});
+
+$app->get('/stock-deposito/{id}/bandejas', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new StockDepositoController($db);
+    return $controller->obtenerDetalleBandejas($request, $response, $args);
+});
+
+$app->post('/stock-deposito/cambiar-contenedor', function (Request $request, Response $response) use ($db) {
+    $controller = new StockDepositoController($db);
+    return $controller->cambiarContenedor($request, $response);
+});
+
+$app->post('/stock-deposito/dar-baja', function (Request $request, Response $response) use ($db) {
+    $controller = new StockDepositoController($db);
+    return $controller->darDeBaja($request, $response);
 });
 
 // Rutas para envíos
@@ -175,6 +218,17 @@ $app->get('/envios/{id}/pdf', function (Request $request, Response $response, $a
 $app->get('/envios/{id}/excel', function (Request $request, Response $response, $args) use ($db) {
     $controller = new EnvioController($db);
     return $controller->exportarExcel($request, $response, $args);
+});
+
+// Rutas para confirmar y cancelar envíos
+$app->put('/envios/{id}/confirmar', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->confirmarEnvio($request, $response, $args);
+});
+
+$app->put('/envios/{id}/cancelar', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->cancelarEnvio($request, $response, $args);
 });
 
 $app->run();

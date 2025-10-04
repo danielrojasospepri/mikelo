@@ -66,8 +66,16 @@ class EnvioController {
     }
 
     public function obtenerProductosDisponibles(Request $request, Response $response) {
+        $params = $request->getQueryParams();
+        $filtros = [
+            'codigo' => $params['codigo'] ?? null,
+            'cantidad' => $params['cantidad'] ?? null,
+            'peso' => $params['peso'] ?? null,
+            'filtro' => $params['filtro'] ?? null
+        ];
+
         try {
-            $productos = $this->envio->obtenerProductosDisponibles();
+            $productos = $this->envio->obtenerProductosDisponibles($filtros);
             return responseJson($response, [
                 'success' => true,
                 'data' => $productos
@@ -125,6 +133,39 @@ class EnvioController {
             return responseJson($response, [
                 'success' => true,
                 'url' => $rutaArchivo
+            ]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function confirmarEnvio(Request $request, Response $response, $args) {
+        $id = $args['id'];
+
+        try {
+            $this->envio->confirmarEnvio($id);
+            return responseJson($response, [
+                'success' => true,
+                'mensaje' => 'Envío confirmado exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function cancelarEnvio(Request $request, Response $response, $args) {
+        $data = json_decode($request->getBody()->getContents(), true);
+        $id = $args['id'];
+
+        if (!isset($data['motivo']) || empty(trim($data['motivo']))) {
+            return responseJson($response, ['error' => 'El motivo es requerido'], 400);
+        }
+
+        try {
+            $this->envio->cancelarEnvio($id, $data['motivo']);
+            return responseJson($response, [
+                'success' => true,
+                'mensaje' => 'Envío cancelado exitosamente'
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);

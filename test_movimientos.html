@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Movimientos - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Test de Movimientos Mejorado</h1>
+    
+    <div style="margin: 20px;">
+        <h3>Filtros</h3>
+        <input type="text" id="producto" placeholder="Buscar producto..." style="padding: 5px; margin: 5px;">
+        <input type="date" id="fechaDesde" style="padding: 5px; margin: 5px;">
+        <input type="date" id="fechaHasta" style="padding: 5px; margin: 5px;">
+        <br><br>
+        <button onclick="buscarMovimientos()" style="padding: 10px; margin: 5px;">Buscar Movimientos</button>
+        <button onclick="exportarPDF()" style="padding: 10px; margin: 5px;">Exportar PDF</button>
+        <button onclick="exportarExcel()" style="padding: 10px; margin: 5px;">Exportar Excel</button>
+    </div>
+    
+    <div id="resultados" style="margin: 20px;">
+        <h3>Resultados:</h3>
+        <div id="contenidoResultados"></div>
+    </div>
+
+    <script>
+        // Inicializar fechas
+        const hoy = new Date();
+        const hace30Dias = new Date();
+        hace30Dias.setDate(hoy.getDate() - 30);
+        
+        document.getElementById('fechaDesde').value = hace30Dias.toISOString().split('T')[0];
+        document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+        
+        function buscarMovimientos() {
+            const producto = document.getElementById('producto').value;
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            
+            const params = new URLSearchParams();
+            if (producto) params.append('producto', producto);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            
+            fetch(`api/movimientos/buscar?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.movimientos) {
+                    mostrarResultados(data.movimientos);
+                } else {
+                    document.getElementById('contenidoResultados').innerHTML = '<p>No se encontraron movimientos</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Error al buscar movimientos', 'error');
+            });
+        }
+        
+        function mostrarResultados(movimientos) {
+            let html = `<p><strong>Movimientos encontrados: ${movimientos.length}</strong></p>`;
+            html += '<table border="1" style="width: 100%; border-collapse: collapse;">';
+            html += '<tr><th>Fecha</th><th>Origen</th><th>Destino</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Peso</th><th>Estado</th></tr>';
+            
+            movimientos.forEach(mov => {
+                html += `<tr>
+                    <td>${new Date(mov.fechaAlta).toLocaleString('es-ES')}</td>
+                    <td>${mov.ubicacion_origen || '-'}</td>
+                    <td>${mov.ubicacion_destino}</td>
+                    <td><strong>${mov.codigo}</strong></td>
+                    <td>${mov.descripcion}</td>
+                    <td>${mov.cnt}</td>
+                    <td>${mov.cnt_peso} kg</td>
+                    <td>${mov.estado}</td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            document.getElementById('contenidoResultados').innerHTML = html;
+        }
+        
+        function exportarPDF() {
+            const filtros = obtenerFiltros();
+            
+            Swal.fire({
+                title: 'Generando PDF...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
+            fetch(`api/movimientos/pdf?${filtros.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    Swal.fire({
+                        title: 'PDF Generado',
+                        text: 'El archivo se ha generado exitosamente',
+                        icon: 'success',
+                        confirmButtonText: 'Descargar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.open(data.url, '_blank');
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', data.error || 'Error al generar PDF', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
+                Swal.fire('Error', 'Error al generar PDF', 'error');
+            });
+        }
+        
+        function exportarExcel() {
+            const filtros = obtenerFiltros();
+            
+            Swal.fire({
+                title: 'Generando Excel...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
+            fetch(`api/movimientos/excel?${filtros.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Excel Generado',
+                        text: 'El archivo se ha generado exitosamente',
+                        icon: 'success',
+                        confirmButtonText: 'Descargar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.open(data.url, '_blank');
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', data.error || 'Error al generar Excel', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
+                Swal.fire('Error', 'Error al generar Excel', 'error');
+            });
+        }
+        
+        function obtenerFiltros() {
+            const params = new URLSearchParams();
+            const producto = document.getElementById('producto').value;
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            
+            if (producto) params.append('producto', producto);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            
+            return params;
+        }
+        
+        // Cargar movimientos al iniciar
+        buscarMovimientos();
+    </script>
+</body>
+</html>
