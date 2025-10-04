@@ -111,7 +111,7 @@ class EnvioController {
             $rutaArchivo = $this->envio->exportarPDF($id, $filtros);
             return responseJson($response, [
                 'success' => true,
-                'url' => $rutaArchivo
+                'archivo' => $rutaArchivo
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
@@ -132,7 +132,7 @@ class EnvioController {
             $rutaArchivo = $this->envio->exportarExcel($id, $filtros);
             return responseJson($response, [
                 'success' => true,
-                'url' => $rutaArchivo
+                'archivo' => $rutaArchivo
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);

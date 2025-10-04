@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Último Estado - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Test de Último Estado en Movimientos</h1>
+    
+    <div style="margin: 20px;">
+        <h3>Buscar movimientos (solo último estado)</h3>
+        <div style="margin: 10px 0;">
+            <label>Fecha Desde:</label>
+            <input type="date" id="fechaDesde" style="padding: 5px; margin: 5px;">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Fecha Hasta:</label>
+            <input type="date" id="fechaHasta" style="padding: 5px; margin: 5px;">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Producto:</label>
+            <input type="text" id="producto" placeholder="Código o descripción" style="padding: 5px; margin: 5px;">
+        </div>
+        <br>
+        <button onclick="buscarMovimientos()" style="padding: 10px; margin: 5px; background-color: blue; color: white;">
+            🔍 Buscar Movimientos
+        </button>
+        <button onclick="limpiar()" style="padding: 10px; margin: 5px; background-color: gray; color: white;">
+            🧹 Limpiar
+        </button>
+    </div>
+    
+    <div id="resultados" style="margin: 20px;">
+        <h3>Resultados:</h3>
+        <div id="contenidoResultados"></div>
+    </div>
+
+    <script>
+        // Inicializar fechas
+        const hoy = new Date();
+        const hace7Dias = new Date();
+        hace7Dias.setDate(hoy.getDate() - 7);
+        
+        document.getElementById('fechaDesde').value = hace7Dias.toISOString().split('T')[0];
+        document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+
+        function buscarMovimientos() {
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const producto = document.getElementById('producto').value;
+            
+            const params = new URLSearchParams();
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            if (producto) params.append('producto', producto);
+            
+            document.getElementById('contenidoResultados').innerHTML = 
+                '<p><i>🔄 Cargando movimientos...</i></p>';
+            
+            fetch(`api/movimientos/buscar?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.movimientos) {
+                    mostrarResultados(data.movimientos);
+                } else {
+                    document.getElementById('contenidoResultados').innerHTML = 
+                        '<p style="color: orange;">⚠️ No se encontraron movimientos</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('contenidoResultados').innerHTML = 
+                    '<p style="color: red;">❌ Error al buscar movimientos: ' + error.message + '</p>';
+            });
+        }
+        
+        function mostrarResultados(movimientos) {
+            let html = `<p><strong>📊 Movimientos encontrados: ${movimientos.length}</strong></p>`;
+            
+            // Agrupar por producto para detectar duplicados
+            const porProducto = {};
+            movimientos.forEach(mov => {
+                const key = mov.codigo + '-' + mov.descripcion;
+                if (!porProducto[key]) {
+                    porProducto[key] = [];
+                }
+                porProducto[key].push(mov);
+            });
+            
+            // Verificar duplicados
+            let duplicados = 0;
+            Object.keys(porProducto).forEach(key => {
+                if (porProducto[key].length > 1) {
+                    duplicados += porProducto[key].length - 1;
+                }
+            });
+            
+            if (duplicados > 0) {
+                html += `<p style="color: red;">⚠️ <strong>Se detectaron ${duplicados} registros duplicados</strong></p>`;
+            } else {
+                html += `<p style="color: green;">✅ <strong>No hay duplicados - cada producto aparece una sola vez</strong></p>`;
+            }
+            
+            html += '<table border="1" style="width: 100%; border-collapse: collapse; font-size: 12px;">';
+            html += '<tr style="background-color: #f0f0f0;"><th>Fecha</th><th>Origen</th><th>Destino</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Peso</th><th>Estado</th></tr>';
+            
+            movimientos.forEach(mov => {
+                const fecha = new Date(mov.fechaAlta).toLocaleString('es-ES');
+                const esDuplicado = porProducto[mov.codigo + '-' + mov.descripcion].length > 1;
+                const colorFila = esDuplicado ? 'background-color: #ffeeee;' : '';
+                
+                html += `<tr style="${colorFila}">
+                    <td>${fecha}</td>
+                    <td>${mov.ubicacion_origen || '-'}</td>
+                    <td>${mov.ubicacion_destino}</td>
+                    <td><strong>${mov.codigo}</strong></td>
+                    <td>${mov.descripcion}</td>
+                    <td>${mov.cnt}</td>
+                    <td>${mov.cnt_peso} kg</td>
+                    <td><span style="padding: 2px 6px; border-radius: 3px; background-color: ${getEstadoColor(mov.estado)}; color: white;">${mov.estado}</span></td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            
+            // Mostrar resumen por estado
+            const porEstado = {};
+            movimientos.forEach(mov => {
+                porEstado[mov.estado] = (porEstado[mov.estado] || 0) + 1;
+            });
+            
+            html += '<h4>📈 Resumen por Estado:</h4>';
+            html += '<ul>';
+            Object.keys(porEstado).forEach(estado => {
+                html += `<li><strong>${estado}:</strong> ${porEstado[estado]} movimientos</li>`;
+            });
+            html += '</ul>';
+            
+            document.getElementById('contenidoResultados').innerHTML = html;
+        }
+        
+        function getEstadoColor(estado) {
+            switch (estado.toLowerCase()) {
+                case 'nuevo': return '#28a745';
+                case 'enviado': return '#007bff';
+                case 'cancelado': return '#dc3545';
+                case 'recibido': return '#17a2b8';
+                default: return '#6c757d';
+            }
+        }
+        
+        function limpiar() {
+            document.getElementById('producto').value = '';
+            document.getElementById('contenidoResultados').innerHTML = '';
+        }
+        
+        // Cargar movimientos al iniciar
+        buscarMovimientos();
+    </script>
+</body>
+</html>

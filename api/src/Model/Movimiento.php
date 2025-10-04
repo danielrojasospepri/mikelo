@@ -68,8 +68,12 @@ class Movimiento {
                 FROM movimientos m
                 JOIN movimientos_items mi ON mi.id_movimientos = m.id
                 JOIN productos p ON p.id = mi.id_productos
-                JOIN estados_items_movimientos eim ON eim.id_movimientos_items = mi.id
-                JOIN estados e ON e.id = eim.id_estados
+                JOIN (
+                    SELECT eim.id_movimientos_items, eim.id_estados, eim.fecha_alta,
+                           ROW_NUMBER() OVER (PARTITION BY eim.id_movimientos_items ORDER BY eim.fecha_alta DESC) as rn
+                    FROM estados_items_movimientos eim
+                ) ultimo_estado ON ultimo_estado.id_movimientos_items = mi.id AND ultimo_estado.rn = 1
+                JOIN estados e ON e.id = ultimo_estado.id_estados
                 WHERE DATE(m.fechaAlta) = :fecha
                 AND m.id_ubicacion_destino = 1
                 ORDER BY m.fechaAlta DESC";
@@ -91,8 +95,12 @@ class Movimiento {
                 JOIN ubicaciones ud ON ud.id = m.id_ubicacion_destino
                 JOIN movimientos_items mi ON mi.id_movimientos = m.id
                 JOIN productos p ON p.id = mi.id_productos
-                JOIN estados_items_movimientos eim ON eim.id_movimientos_items = mi.id
-                JOIN estados e ON e.id = eim.id_estados
+                JOIN (
+                    SELECT eim.id_movimientos_items, eim.id_estados, eim.fecha_alta,
+                           ROW_NUMBER() OVER (PARTITION BY eim.id_movimientos_items ORDER BY eim.fecha_alta DESC) as rn
+                    FROM estados_items_movimientos eim
+                ) ultimo_estado ON ultimo_estado.id_movimientos_items = mi.id AND ultimo_estado.rn = 1
+                JOIN estados e ON e.id = ultimo_estado.id_estados
                 WHERE 1=1";
         
         $params = [];

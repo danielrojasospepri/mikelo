@@ -313,7 +313,7 @@ class Envio {
         $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
         $mpdf->Output($rutaArchivo, 'F');
         
-        return '/mikelo/temp/' . $nombreArchivo;
+        return 'temp/' . $nombreArchivo;
     }
 
     public function exportarExcel($id = null, $filtros = []) {
@@ -336,7 +336,7 @@ class Envio {
         $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
         $writer->save($rutaArchivo);
         
-        return '/mikelo/temp/' . $nombreArchivo;
+        return 'temp/' . $nombreArchivo;
     }
 
     private function generarHTMLLista($envios) {

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Exportación Envíos - Mikelo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Test de Exportación de Envíos</h1>
+    
+    <div style="margin: 20px;">
+        <h3>Exportar envíos</h3>
+        <div style="margin: 10px 0;">
+            <label>Fecha Desde:</label>
+            <input type="date" id="fechaDesde" style="padding: 5px; margin: 5px;">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Fecha Hasta:</label>
+            <input type="date" id="fechaHasta" style="padding: 5px; margin: 5px;">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Destino:</label>
+            <select id="destino" style="padding: 5px; margin: 5px;">
+                <option value="">Todos los destinos</option>
+                <option value="2">Sucursal 1</option>
+                <option value="3">Sucursal 2</option>
+                <option value="4">Sucursal 3</option>
+                <option value="5">Sucursal 4</option>
+            </select>
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Estado:</label>
+            <select id="estado" style="padding: 5px; margin: 5px;">
+                <option value="">Todos los estados</option>
+                <option value="NUEVO">Nuevo</option>
+                <option value="ENVIADO">Enviado</option>
+                <option value="CANCELADO">Cancelado</option>
+            </select>
+        </div>
+        <br>
+        <button onclick="exportarPDF()" style="padding: 10px; margin: 5px; background-color: red; color: white;">
+            📄 Exportar PDF
+        </button>
+        <button onclick="exportarExcel()" style="padding: 10px; margin: 5px; background-color: green; color: white;">
+            📊 Exportar Excel
+        </button>
+    </div>
+    
+    <div id="resultados" style="margin: 20px;">
+        <h3>Resultados:</h3>
+        <div id="contenidoResultados"></div>
+    </div>
+
+    <script>
+        // Inicializar fechas
+        const hoy = new Date();
+        const hace30Dias = new Date();
+        hace30Dias.setDate(hoy.getDate() - 30);
+        
+        document.getElementById('fechaDesde').value = hace30Dias.toISOString().split('T')[0];
+        document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+
+        function obtenerFiltros() {
+            const filtros = {};
+            
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const destino = document.getElementById('destino').value;
+            const estado = document.getElementById('estado').value;
+            
+            if (fechaDesde) filtros.fechaDesde = fechaDesde;
+            if (fechaHasta) filtros.fechaHasta = fechaHasta;
+            if (destino) filtros.destino = destino;
+            if (estado) filtros.estado = estado;
+            
+            return filtros;
+        }
+
+        function exportarPDF() {
+            const filtros = obtenerFiltros();
+            
+            Swal.fire({
+                title: 'Generando PDF...',
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            const params = new URLSearchParams(filtros);
+            fetch(`api/envios/pdf?${params.toString()}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Error en la respuesta del servidor');
+                })
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'PDF Generado',
+                            text: 'El archivo PDF se ha generado exitosamente',
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonText: 'Descargar',
+                            cancelButtonText: 'Cerrar'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.open(data.url, '_blank');
+                            }
+                        });
+                        
+                        document.getElementById('contenidoResultados').innerHTML = 
+                            '<p style="color: green;">✅ PDF generado exitosamente</p>' +
+                            '<p><strong>URL:</strong> <a href="' + data.url + '" target="_blank">' + data.url + '</a></p>';
+                    } else {
+                        throw new Error(data.error || 'Error al generar PDF');
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error al generar el PDF: ' + error.message,
+                        icon: 'error'
+                    });
+                    
+                    document.getElementById('contenidoResultados').innerHTML = 
+                        '<p style="color: red;">❌ Error al generar PDF: ' + error.message + '</p>';
+                });
+        }
+
+        function exportarExcel() {
+            const filtros = obtenerFiltros();
+            
+            Swal.fire({
+                title: 'Generando Excel...',
+                text: 'Por favor espere mientras se genera el archivo',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            const params = new URLSearchParams(filtros);
+            fetch(`api/envios/excel?${params.toString()}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Error en la respuesta del servidor');
+                })
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Excel Generado',
+                            text: 'El archivo Excel se ha generado exitosamente',
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonText: 'Descargar',
+                            cancelButtonText: 'Cerrar'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.open(data.url, '_blank');
+                            }
+                        });
+                        
+                        document.getElementById('contenidoResultados').innerHTML = 
+                            '<p style="color: green;">✅ Excel generado exitosamente</p>' +
+                            '<p><strong>URL:</strong> <a href="' + data.url + '" target="_blank">' + data.url + '</a></p>';
+                    } else {
+                        throw new Error(data.error || 'Error al generar Excel');
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error al generar el Excel: ' + error.message,
+                        icon: 'error'
+                    });
+                    
+                    document.getElementById('contenidoResultados').innerHTML = 
+                        '<p style="color: red;">❌ Error al generar Excel: ' + error.message + '</p>';
+                });
+        }
+    </script>
+</body>
+</html>

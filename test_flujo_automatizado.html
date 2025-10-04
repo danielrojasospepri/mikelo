@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Flujo Automatizado - Alta Depósito</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .results { margin-top: 10px; }
+        .result-item { padding: 5px; margin: 2px 0; background-color: #f8f9fa; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .btn-pdf { background-color: #dc3545; }
+        .btn-test { background-color: #17a2b8; }
+        .codigo-barras { 
+            font-family: monospace; 
+            font-size: 18px; 
+            font-weight: bold; 
+            background-color: #f8f9fa; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 5px;
+        }
+        .workflow-step {
+            margin: 15px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Flujo Automatizado - Alta Depósito</h1>
+        <p><strong>Objetivo:</strong> Verificar el flujo completo sin uso de mouse/teclado, solo códigos de barras.</p>
+        
+        <div class="test-section">
+            <h3>📋 Flujo de Trabajo Automatizado</h3>
+            <div class="workflow-step">
+                <strong>1. Generar PDF:</strong> Descargar códigos de barras de contenedores
+            </div>
+            <div class="workflow-step">
+                <strong>2. Escanear Producto:</strong> Usar código de barras normal del producto
+            </div>
+            <div class="workflow-step">
+                <strong>3. Escanear Contenedor:</strong> Usar código que inicia con "00000"
+            </div>
+            <div class="workflow-step">
+                <strong>4. Guardado Automático:</strong> 10 segundos de visualización + limpieza automática
+            </div>
+            <div class="workflow-step">
+                <strong>5. Reinicio:</strong> Focus automático en búsqueda para siguiente producto
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📄 Generación de PDF</h3>
+            <button onclick="testGenerarPDF()" class="btn-pdf">Test Generar Códigos de Barras</button>
+            <button onclick="testCodigosBarras()" class="btn-test">Ver Test de Códigos Individuales</button>
+            <div id="result-pdf" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Códigos de Contenedores Generados</h3>
+            <div id="contenedores-info" class="results">
+                <div class="result-item info">⏳ Cargando información de contenedores...</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Simulación de Códigos de Barras</h3>
+            <p>Los siguientes códigos se pueden usar para probar manualmente en <strong>alta_deposito.html</strong>:</p>
+            <div id="codigos-simulacion" class="results"></div>
+            <button onclick="abrirAltaDeposito()" class="btn-test">🚀 Abrir Alta Depósito para Probar</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Verificar APIs</h3>
+            <button onclick="verificarContenedores()" class="btn-test">Verificar API Contenedores</button>
+            <div id="result-apis" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost/mikelo/api';
+
+        async function testGenerarPDF() {
+            const resultDiv = document.getElementById('result-pdf');
+            resultDiv.innerHTML = '<div>⏳ Generando PDF de códigos de barras...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/contenedores/codigos-barras/pdf`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    // Simular descarga automática
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ PDF generado exitosamente</div>
+                        <div class="result-item">📄 Archivo: ${data.archivo}</div>
+                        <div class="result-item">📥 Descarga automática iniciada</div>
+                        <div class="result-item info">💡 El PDF contiene códigos Code 128 reales y legibles</div>
+                        <div class="result-item info">🔍 Formato: ${data.detalles?.formato || 'Code 128'} - Compatible con cualquier lector</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function verificarContenedores() {
+            const resultDiv = document.getElementById('result-apis');
+            resultDiv.innerHTML = '<div>⏳ Verificando contenedores...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/contenedores`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    let html = '<div class="result-item success">✅ API de contenedores funcionando</div>';
+                    html += `<div class="result-item">📊 Total contenedores: ${data.data.length}</div>`;
+                    
+                    data.data.forEach(contenedor => {
+                        const codigo = '00000' + String(contenedor.id).padStart(2, '0');
+                        html += `
+                            <div class="result-item">
+                                🥤 ${contenedor.nombre} (ID: ${contenedor.id}, Peso: ${contenedor.peso}kg)
+                                <div class="codigo-barras">Código: ${codigo}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function cargarInformacionContenedores() {
+            const resultDiv = document.getElementById('contenedores-info');
+
+            try {
+                const response = await fetch(`${API_BASE}/contenedores`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    let html = '<div class="result-item success">✅ Contenedores disponibles:</div>';
+                    
+                    data.data.forEach(contenedor => {
+                        const codigo = '00000' + String(contenedor.id).padStart(2, '0');
+                        html += `
+                            <div class="result-item">
+                                <strong>${contenedor.nombre}</strong> (ID: ${contenedor.id}, Peso: ${contenedor.peso} kg)
+                                <div class="codigo-barras">📊 Código de barras: ${codigo}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    resultDiv.innerHTML = html;
+                    generarCodigosSimulacion(data.data);
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'No se pudieron cargar contenedores'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        function generarCodigosSimulacion(contenedores) {
+            const resultDiv = document.getElementById('codigos-simulacion');
+            
+            let html = '<div class="result-item info">📋 Códigos para copiar y pegar en el campo de búsqueda:</div>';
+            
+            // Agregar ejemplos de productos primero
+            html += `
+                <div class="result-item">
+                    <strong>🍦 Ejemplos de productos (códigos normales):</strong>
+                    <div class="codigo-barras">2000000100015</div>
+                    <div class="codigo-barras">2000000200012</div>
+                    <div style="font-size: 12px; color: #666;">Estos son códigos de productos normales (más de 10 caracteres)</div>
+                </div>
+            `;
+            
+            html += '<div class="result-item"><strong>🥤 Códigos de contenedores (empiezan con 00000):</strong></div>';
+            
+            contenedores.forEach(contenedor => {
+                const codigo = '00000' + String(contenedor.id).padStart(2, '0');
+                html += `
+                    <div class="result-item">
+                        <strong>${contenedor.nombre}:</strong>
+                        <div class="codigo-barras" onclick="copiarCodigo('${codigo}')" style="cursor: pointer;" title="Click para copiar">
+                            ${codigo}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '<div class="result-item info">💡 Haz click en cualquier código para copiarlo al portapapeles</div>';
+            
+            resultDiv.innerHTML = html;
+        }
+
+        function copiarCodigo(codigo) {
+            navigator.clipboard.writeText(codigo).then(() => {
+                // Mostrar feedback visual
+                const element = event.target;
+                const originalBg = element.style.backgroundColor;
+                element.style.backgroundColor = '#28a745';
+                element.style.color = 'white';
+                
+                setTimeout(() => {
+                    element.style.backgroundColor = originalBg;
+                    element.style.color = '';
+                }, 500);
+                
+                console.log(`📋 Código copiado: ${codigo}`);
+            }).catch(err => {
+                console.error('Error al copiar:', err);
+            });
+        }
+
+        function abrirAltaDeposito() {
+            window.open('http://localhost/mikelo/alta_deposito.html', '_blank');
+        }
+
+        function testCodigosBarras() {
+            window.open('http://localhost/mikelo/api/test_barcode.php', '_blank');
+        }
+
+        // Cargar información inicial
+        window.onload = function() {
+            cargarInformacionContenedores();
+            console.log('🧪 Test de flujo automatizado cargado');
+        };
+    </script>
+</body>
+</html>

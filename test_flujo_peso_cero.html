@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Flujo Automático - Peso Cero</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f0f8ff;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .error { background: #ffebee; border-color: #f44336; }
+        .success { background: #e8f5e8; border-color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test Flujo Automático - Peso Cero</h1>
+        <p>Pruebas para verificar que productos con peso cero pueden guardarse correctamente.</p>
+        
+        <div class="test-case">
+            <h3>📦 Test 1: Producto con peso 0 (válido)</h3>
+            <button onclick="testPesoCero()">Probar Peso Cero</button>
+            <div id="resultado1"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>⚠️ Test 2: Producto con peso negativo (inválido)</h3>
+            <button onclick="testPesoNegativo()">Probar Peso Negativo</button>
+            <div id="resultado2"></div>
+        </div>
+        
+        <div class="test-case">
+            <h3>✅ Test 3: Validación completa</h3>
+            <button onclick="testValidacionCompleta()">Probar Validación</button>
+            <div id="resultado3"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testPesoCero() {
+            const data = {
+                productoId: 1,
+                cantidad: 5,
+                peso: 0, // Peso cero - debería ser válido
+                contenedorId: 1,
+                ubicacion_destino: 1
+            };
+            
+            try {
+                const response = await fetch('api/movimientos/alta-deposito', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('resultado1').innerHTML = `
+                    <div class="${result.success ? 'success' : 'error'}">
+                        <strong>Resultado:</strong> ${result.success ? '✅ Éxito' : '❌ Error'}<br>
+                        <strong>Mensaje:</strong> ${result.mensaje || result.error}<br>
+                        <strong>Datos:</strong> ${JSON.stringify(data)}
+                    </div>
+                `;
+                
+                if (result.success) {
+                    Swal.fire('✅ Test Exitoso', 'Peso cero aceptado correctamente', 'success');
+                }
+                
+            } catch (error) {
+                document.getElementById('resultado1').innerHTML = `
+                    <div class="error">
+                        <strong>Error de conexión:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testPesoNegativo() {
+            const data = {
+                productoId: 1,
+                cantidad: 5,
+                peso: -1, // Peso negativo - debería ser inválido
+                contenedorId: 1,
+                ubicacion_destino: 1
+            };
+            
+            try {
+                const response = await fetch('api/movimientos/alta-deposito', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('resultado2').innerHTML = `
+                    <div class="${!result.success ? 'success' : 'error'}">
+                        <strong>Resultado:</strong> ${!result.success ? '✅ Correctamente rechazado' : '❌ Debería haber fallado'}<br>
+                        <strong>Mensaje:</strong> ${result.mensaje || result.error}<br>
+                        <strong>Datos:</strong> ${JSON.stringify(data)}
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('resultado2').innerHTML = `
+                    <div class="error">
+                        <strong>Error de conexión:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testValidacionCompleta() {
+            const tests = [
+                { name: 'Sin ubicación destino', data: { productoId: 1, cantidad: 5, peso: 0 } },
+                { name: 'Sin producto', data: { cantidad: 5, peso: 0, ubicacion_destino: 1 } },
+                { name: 'Sin cantidad', data: { productoId: 1, peso: 0, ubicacion_destino: 1 } },
+                { name: 'Datos completos', data: { productoId: 1, cantidad: 5, peso: 0, ubicacion_destino: 1 } }
+            ];
+            
+            let resultados = '<h4>Resultados de Validación:</h4>';
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch('api/movimientos/alta-deposito', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(test.data)
+                    });
+                    
+                    const result = await response.json();
+                    const esperado = test.name === 'Datos completos';
+                    const correcto = result.success === esperado;
+                    
+                    resultados += `
+                        <div style="margin: 5px 0; padding: 8px; border-radius: 3px; background: ${correcto ? '#e8f5e8' : '#ffebee'}">
+                            <strong>${test.name}:</strong> ${correcto ? '✅' : '❌'} ${result.success ? 'Éxito' : 'Error'} - ${result.mensaje || result.error}
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    resultados += `
+                        <div style="margin: 5px 0; padding: 8px; border-radius: 3px; background: #ffebee">
+                            <strong>${test.name}:</strong> ❌ Error de conexión - ${error.message}
+                        </div>
+                    `;
+                }
+            }
+            
+            document.getElementById('resultado3').innerHTML = resultados;
+        }
+    </script>
+</body>
+</html>

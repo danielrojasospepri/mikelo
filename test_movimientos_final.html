@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Movimientos - Solo Últimos Estados</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .results { margin-top: 10px; }
+        .result-item { padding: 5px; margin: 2px 0; background-color: #f8f9fa; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 8px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Final - Movimientos (Solo Últimos Estados)</h1>
+        
+        <div class="test-section">
+            <h3>Test 1: Cargar Todos los Movimientos</h3>
+            <button onclick="testTodosMovimientos()">Ejecutar Test</button>
+            <div id="result1" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 2: Filtrar por Producto CHANTILLY</h3>
+            <button onclick="testFiltroChantilly()">Ejecutar Test</button>
+            <div id="result2" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 3: Verificar Sin Duplicados</h3>
+            <button onclick="testSinDuplicados()">Ejecutar Test</button>
+            <div id="result3" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 4: Exportar PDF</h3>
+            <button onclick="testExportarPDF()">Ejecutar Test</button>
+            <div id="result4" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost/mikelo/api';
+
+        async function testTodosMovimientos() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.innerHTML = '<div>⏳ Ejecutando test...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/movimientos/buscar`);
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">📊 Total registros: ${data.data.length}</div>
+                        <div class="result-item">🕒 Primeros 3 registros:</div>
+                    `;
+                    
+                    data.data.slice(0, 3).forEach((mov, index) => {
+                        resultDiv.innerHTML += `
+                            <div class="result-item">
+                                ${index + 1}. ${mov.codigo} - ${mov.descripcion} (${mov.estado}) - ${mov.fechaAlta}
+                            </div>
+                        `;
+                    });
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testFiltroChantilly() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = '<div>⏳ Ejecutando test...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/movimientos/buscar?producto=CHANTILLY`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const productosUnicos = [...new Set(data.data.map(m => m.codigo))];
+                    const totalRegistros = data.data.length;
+                    const productosUnicosCount = productosUnicos.length;
+
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ Filtro funcionando</div>
+                        <div class="result-item">📊 Total registros: ${totalRegistros}</div>
+                        <div class="result-item">🎯 Productos únicos: ${productosUnicosCount}</div>
+                        <div class="result-item ${totalRegistros === productosUnicosCount ? 'success' : 'error'}">
+                            ${totalRegistros === productosUnicosCount ? 
+                                '✅ No hay duplicados' : 
+                                `❌ Hay duplicados: ${totalRegistros - productosUnicosCount} extras`}
+                        </div>
+                    `;
+
+                    if (data.data.length > 0) {
+                        resultDiv.innerHTML += '<div class="result-item">📋 Registros encontrados:</div>';
+                        data.data.forEach((mov, index) => {
+                            resultDiv.innerHTML += `
+                                <div class="result-item">
+                                    ${index + 1}. ${mov.codigo} - ${mov.cnt} unidades (${mov.estado}) - ${mov.fechaAlta}
+                                </div>
+                            `;
+                        });
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testSinDuplicados() {
+            const resultDiv = document.getElementById('result3');
+            resultDiv.innerHTML = '<div>⏳ Ejecutando test...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/movimientos/buscar`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Agrupar por id_movimientos_items para verificar unicidad
+                    const grupos = {};
+                    data.data.forEach(mov => {
+                        const key = mov.id_movimientos_items;
+                        if (!grupos[key]) {
+                            grupos[key] = [];
+                        }
+                        grupos[key].push(mov);
+                    });
+
+                    const duplicados = Object.values(grupos).filter(grupo => grupo.length > 1);
+                    const totalGrupos = Object.keys(grupos).length;
+
+                    resultDiv.innerHTML = `
+                        <div class="result-item ${duplicados.length === 0 ? 'success' : 'error'}">
+                            ${duplicados.length === 0 ? 
+                                '✅ No hay duplicados por ID de movimiento' : 
+                                `❌ Encontrados ${duplicados.length} grupos con duplicados`}
+                        </div>
+                        <div class="result-item">📊 Total registros: ${data.data.length}</div>
+                        <div class="result-item">🆔 IDs únicos: ${totalGrupos}</div>
+                    `;
+
+                    if (duplicados.length > 0) {
+                        resultDiv.innerHTML += '<div class="result-item">🔍 Grupos con duplicados:</div>';
+                        duplicados.slice(0, 3).forEach(grupo => {
+                            resultDiv.innerHTML += `
+                                <div class="result-item error">
+                                    ID ${grupo[0].id_movimientos_items}: ${grupo.length} registros
+                                </div>
+                            `;
+                        });
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testExportarPDF() {
+            const resultDiv = document.getElementById('result4');
+            resultDiv.innerHTML = '<div>⏳ Ejecutando test...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/movimientos/pdf`);
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ PDF generado correctamente</div>
+                        <div class="result-item">📄 Archivo: ${data.archivo}</div>
+                        <div class="result-item">
+                            <a href="http://localhost/mikelo/${data.archivo}" target="_blank" 
+                               style="color: #007bff; text-decoration: none;">
+                                🔗 Abrir PDF generado
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        // Ejecutar test inicial automáticamente
+        window.onload = function() {
+            console.log('🧪 Página de test cargada - Lista para ejecutar pruebas');
+        };
+    </script>
+</body>
+</html>

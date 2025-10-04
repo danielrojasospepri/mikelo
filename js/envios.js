@@ -671,11 +671,85 @@ $(document).ready(function() {
     }
 
     function exportarLista(formato) {
-        window.open(`api/envios/${formato}`, '_blank');
+        // Mostrar loading
+        Swal.fire({
+            title: `Generando ${formato.toUpperCase()}...`,
+            text: 'Por favor espere mientras se genera el archivo',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch(`api/envios/${formato}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Error en la respuesta del servidor');
+            })
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    // Descarga automática
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    mostrarExito(`${formato.toUpperCase()} descargado exitosamente`);
+                } else {
+                    throw new Error(data.error || `Error al generar ${formato.toUpperCase()}`);
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
+                mostrarError(`Error al generar ${formato.toUpperCase()}: ` + error.message);
+            });
     }
 
     function exportarDetalle(id, formato) {
-        window.open(`api/envios/${id}/${formato}`, '_blank');
+        // Mostrar loading
+        Swal.fire({
+            title: `Generando ${formato.toUpperCase()}...`,
+            text: 'Por favor espere mientras se genera el archivo',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch(`api/envios/${id}/${formato}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Error en la respuesta del servidor');
+            })
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    // Descarga automática
+                    const link = document.createElement('a');
+                    link.href = data.archivo;
+                    link.download = data.archivo.split('/').pop();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    mostrarExito(`${formato.toUpperCase()} descargado exitosamente`);
+                } else {
+                    throw new Error(data.error || `Error al generar ${formato.toUpperCase()}`);
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
+                mostrarError(`Error al generar ${formato.toUpperCase()}: ` + error.message);
+            });
     }
 
     // Funciones de gestión de envíos

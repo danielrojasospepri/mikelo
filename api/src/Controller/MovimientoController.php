@@ -127,7 +127,7 @@ class MovimientoController {
             $rutaArchivo = $this->movimiento->exportarPDF($filtros);
             return responseJson($response, [
                 'success' => true,
-                'url' => $rutaArchivo
+                'archivo' => $rutaArchivo
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
@@ -148,10 +148,55 @@ class MovimientoController {
             $rutaArchivo = $this->movimiento->exportarExcel($filtros);
             return responseJson($response, [
                 'success' => true,
-                'url' => $rutaArchivo
+                'archivo' => $rutaArchivo
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // Método específico para alta de depósito que crea movimiento y agrega item en una operación
+    public function crearAltaDeposito(Request $request, Response $response) {
+        $data = json_decode($request->getBody()->getContents(), true);
+        
+        // Validar datos requeridos
+        if (!isset($data['ubicacion_destino'])) {
+            return responseJson($response, ['error' => 'La ubicación destino es requerida'], 400);
+        }
+        
+        if (!isset($data['productoId']) || !isset($data['cantidad'])) {
+            return responseJson($response, ['error' => 'Producto y cantidad son requeridos'], 400);
+        }
+
+        try {
+            // Crear el movimiento
+            $movimientoId = $this->movimiento->crear(
+                $data['ubicacion_origen'] ?? null,
+                $data['ubicacion_destino'],
+                'usuario_temporal'
+            );
+            
+            // Agregar el item al movimiento
+            $itemId = $this->movimiento->agregarItem(
+                $movimientoId,
+                $data['productoId'],
+                $data['cantidad'],
+                $data['peso'] ?? 0,
+                $data['contenedorId'] ?? null
+            );
+            
+            return responseJson($response, [
+                'success' => true,
+                'movimiento_id' => $movimientoId,
+                'item_id' => $itemId,
+                'mensaje' => 'Registro de depósito creado exitosamente'
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return responseJson($response, [
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

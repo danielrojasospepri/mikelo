@@ -159,18 +159,15 @@ function exportarPDF() {
         .then(data => {
             Swal.close();
             if (data.success) {
-                Swal.fire({
-                    title: 'PDF Generado',
-                    text: 'El archivo PDF se ha generado exitosamente',
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: 'Descargar',
-                    cancelButtonText: 'Cerrar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.open(data.url, '_blank');
-                    }
-                });
+                // Descarga automática
+                const link = document.createElement('a');
+                link.href = data.archivo;
+                link.download = data.archivo.split('/').pop();
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                mostrarMensaje('PDF descargado exitosamente', 'success');
             } else {
                 throw new Error(data.error || 'Error al generar PDF');
             }
@@ -209,18 +206,15 @@ function exportarExcel() {
         .then(data => {
             Swal.close();
             if (data.success) {
-                Swal.fire({
-                    title: 'Excel Generado',
-                    text: 'El archivo Excel se ha generado exitosamente',
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: 'Descargar',
-                    cancelButtonText: 'Cerrar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.open(data.url, '_blank');
-                    }
-                });
+                // Descarga automática
+                const link = document.createElement('a');
+                link.href = data.archivo;
+                link.download = data.archivo.split('/').pop();
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                mostrarMensaje('Excel descargado exitosamente', 'success');
             } else {
                 throw new Error(data.error || 'Error al generar Excel');
             }

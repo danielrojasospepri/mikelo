@@ -16,6 +16,11 @@ document.addEventListener("DOMContentLoaded", function () {
     .getElementById("btnEscanearQR")
     .addEventListener("click", iniciarEscaneoQR);
 
+  // Evento para generar códigos de barras
+  document
+    .getElementById("btnGenerarCodigosBarras")
+    .addEventListener("click", generarCodigosBarras);
+
   // Cargar contenedores al inicio
   cargarContenedores();
 
@@ -42,6 +47,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Cargar registros del día
   cargarRegistrosDelDia();
+
+  // Asegurar focus en el campo de búsqueda al cargar
+  setTimeout(() => {
+    document.getElementById("buscarProducto").focus();
+  }, 500);
 });
 
 function buscarProductos(e) {
@@ -54,6 +64,14 @@ function buscarProductos(e) {
   // Ocultar resultados si el término de búsqueda está vacío
   if (termino.length < 2) {
     document.getElementById("resultadosBusqueda").style.display = "none";
+    return;
+  }
+
+  // 🎯 DETECCIÓN DE CÓDIGOS DE CONTENEDORES (empiezan con 00000)
+  if (termino.startsWith("00000") && termino.length === 7) {
+    // Código de contenedor detectado
+    const contenedorId = parseInt(termino.substring(5)); // Extraer ID del contenedor
+    seleccionarContenedorAutomatico(contenedorId, termino);
     return;
   }
 
@@ -570,4 +588,255 @@ function cargarRegistrosDelDia() {
       );
       console.error("Error:", error);
     });
+}
+
+// 🎯 NUEVAS FUNCIONES PARA FLUJO AUTOMATIZADO
+
+// Función para generar PDF de códigos de barras
+function generarCodigosBarras() {
+  Swal.fire({
+    title: 'Generando códigos de barras...',
+    text: 'Por favor espere mientras se genera el PDF',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  fetch('api/contenedores/codigos-barras/pdf')
+    .then(response => response.json())
+    .then(data => {
+      Swal.close();
+      if (data.success) {
+        // Descarga automática
+        const link = document.createElement('a');
+        link.href = data.archivo;
+        link.download = data.archivo.split('/').pop();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        Swal.fire({
+          title: '📄 PDF Generado',
+          text: 'Los códigos de barras se han descargado exitosamente',
+          icon: 'success',
+          timer: 3000
+        });
+      } else {
+        throw new Error(data.error || 'Error al generar códigos de barras');
+      }
+    })
+    .catch(error => {
+      Swal.close();
+      console.error('Error:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al generar códigos de barras: ' + error.message,
+        icon: 'error'
+      });
+    });
+}
+
+// Función para seleccionar contenedor automáticamente
+function seleccionarContenedorAutomatico(contenedorId, codigoEscaneado) {
+  console.log(`🎯 Código de contenedor detectado: ${codigoEscaneado} -> ID: ${contenedorId}`);
+  
+  // Verificar que hay un producto seleccionado
+  if (!productoSeleccionado) {
+    Swal.fire({
+      title: '⚠️ Atención',
+      text: 'Primero debe escanear un producto antes de seleccionar el contenedor',
+      icon: 'warning',
+      timer: 3000
+    });
+    limpiarCamposBusqueda();
+    return;
+  }
+
+  // Buscar el contenedor en el select
+  const selectContenedor = document.getElementById("contenedorProducto");
+  const opcionContenedor = Array.from(selectContenedor.options).find(
+    option => option.value == contenedorId
+  );
+
+  if (opcionContenedor) {
+    // Seleccionar el contenedor
+    selectContenedor.value = contenedorId;
+    actualizarPesoTotal();
+    
+    // Mostrar confirmación visual
+    Swal.fire({
+      title: '✅ Contenedor Seleccionado',
+      text: `${opcionContenedor.text} seleccionado automáticamente`,
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    // Guardar automáticamente después de 1 segundo
+    setTimeout(() => {
+      guardarRegistroAutomatico();
+    }, 1000);
+
+  } else {
+    Swal.fire({
+      title: '❌ Error',
+      text: `Contenedor con ID ${contenedorId} no encontrado`,
+      icon: 'error',
+      timer: 3000
+    });
+    limpiarCamposBusqueda();
+  }
+}
+
+// Función para guardar registro automáticamente
+function guardarRegistroAutomatico() {
+  if (!productoSeleccionado) {
+    console.error('No hay producto seleccionado');
+    return;
+  }
+
+  const cantidad = document.getElementById("cantidadProducto").value;
+  const peso = document.getElementById("pesoProducto").value;
+  const contenedor = document.getElementById("contenedorProducto").value;
+
+  if (!cantidad || cantidad <= 0) {
+    Swal.fire({
+      title: 'Error',
+      text: 'La cantidad debe ser mayor a 0',
+      icon: 'error',
+      timer: 3000
+    });
+    return;
+  }
+
+  if (peso < 0) {
+    Swal.fire({
+      title: 'Error',
+      text: 'El peso no puede ser negativo',
+      icon: 'error',
+      timer: 3000
+    });
+    return;
+  }  // Mostrar proceso de guardado
+  Swal.fire({
+    title: '💾 Guardando...',
+    text: 'Procesando registro automáticamente',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  const data = {
+    productoId: productoSeleccionado.id,
+    cantidad: parseInt(cantidad),
+    peso: parseFloat(peso),
+    contenedorId: contenedor || null,
+    fecha: fechaActual,
+    ubicacion_destino: 1, // ID del depósito central
+  };
+
+  fetch("api/movimientos/alta-deposito", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+    .then((response) => {
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then((result) => {
+      if (result.success) {
+        // Mostrar éxito con información del registro
+        const pesoTotal = parseFloat(peso);
+        const contenedorNombre = contenedor ? 
+          document.getElementById("contenedorProducto").selectedOptions[0].text : 
+          'Sin contenedor';
+
+        Swal.fire({
+          title: '🎉 ¡Guardado Exitoso!',
+          html: `
+            <div style="text-align: left; font-size: 14px;">
+              <p><strong>📦 Producto:</strong> ${productoSeleccionado.codigo} - ${productoSeleccionado.descripcion}</p>
+              <p><strong>📊 Cantidad:</strong> ${cantidad} unidades</p>
+              <p><strong>⚖️ Peso:</strong> ${peso} kg</p>
+              <p><strong>🥤 Contenedor:</strong> ${contenedorNombre}</p>
+            </div>
+          `,
+          icon: 'success',
+          timer: 10000, // 10 segundos
+          timerProgressBar: true,
+          showConfirmButton: false
+        });
+
+        // Limpiar y reiniciar automáticamente después de 10 segundos
+        setTimeout(() => {
+          limpiarFormularioCompleto();
+          cargarRegistrosDelDia(); // Refrescar grilla
+          
+          // Volver a poner focus en búsqueda para siguiente producto
+          setTimeout(() => {
+            document.getElementById("buscarProducto").focus();
+          }, 500);
+        }, 10000);
+
+      } else {
+        throw new Error(result.error || 'Error al guardar el registro');
+      }
+    })
+    .catch((error) => {
+      Swal.close();
+      console.error('Error completo:', error);
+      console.error('Data enviada:', data);
+      Swal.fire({
+        title: '❌ Error al Guardar',
+        html: `
+          <div style="text-align: left; font-size: 12px;">
+            <p><strong>Mensaje:</strong> ${error.message}</p>
+            <p><strong>Producto:</strong> ${productoSeleccionado.codigo}</p>
+            <p><strong>Cantidad:</strong> ${data.cantidad}</p>
+            <p><strong>Peso:</strong> ${data.peso}</p>
+            <p><strong>Contenedor:</strong> ${data.contenedorId || 'Ninguno'}</p>
+          </div>
+        `,
+        icon: 'error',
+        confirmButtonText: 'Entendido'
+      });
+    });
+}
+
+// Función para limpiar campos de búsqueda
+function limpiarCamposBusqueda() {
+  document.getElementById("buscarProducto").value = "";
+  setTimeout(() => {
+    document.getElementById("buscarProducto").focus();
+  }, 100);
+}
+
+// Función para limpiar formulario completo
+function limpiarFormularioCompleto() {
+  // Limpiar búsqueda
+  document.getElementById("buscarProducto").value = "";
+  
+  // Ocultar secciones
+  document.getElementById("productoSeleccionado").style.display = "none";
+  document.getElementById("resultadosBusqueda").style.display = "none";
+  
+  // Resetear formulario
+  document.getElementById("altaProductoForm").reset();
+  document.getElementById("cantidadProducto").value = "1";
+  document.getElementById("pesoProducto").value = "0";
+  document.getElementById("contenedorProducto").value = "";
+  document.getElementById("pesoTotalDisplay").textContent = "Peso Total: 0 kg";
+  
+  // Limpiar variable global
+  productoSeleccionado = null;
+  
+  console.log('🧹 Formulario limpiado completamente');
 }

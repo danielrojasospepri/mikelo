@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Exportaciones - Descarga Automática</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .results { margin-top: 10px; }
+        .result-item { padding: 5px; margin: 2px 0; background-color: #f8f9fa; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 8px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .btn-pdf { background-color: #dc3545; }
+        .btn-excel { background-color: #28a745; }
+        .btn-envios { background-color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Exportaciones - Descarga Automática</h1>
+        <p><strong>Objetivo:</strong> Verificar que todas las exportaciones descarguen automáticamente sin mostrar diálogos.</p>
+        
+        <div class="test-section">
+            <h3>📊 Movimientos - Exportaciones</h3>
+            <button onclick="testMovimientosPDF()" class="btn-pdf">Test PDF Movimientos</button>
+            <button onclick="testMovimientosExcel()" class="btn-excel">Test Excel Movimientos</button>
+            <div id="result-movimientos" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚚 Envíos - Exportaciones Generales</h3>
+            <button onclick="testEnviosListaPDF()" class="btn-pdf">Test PDF Lista Envíos</button>
+            <button onclick="testEnviosListaExcel()" class="btn-excel">Test Excel Lista Envíos</button>
+            <div id="result-envios-lista" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📄 Envíos - Exportaciones Individuales</h3>
+            <button onclick="testEnvioIndividualPDF()" class="btn-pdf">Test PDF Envío Individual</button>
+            <button onclick="testEnvioIndividualExcel()" class="btn-excel">Test Excel Envío Individual</button>
+            <div id="result-envios-individual" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Verificar APIs</h3>
+            <button onclick="verificarAPIs()" class="btn-envios">Verificar Todas las APIs</button>
+            <div id="result-apis" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost/mikelo/api';
+
+        // Helper para simular descarga automática
+        function simularDescargaAutomatica(url, nombreArchivo) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = nombreArchivo;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return true;
+        }
+
+        async function testMovimientosPDF() {
+            const resultDiv = document.getElementById('result-movimientos');
+            resultDiv.innerHTML = '<div>⏳ Probando exportación PDF de movimientos...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/movimientos/pdf`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    // Simular descarga automática
+                    const descargado = simularDescargaAutomatica(data.archivo, data.archivo.split('/').pop());
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">📄 Archivo generado: ${data.archivo}</div>
+                        <div class="result-item success">📥 Descarga automática simulada: ${descargado ? 'OK' : 'ERROR'}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testMovimientosExcel() {
+            const resultDiv = document.getElementById('result-movimientos');
+            resultDiv.innerHTML = '<div>⏳ Probando exportación Excel de movimientos...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/movimientos/excel`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    const descargado = simularDescargaAutomatica(data.archivo, data.archivo.split('/').pop());
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">📊 Archivo generado: ${data.archivo}</div>
+                        <div class="result-item success">📥 Descarga automática simulada: ${descargado ? 'OK' : 'ERROR'}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testEnviosListaPDF() {
+            const resultDiv = document.getElementById('result-envios-lista');
+            resultDiv.innerHTML = '<div>⏳ Probando exportación PDF lista de envíos...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/envios/pdf`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    const descargado = simularDescargaAutomatica(data.archivo, data.archivo.split('/').pop());
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">📄 Archivo generado: ${data.archivo}</div>
+                        <div class="result-item success">📥 Descarga automática simulada: ${descargado ? 'OK' : 'ERROR'}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testEnviosListaExcel() {
+            const resultDiv = document.getElementById('result-envios-lista');
+            resultDiv.innerHTML = '<div>⏳ Probando exportación Excel lista de envíos...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/envios/excel`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    const descargado = simularDescargaAutomatica(data.archivo, data.archivo.split('/').pop());
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">📊 Archivo generado: ${data.archivo}</div>
+                        <div class="result-item success">📥 Descarga automática simulada: ${descargado ? 'OK' : 'ERROR'}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testEnvioIndividualPDF() {
+            const resultDiv = document.getElementById('result-envios-individual');
+            resultDiv.innerHTML = '<div>⏳ Probando exportación PDF envío individual...</div>';
+
+            try {
+                // Primero obtener un envío existente
+                const enviosResponse = await fetch(`${API_BASE}/envios`);
+                const enviosData = await enviosResponse.json();
+                
+                if (!enviosData.success || !enviosData.data || enviosData.data.length === 0) {
+                    resultDiv.innerHTML = '<div class="result-item error">❌ No hay envíos para probar</div>';
+                    return;
+                }
+
+                const envioId = enviosData.data[0].id;
+                const response = await fetch(`${API_BASE}/envios/${envioId}/pdf`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    const descargado = simularDescargaAutomatica(data.archivo, data.archivo.split('/').pop());
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">🆔 Envío probado: ${envioId}</div>
+                        <div class="result-item">📄 Archivo generado: ${data.archivo}</div>
+                        <div class="result-item success">📥 Descarga automática simulada: ${descargado ? 'OK' : 'ERROR'}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function testEnvioIndividualExcel() {
+            const resultDiv = document.getElementById('result-envios-individual');
+            resultDiv.innerHTML = '<div>⏳ Probando exportación Excel envío individual...</div>';
+
+            try {
+                // Primero obtener un envío existente
+                const enviosResponse = await fetch(`${API_BASE}/envios`);
+                const enviosData = await enviosResponse.json();
+                
+                if (!enviosData.success || !enviosData.data || enviosData.data.length === 0) {
+                    resultDiv.innerHTML = '<div class="result-item error">❌ No hay envíos para probar</div>';
+                    return;
+                }
+
+                const envioId = enviosData.data[0].id;
+                const response = await fetch(`${API_BASE}/envios/${envioId}/excel`);
+                const data = await response.json();
+
+                if (data.success && data.archivo) {
+                    const descargado = simularDescargaAutomatica(data.archivo, data.archivo.split('/').pop());
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-item success">✅ API funcionando correctamente</div>
+                        <div class="result-item">🆔 Envío probado: ${envioId}</div>
+                        <div class="result-item">📊 Archivo generado: ${data.archivo}</div>
+                        <div class="result-item success">📥 Descarga automática simulada: ${descargado ? 'OK' : 'ERROR'}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result-item error">❌ Error: ${data.error || 'Respuesta inválida'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result-item error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        async function verificarAPIs() {
+            const resultDiv = document.getElementById('result-apis');
+            resultDiv.innerHTML = '<div>⏳ Verificando todas las APIs...</div>';
+
+            const tests = [
+                { name: 'Movimientos PDF', url: `${API_BASE}/movimientos/pdf` },
+                { name: 'Movimientos Excel', url: `${API_BASE}/movimientos/excel` },
+                { name: 'Envíos Lista PDF', url: `${API_BASE}/envios/pdf` },
+                { name: 'Envíos Lista Excel', url: `${API_BASE}/envios/excel` }
+            ];
+
+            let resultados = '<div class="result-item">🔍 Resultados de verificación:</div>';
+
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url);
+                    const data = await response.json();
+                    
+                    if (data.success && data.archivo) {
+                        resultados += `<div class="result-item success">✅ ${test.name}: OK (${data.archivo})</div>`;
+                    } else {
+                        resultados += `<div class="result-item error">❌ ${test.name}: ${data.error || 'Respuesta inválida'}</div>`;
+                    }
+                } catch (error) {
+                    resultados += `<div class="result-item error">❌ ${test.name}: Error de conexión</div>`;
+                }
+            }
+
+            resultDiv.innerHTML = resultados;
+        }
+
+        // Ejecutar verificación inicial
+        window.onload = function() {
+            console.log('🧪 Test de exportaciones cargado - Todas las exportaciones deben descargar automáticamente');
+        };
+    </script>
+</body>
+</html>

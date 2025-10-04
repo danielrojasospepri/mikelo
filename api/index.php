@@ -18,6 +18,7 @@ use App\Controller\MovimientoController;
 use App\Controller\UbicacionController;
 use App\Controller\EnvioController;
 use App\Controller\StockDepositoController;
+use App\Controller\ContenedorController;
 
 $app = AppFactory::create();
 $app->setBasePath('/mikelo/api');
@@ -89,21 +90,24 @@ $app->get('/productos/nuevos', function (Request $request, Response $response) u
 });
 
 $app->get('/contenedores', function (Request $request, Response $response) use ($db) {
-    $sql = "SELECT id, nombre, peso FROM contenedores ORDER BY nombre";
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $contenedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    $response->getBody()->write(json_encode([
-        'success' => true,
-        'data' => $contenedores
-    ]));
-    return $response->withHeader('Content-Type', 'application/json');
+    $controller = new ContenedorController($db);
+    return $controller->listarContenedores($request, $response);
+});
+
+$app->get('/contenedores/codigos-barras/pdf', function (Request $request, Response $response) use ($db) {
+    $controller = new ContenedorController($db);
+    return $controller->generarPDFCodigosBarras($request, $response);
 });
 
 $app->post('/movimientos', function (Request $request, Response $response) use ($db) {
     $controller = new MovimientoController($db);
     return $controller->crear($request, $response);
+});
+
+// Nueva ruta específica para alta de depósito (crear movimiento + agregar item en una operación)
+$app->post('/movimientos/alta-deposito', function (Request $request, Response $response) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->crearAltaDeposito($request, $response);
 });
 
 $app->post('/movimientos/{id}/items', function (Request $request, Response $response, $args) use ($db) {
