@@ -10,10 +10,11 @@ class StockDeposito {
 
     public function obtenerStockAgrupado($filtros = []) {
         $whereConditions = ["mi.id_movimientos_items_origen IS NULL"];
-        $whereConditions[] = "NOT EXISTS (
-            SELECT 1 FROM movimientos_items mi2 
+        $whereConditions[] = "mi.cnt > IFNULL((
+            SELECT IFNULL(SUM(mi2.cnt), 0)
+            FROM movimientos_items mi2
             WHERE mi2.id_movimientos_items_origen = mi.id
-        )";
+        ), 0)";
         
         // Excluir productos dados de baja
         $whereConditions[] = "NOT EXISTS (
@@ -63,6 +64,20 @@ class StockDeposito {
                         ELSE mi.cnt_peso
                     END
                 ) as total_peso_neto,
+                SUM(
+                    mi.cnt - IFNULL((
+                        SELECT SUM(mi2.cnt)
+                        FROM movimientos_items mi2
+                        WHERE mi2.id_movimientos_items_origen = mi.id
+                    ), 0)
+                ) as total_disponible,
+                SUM(
+                    IFNULL((
+                        SELECT SUM(mi2.cnt)
+                        FROM movimientos_items mi2
+                        WHERE mi2.id_movimientos_items_origen = mi.id
+                    ), 0)
+                ) as total_enviado,
                 GROUP_CONCAT(DISTINCT c.nombre ORDER BY c.nombre SEPARATOR ', ') as contenedores,
                 MIN(m.fechaAlta) as fecha_mas_antigua
             FROM movimientos_items mi
@@ -84,10 +99,11 @@ class StockDeposito {
             "mi.id_productos = ?",
             "mi.id_movimientos_items_origen IS NULL"
         ];
-        $whereConditions[] = "NOT EXISTS (
-            SELECT 1 FROM movimientos_items mi2 
+        $whereConditions[] = "mi.cnt > IFNULL((
+            SELECT IFNULL(SUM(mi2.cnt), 0)
+            FROM movimientos_items mi2
             WHERE mi2.id_movimientos_items_origen = mi.id
-        )";
+        ), 0)";
         
         // Excluir productos dados de baja
         $whereConditions[] = "NOT EXISTS (
@@ -118,6 +134,18 @@ class StockDeposito {
                 mi.cnt,
                 mi.cnt_peso,
                 mi.id_contenedor,
+                (
+                    mi.cnt - IFNULL((
+                        SELECT SUM(mi2.cnt)
+                        FROM movimientos_items mi2
+                        WHERE mi2.id_movimientos_items_origen = mi.id
+                    ), 0)
+                ) as cnt_disponible,
+                IFNULL((
+                    SELECT SUM(mi2.cnt)
+                    FROM movimientos_items mi2
+                    WHERE mi2.id_movimientos_items_origen = mi.id
+                ), 0) as cnt_enviado,
                 c.nombre as contenedor,
                 c.peso as peso_contenedor,
                 m.fechaAlta,
@@ -312,7 +340,7 @@ class StockDeposito {
 
     private function generarHTMLStock($data) {
         $totalProductos = count($data);
-        $totalUnidades = array_sum(array_column($data, 'total_unidades'));
+        $totalDisponible = array_sum(array_column($data, 'total_disponible'));
         $totalPesoBruto = array_sum(array_column($data, 'total_peso_bruto'));
         $totalPesoNeto = array_sum(array_column($data, 'total_peso_neto'));
         
@@ -357,7 +385,7 @@ class StockDeposito {
         }
         
         $html .= '
-            <div class="title">REPORTE DE STOCK EN DEPÓSITO</div>
+            <div class="title">REPORTE DE STOCK DISPONIBLE EN DEPÓSITO</div>
             <div class="subtitle">Generado el ' . date('d/m/Y H:i') . '</div>
         </div>
         
@@ -369,8 +397,8 @@ class StockDeposito {
                     <span class="resumen-label">Productos</span>
                 </div>
                 <div class="resumen-item">
-                    <span class="resumen-numero">' . $formatNumber($totalUnidades) . '</span>
-                    <span class="resumen-label">Unidades</span>
+                    <span class="resumen-numero">' . $formatNumber($totalDisponible) . '</span>
+                    <span class="resumen-label">Unidades Disponibles</span>
                 </div>
                 <div class="resumen-item">
                     <span class="resumen-numero">' . $formatNumber($totalPesoBruto) . '</span>
@@ -388,7 +416,7 @@ class StockDeposito {
                 <tr>
                     <th style="width: 10%;">Código</th>
                     <th style="width: 30%;">Descripción</th>
-                    <th style="width: 10%;">Unidades</th>
+                    <th style="width: 10%;">Disponible</th>
                     <th style="width: 12%;">Peso Bruto</th>
                     <th style="width: 12%;">Peso Neto</th>
                     <th style="width: 16%;">Contenedores</th>
@@ -402,7 +430,7 @@ class StockDeposito {
                 <tr>
                     <td class="numero">' . htmlspecialchars($producto['codigo']) . '</td>
                     <td>' . htmlspecialchars($producto['descripcion']) . '</td>
-                    <td class="numero">' . $formatNumber($producto['total_unidades']) . '</td>
+                    <td class="numero">' . $formatNumber($producto['total_disponible']) . '</td>
                     <td class="peso">' . $formatNumber($producto['total_peso_bruto']) . ' kg</td>
                     <td class="peso">' . $formatNumber($producto['total_peso_neto']) . ' kg</td>
                     <td>' . htmlspecialchars($producto['contenedores'] ?: '-') . '</td>
@@ -438,7 +466,7 @@ class StockDeposito {
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         
         // Encabezados de columnas
-        $headers = ['Código', 'Descripción', 'Total Unidades', 'Peso Bruto (kg)', 'Peso Neto (kg)', 'Contenedores', 'Fecha Más Antigua'];
+        $headers = ['Código', 'Descripción', 'Disponible', 'Peso Bruto (kg)', 'Peso Neto (kg)', 'Contenedores', 'Fecha Más Antigua'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '4', $header);
@@ -451,20 +479,20 @@ class StockDeposito {
         
         // Datos
         $row = 5;
-        $totalUnidades = 0;
+        $totalDisponible = 0;
         $totalPesoBruto = 0;
         $totalPesoNeto = 0;
         
         foreach ($data as $producto) {
             $sheet->setCellValue('A' . $row, $producto['codigo']);
             $sheet->setCellValue('B' . $row, $producto['descripcion']);
-            $sheet->setCellValue('C' . $row, $producto['total_unidades']);
+            $sheet->setCellValue('C' . $row, $producto['total_disponible']);
             $sheet->setCellValue('D' . $row, round($producto['total_peso_bruto'], 2));
             $sheet->setCellValue('E' . $row, round($producto['total_peso_neto'], 2));
             $sheet->setCellValue('F' . $row, $producto['contenedores'] ?: '-');
             $sheet->setCellValue('G' . $row, date('d/m/Y', strtotime($producto['fecha_mas_antigua'])));
             
-            $totalUnidades += $producto['total_unidades'];
+            $totalDisponible += $producto['total_disponible'];
             $totalPesoBruto += $producto['total_peso_bruto'];
             $totalPesoNeto += $producto['total_peso_neto'];
             
@@ -474,7 +502,7 @@ class StockDeposito {
         // Totales
         $row++;
         $sheet->setCellValue('A' . $row, 'TOTALES:');
-        $sheet->setCellValue('C' . $row, $totalUnidades);
+        $sheet->setCellValue('C' . $row, $totalDisponible);
         $sheet->setCellValue('D' . $row, round($totalPesoBruto, 2));
         $sheet->setCellValue('E' . $row, round($totalPesoNeto, 2));
         $sheet->getStyle('A' . $row . ':G' . $row)->getFont()->setBold(true);

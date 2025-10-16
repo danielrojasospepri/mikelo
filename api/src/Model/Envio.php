@@ -22,6 +22,31 @@ class Envio {
 
             // 2. Insertar los productos del envío
             foreach ($productos as $producto) {
+                // Validar cantidad disponible ANTES de insertar
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        mi.cnt as cnt_original,
+                        (mi.cnt - IFNULL((
+                            SELECT IFNULL(SUM(mi2.cnt), 0)
+                            FROM movimientos_items mi2
+                            WHERE mi2.id_movimientos_items_origen = mi.id
+                        ), 0)) as cnt_disponible
+                    FROM movimientos_items mi
+                    WHERE mi.id = ?
+                ");
+                $stmt->execute([$producto['id_movimientos_items_origen']]);
+                $disponibilidad = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                if (!$disponibilidad) {
+                    throw new \Exception("Producto origen no encontrado: {$producto['id_movimientos_items_origen']}");
+                }
+                
+                if ($producto['cantidad'] > $disponibilidad['cnt_disponible']) {
+                    throw new \Exception(
+                        "Cantidad solicitada ({$producto['cantidad']}) excede cantidad disponible ({$disponibilidad['cnt_disponible']})"
+                    );
+                }
+                
                 // Obtener el contenedor del item origen
                 $stmt = $this->db->prepare("
                     SELECT id_contenedor FROM movimientos_items 
@@ -222,17 +247,22 @@ class Envio {
                     WHERE eim.id_movimientos_items = mi.id
                     ORDER BY eim.fecha_alta DESC
                     LIMIT 1
-                ) as estado_actual
+                ) as estado_actual,
+                (mi.cnt - IFNULL((
+                    SELECT IFNULL(SUM(mi2.cnt), 0)
+                    FROM movimientos_items mi2
+                    WHERE mi2.id_movimientos_items_origen = mi.id
+                ), 0)) as cnt_disponible
             FROM movimientos_items mi
             JOIN productos p ON p.id = mi.id_productos
             JOIN movimientos m ON m.id = mi.id_movimientos
             LEFT JOIN contenedores c ON c.id = mi.id_contenedor
             WHERE mi.id_movimientos_items_origen IS NULL 
-            AND NOT EXISTS (
-                SELECT 1
+            AND mi.cnt > ifnull((
+                SELECT ifnull(sum(mi2.cnt), 0)
                 FROM movimientos_items mi2
                 WHERE mi2.id_movimientos_items_origen = mi.id
-            )
+            ), 0)
             AND EXISTS (
                 SELECT 1 
                 FROM estados_items_movimientos eim

@@ -504,11 +504,17 @@ $(document).ready(function() {
                 return;
             }
 
+            // Calcular cantidad disponible (si no viene del backend, usar cnt)
+            const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
+
             html += `
                 <tr>
                     <td>${producto.codigo}</td>
                     <td>${producto.descripcion}</td>
-                    <td>${producto.cnt}</td>
+                    <td class="text-center">
+                        <strong>${cantidadDisponible}</strong>
+                        ${producto.cnt !== cantidadDisponible ? `<br><small class="text-muted">(Original: ${producto.cnt})</small>` : ''}
+                    </td>
                     <td>${producto.cnt_peso} kg</td>
                     <td>${producto.contenedor || '-'}</td>
                     <td>
@@ -531,19 +537,19 @@ $(document).ready(function() {
                     <td>${producto.descripcion}</td>
                     <td>${producto.contenedor || '-'}</td>
                     <td>
-                        <input type="number" step="0.001" min="0" max="${producto.cnt_disponible}" 
+                        <input type="number" step="0.001" min="1" max="${producto.cnt_disponible}" 
                                value="${producto.cnt}" class="form-control form-control-sm" 
                                onchange="actualizarCantidadProducto(${index}, this.value)">
-                        <small>Disponible: ${producto.cnt_disponible}</small>
+                        <small class="text-muted">Disponible: <strong>${producto.cnt_disponible}</strong></small>
                     </td>
                     <td>
                         <input type="number" step="0.001" min="0" max="${producto.peso_disponible}" 
-                               value="${producto.cnt_peso}" class="form-control form-control-sm" 
-                               onchange="actualizarPesoProducto(${index}, this.value)">
-                        <small>Disponible: ${producto.peso_disponible} kg</small>
+                               value="${producto.cnt_peso.toFixed(3)}" class="form-control form-control-sm" 
+                               onchange="actualizarPesoProducto(${index}, this.value)" readonly>
+                        <small class="text-muted">Auto-calculado</small>
                     </td>
-                    <td>${producto.peso_neto.toFixed(3)} kg</td>
-                    <td>
+                    <td class="text-right">${producto.peso_neto.toFixed(3)} kg</td>
+                    <td class="text-center">
                         <button class="btn btn-sm btn-danger" onclick="quitarProductoDeEnvio(${index})">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -567,13 +573,31 @@ $(document).ready(function() {
             return;
         }
 
-        // Agregar producto con valores por defecto
-        producto.cnt_disponible = parseFloat(producto.cnt);
+        // Calcular cantidad disponible
+        const cantidadDisponible = producto.cnt_disponible !== undefined ? parseFloat(producto.cnt_disponible) : parseFloat(producto.cnt);
+        
+        // Verificar que haya stock disponible
+        if (cantidadDisponible <= 0) {
+            Swal.fire({
+                title: 'Sin stock disponible',
+                text: 'Este producto no tiene unidades disponibles para enviar.',
+                icon: 'error'
+            });
+            return;
+        }
+
+        // Agregar producto con cantidad inicial de 1
+        producto.cnt_disponible = cantidadDisponible;
         producto.peso_disponible = parseFloat(producto.cnt_peso);
         producto.peso_contenedor = parseFloat(producto.peso_contenedor) || 0;
-        producto.peso_neto = producto.peso_disponible - producto.peso_contenedor;
-        producto.cnt = producto.cnt_disponible;
-        producto.cnt_peso = producto.peso_disponible;
+        
+        // Establecer cantidad inicial en 1 (o la disponible si es menor)
+        producto.cnt = Math.min(1, cantidadDisponible);
+        
+        // Calcular peso proporcional
+        const pesoUnitario = producto.peso_disponible / cantidadDisponible;
+        producto.cnt_peso = pesoUnitario * producto.cnt;
+        producto.peso_neto = producto.cnt_peso - producto.peso_contenedor;
 
         productosSeleccionados.push(producto);
         mostrarProductosEnvio();
@@ -590,6 +614,17 @@ $(document).ready(function() {
         const producto = productosSeleccionados[index];
         nuevaCantidad = parseFloat(nuevaCantidad) || 0;
         
+        // Validar cantidad mínima
+        if (nuevaCantidad < 1) {
+            Swal.fire({
+                title: 'Cantidad inválida',
+                text: 'La cantidad mínima es 1 unidad.',
+                icon: 'warning'
+            });
+            nuevaCantidad = 1;
+        }
+        
+        // Validar cantidad máxima
         if (nuevaCantidad > producto.cnt_disponible) {
             Swal.fire({
                 title: 'Cantidad no disponible',
@@ -599,7 +634,14 @@ $(document).ready(function() {
             nuevaCantidad = producto.cnt_disponible;
         }
         
+        // Actualizar cantidad
         producto.cnt = nuevaCantidad;
+        
+        // Recalcular peso proporcionalmente
+        const pesoUnitario = producto.peso_disponible / producto.cnt_disponible;
+        producto.cnt_peso = pesoUnitario * nuevaCantidad;
+        producto.peso_neto = producto.cnt_peso - producto.peso_contenedor;
+        
         mostrarProductosEnvio();
     };
 

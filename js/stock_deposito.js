@@ -141,8 +141,8 @@ $(document).ready(function() {
         if (stock.length === 0) {
             $tbody.append(`
                 <tr>
-                    <td colspan=\"8\" class=\"text-center text-muted\">
-                        <i class=\"fas fa-inbox fa-2x mb-2\"></i><br>
+                    <td colspan="8" class="text-center text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i><br>
                         No hay productos en stock con los filtros aplicados
                     </td>
                 </tr>
@@ -154,21 +154,35 @@ $(document).ready(function() {
             const contenedores = Array.isArray(producto.contenedores) 
                 ? producto.contenedores.join(', ') 
                 : (producto.contenedores || '-');
+            
+            const totalOriginal = parseInt(producto.total_unidades);
+            const totalDisponible = parseInt(producto.total_disponible);
+            
+            // Determinar color según disponibilidad
+            let badgeClass = 'badge-success';
+            let textoDisponible = formatearNumero(totalDisponible);
+            
+            if (totalDisponible === 0) {
+                badgeClass = 'badge-danger';
+            } else if (totalDisponible < totalOriginal) {
+                badgeClass = 'badge-warning';
+                textoDisponible += ` <small class="text-muted">(Orig: ${formatearNumero(totalOriginal)})</small>`;
+            }
 
             $tbody.append(`
                 <tr>
                     <td><strong>${producto.codigo}</strong></td>
                     <td>${producto.descripcion}</td>
-                    <td class=\"text-center\">
-                        <span class=\"badge badge-primary\">${formatearNumero(producto.total_unidades)}</span>
+                    <td class="text-center">
+                        <span class="badge ${badgeClass}">${textoDisponible}</span>
                     </td>
-                    <td class=\"text-right\">${formatearPeso(producto.total_peso_bruto)}</td>
-                    <td class=\"text-right\">${formatearPeso(producto.total_peso_neto)}</td>
+                    <td class="text-right">${formatearPeso(producto.total_peso_bruto)}</td>
+                    <td class="text-right">${formatearPeso(producto.total_peso_neto)}</td>
                     <td><small>${contenedores}</small></td>
                     <td><small>${formatearFecha(producto.fecha_mas_antigua)}</small></td>
                     <td>
-                        <button class=\"btn btn-sm btn-info\" onclick=\"verDetalleBandejas('${producto.id_producto}', '${producto.codigo}', '${producto.descripcion}')\">
-                            <i class=\"fas fa-eye\"></i> Ver Bandejas
+                        <button class="btn btn-sm btn-info" onclick="verDetalleBandejas('${producto.id_producto}', '${producto.codigo}', '${producto.descripcion}')">
+                            <i class="fas fa-eye"></i> Ver Bandejas
                         </button>
                     </td>
                 </tr>
@@ -179,14 +193,14 @@ $(document).ready(function() {
     function actualizarResumen(stock) {
         const resumen = stock.reduce((acc, producto) => {
             acc.productos += 1;
-            acc.unidades += parseInt(producto.total_unidades);
+            acc.disponibles += parseInt(producto.total_disponible);
             acc.kilosBrutos += parseFloat(producto.total_peso_bruto);
             acc.kilosNetos += parseFloat(producto.total_peso_neto);
             return acc;
-        }, { productos: 0, unidades: 0, kilosBrutos: 0, kilosNetos: 0 });
+        }, { productos: 0, disponibles: 0, kilosBrutos: 0, kilosNetos: 0 });
 
         $('#totalProductos').text(resumen.productos);
-        $('#totalUnidades').text(formatearNumero(resumen.unidades));
+        $('#totalDisponibles').text(formatearNumero(resumen.disponibles));
         $('#totalKilos').text(formatearPeso(resumen.kilosBrutos));
         $('#totalKilosNetos').text(formatearPeso(resumen.kilosNetos));
     }
@@ -219,8 +233,8 @@ $(document).ready(function() {
         $tbody.empty();
 
         let totalCantidad = 0;
+        let totalDisponible = 0;
         let totalPesoBruto = 0;
-        let totalPesoContenedor = 0;
         let totalPesoNeto = 0;
 
         bandejas.forEach(bandeja => {
@@ -228,31 +242,46 @@ $(document).ready(function() {
             const pesoBruto = parseFloat(bandeja.cnt_peso) || 0;
             const pesoNeto = bandeja.peso_contenedor !== null ? (pesoBruto - pesoContenedor) : pesoBruto;
             
-            totalCantidad += parseInt(bandeja.cnt) || 0;
+            const cantidadOriginal = parseInt(bandeja.cnt) || 0;
+            const cantidadDisponible = parseInt(bandeja.cnt_disponible) || cantidadOriginal;
+            
+            totalCantidad += cantidadOriginal;
+            totalDisponible += cantidadDisponible;
             totalPesoBruto += pesoBruto;
-            totalPesoContenedor += pesoContenedor;
             totalPesoNeto += pesoNeto;
+            
+            // Determinar color del badge según disponibilidad
+            let badgeClass = 'badge-success';
+            if (cantidadDisponible === 0) {
+                badgeClass = 'badge-danger';
+            } else if (cantidadDisponible < cantidadOriginal) {
+                badgeClass = 'badge-warning';
+            }
 
             $tbody.append(`
-                <tr data-id=\"${bandeja.id_movimiento_item}\">
+                <tr data-id="${bandeja.id_movimiento_item}">
                     <td>
-                        <input type=\"checkbox\" class=\"bandeja-checkbox\" value=\"${bandeja.id_movimiento_item}\">
+                        <input type="checkbox" class="bandeja-checkbox" value="${bandeja.id_movimiento_item}">
                     </td>
                     <td>${formatearFecha(bandeja.fechaAlta)}</td>
                     <td>${bandeja.contenedor || '-'}</td>
-                    <td class=\"text-center\">${formatearNumero(bandeja.cnt)}</td>
-                    <td class=\"text-right\">${formatearPeso(pesoBruto)}</td>
-                    <td class=\"text-right\">${pesoContenedor > 0 ? formatearPeso(pesoContenedor) : '-'}</td>
-                    <td class=\"text-right\">${formatearPeso(pesoNeto)}</td>
+                    <td class="text-center">
+                        <span class="badge badge-secondary">${formatearNumero(cantidadOriginal)}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${badgeClass}">${formatearNumero(cantidadDisponible)}</span>
+                    </td>
+                    <td class="text-right">${formatearPeso(pesoBruto)}</td>
+                    <td class="text-right">${formatearPeso(pesoNeto)}</td>
                     <td>
-                        <span class=\"badge badge-success\">${bandeja.estado || 'Disponible'}</span>
+                        <span class="badge badge-success">${bandeja.estado || 'Disponible'}</span>
                     </td>
                     <td>
-                        <button class=\"btn btn-xs btn-warning\" onclick=\"cambiarContenedorIndividual('${bandeja.id_movimiento_item}')\">
-                            <i class=\"fas fa-box\"></i>
+                        <button class="btn btn-xs btn-warning" onclick="cambiarContenedorIndividual('${bandeja.id_movimiento_item}')">
+                            <i class="fas fa-box"></i>
                         </button>
-                        <button class=\"btn btn-xs btn-danger\" onclick=\"darDeBajaIndividual('${bandeja.id_movimiento_item}')\">
-                            <i class=\"fas fa-trash\"></i>
+                        <button class="btn btn-xs btn-danger" onclick="darDeBajaIndividual('${bandeja.id_movimiento_item}')">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
@@ -261,12 +290,12 @@ $(document).ready(function() {
 
         // Actualizar totales
         $('#detalleTotalCantidad').text(formatearNumero(totalCantidad));
+        $('#detalleTotalDisponible').text(formatearNumero(totalDisponible));
         $('#detalleTotalPesoBruto').text(formatearPeso(totalPesoBruto));
-        $('#detalleTotalPesoContenedor').text(formatearPeso(totalPesoContenedor));
         $('#detalleTotalPesoNeto').text(formatearPeso(totalPesoNeto));
 
         // Actualizar resumen
-        $('#detalleResumen').text(`${bandejas.length} bandejas - ${totalCantidad} unidades - ${formatearPeso(totalPesoNeto)} netos`);
+        $('#detalleResumen').text(`${bandejas.length} bandejas - ${totalCantidad} original - ${totalDisponible} disponible - ${formatearPeso(totalPesoNeto)} netos`);
 
         // Event listener para checkboxes
         $('.bandeja-checkbox').change(function() {

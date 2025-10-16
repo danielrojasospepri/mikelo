@@ -273,11 +273,23 @@ $(document).ready(function() {
         tbody.empty();
 
         productos.forEach(producto => {
+            // Calcular cantidad disponible
+            const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
+            
+            // No mostrar productos sin stock
+            if (cantidadDisponible <= 0) {
+                return;
+            }
+            
             const row = `
                 <tr>
                     <td>${producto.codigo}</td>
                     <td>${producto.descripcion}</td>
-                    <td>${producto.cnt} (${producto.cnt_peso} kg)</td>
+                    <td>
+                        <strong>${cantidadDisponible}</strong>
+                        ${producto.cnt !== cantidadDisponible ? `<br><small class="text-muted">(Original: ${producto.cnt})</small>` : ''}
+                        <br><small>${producto.cnt_peso} kg</small>
+                    </td>
                     <td>${producto.contenedor || '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-primary" onclick="agregarProductoAlEnvio(${JSON.stringify(producto).replace(/"/g, '&quot;')})">
@@ -301,7 +313,28 @@ $(document).ready(function() {
             return;
         }
 
-        productosEnEnvio.push(producto);
+        // Calcular cantidad disponible
+        const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
+        
+        if (cantidadDisponible <= 0) {
+            mostrarEstadoOperacion('No hay stock disponible de este producto', 'warning');
+            return;
+        }
+
+        // Agregar con cantidad inicial = 1 (o el mínimo disponible)
+        const cantidadInicial = Math.min(1, cantidadDisponible);
+        const pesoUnitario = producto.cnt_peso / producto.cnt; // Peso por unidad
+        const pesoInicial = (pesoUnitario * cantidadInicial).toFixed(3);
+
+        const productoEnEnvio = {
+            ...producto,
+            cantidad: cantidadInicial,
+            peso: parseFloat(pesoInicial),
+            cnt_disponible: cantidadDisponible,
+            peso_unitario: pesoUnitario
+        };
+
+        productosEnEnvio.push(productoEnEnvio);
         actualizarTablaProductosEnvio();
         
         $('#productosEncontrados').hide();
@@ -323,12 +356,34 @@ $(document).ready(function() {
         }
 
         productosEnEnvio.forEach((producto, index) => {
+            const cantidadActual = producto.cantidad || producto.cnt;
+            const pesoActual = producto.peso !== undefined ? producto.peso : producto.cnt_peso;
+            const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
+            
             const row = `
                 <tr>
                     <td>${producto.codigo}</td>
-                    <td>${producto.descripcion}</td>
-                    <td>${producto.cnt}</td>
-                    <td>${producto.cnt_peso} kg</td>
+                    <td>
+                        ${producto.descripcion}
+                        <br><small class="text-muted">Disponible: ${cantidadDisponible}</small>
+                    </td>
+                    <td>
+                        <input type="number" 
+                               class="form-control form-control-sm cantidad-producto" 
+                               value="${cantidadActual}" 
+                               min="1" 
+                               max="${cantidadDisponible}"
+                               data-index="${index}"
+                               style="width: 80px;">
+                    </td>
+                    <td>
+                        <input type="number" 
+                               class="form-control form-control-sm peso-producto" 
+                               value="${pesoActual}" 
+                               step="0.001"
+                               readonly
+                               style="width: 100px;"> kg
+                    </td>
                     <td>${producto.contenedor || '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-danger" onclick="quitarProductoDelEnvio(${index})">
@@ -340,7 +395,42 @@ $(document).ready(function() {
             tbody.append(row);
         });
 
+        // Agregar event listener para cambios de cantidad
+        $('.cantidad-producto').on('change', function() {
+            const index = $(this).data('index');
+            const nuevaCantidad = parseInt($(this).val());
+            actualizarCantidadProducto(index, nuevaCantidad);
+        });
+
         $('#productosEnvio').show();
+    }
+
+    // Función para actualizar cantidad y recalcular peso
+    function actualizarCantidadProducto(index, nuevaCantidad) {
+        const producto = productosEnEnvio[index];
+        const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
+        
+        // Validar mínimo y máximo
+        if (nuevaCantidad < 1) {
+            nuevaCantidad = 1;
+            mostrarEstadoOperacion('La cantidad mínima es 1', 'warning');
+        }
+        
+        if (nuevaCantidad > cantidadDisponible) {
+            nuevaCantidad = cantidadDisponible;
+            mostrarEstadoOperacion(`La cantidad máxima disponible es ${cantidadDisponible}`, 'warning');
+        }
+        
+        // Calcular peso proporcional
+        const pesoUnitario = producto.peso_unitario || (producto.cnt_peso / producto.cnt);
+        const nuevoPeso = (pesoUnitario * nuevaCantidad).toFixed(3);
+        
+        // Actualizar el producto en el array
+        productosEnEnvio[index].cantidad = nuevaCantidad;
+        productosEnEnvio[index].peso = parseFloat(nuevoPeso);
+        
+        // Actualizar la tabla
+        actualizarTablaProductosEnvio();
     }
 
     // Función global para quitar producto
@@ -373,8 +463,8 @@ $(document).ready(function() {
             productos: productosEnEnvio.map(p => ({
                 id_movimientos_items_origen: p.id_movimiento_item,
                 id_productos: p.id_producto,
-                cantidad: p.cnt,
-                peso: p.cnt_peso
+                cantidad: p.cantidad || p.cnt,
+                peso: p.peso !== undefined ? p.peso : p.cnt_peso
             }))
         };
 
