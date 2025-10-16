@@ -124,11 +124,25 @@ class StockDepositoController {
         ];
 
         try {
-            $url = $this->stockDeposito->exportarPDF($filtros);
-            return responseJson($response, [
-                'success' => true,
-                'url' => $url
-            ]);
+            $rutaRelativa = $this->stockDeposito->exportarPDF($filtros);
+            $rutaCompleta = __DIR__ . '/../../../' . $rutaRelativa;
+            
+            if (!file_exists($rutaCompleta)) {
+                return responseJson($response, ['error' => 'Archivo no encontrado'], 404);
+            }
+
+            $nombreArchivo = basename($rutaRelativa);
+            
+            // Configurar headers para descarga directa (igual que EnvioController)
+            $response = $response
+                ->withHeader('Content-Type', 'application/pdf')
+                ->withHeader('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+                ->withHeader('Content-Length', filesize($rutaCompleta));
+
+            // Leer y enviar archivo
+            $response->getBody()->write(file_get_contents($rutaCompleta));
+            
+            return $response;
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
         }
@@ -144,11 +158,25 @@ class StockDepositoController {
         ];
 
         try {
-            $url = $this->stockDeposito->exportarExcel($filtros);
-            return responseJson($response, [
-                'success' => true,
-                'url' => $url
-            ]);
+            $rutaRelativa = $this->stockDeposito->exportarExcel($filtros);
+            $rutaCompleta = __DIR__ . '/../../../' . $rutaRelativa;
+            
+            if (!file_exists($rutaCompleta)) {
+                return responseJson($response, ['error' => 'Archivo no encontrado'], 404);
+            }
+
+            $nombreArchivo = basename($rutaRelativa);
+            
+            // Configurar headers para descarga directa (igual que PDF)
+            $response = $response
+                ->withHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                ->withHeader('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+                ->withHeader('Content-Length', filesize($rutaCompleta));
+
+            // Leer y enviar archivo
+            $response->getBody()->write(file_get_contents($rutaCompleta));
+            
+            return $response;
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
         }

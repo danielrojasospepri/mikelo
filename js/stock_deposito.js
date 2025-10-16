@@ -160,7 +160,7 @@ $(document).ready(function() {
                     <td><strong>${producto.codigo}</strong></td>
                     <td>${producto.descripcion}</td>
                     <td class=\"text-center\">
-                        <span class=\"badge badge-primary\">${producto.total_unidades}</span>
+                        <span class=\"badge badge-primary\">${formatearNumero(producto.total_unidades)}</span>
                     </td>
                     <td class=\"text-right\">${formatearPeso(producto.total_peso_bruto)}</td>
                     <td class=\"text-right\">${formatearPeso(producto.total_peso_neto)}</td>
@@ -186,7 +186,7 @@ $(document).ready(function() {
         }, { productos: 0, unidades: 0, kilosBrutos: 0, kilosNetos: 0 });
 
         $('#totalProductos').text(resumen.productos);
-        $('#totalUnidades').text(resumen.unidades);
+        $('#totalUnidades').text(formatearNumero(resumen.unidades));
         $('#totalKilos').text(formatearPeso(resumen.kilosBrutos));
         $('#totalKilosNetos').text(formatearPeso(resumen.kilosNetos));
     }
@@ -240,7 +240,7 @@ $(document).ready(function() {
                     </td>
                     <td>${formatearFecha(bandeja.fechaAlta)}</td>
                     <td>${bandeja.contenedor || '-'}</td>
-                    <td class=\"text-center\">${bandeja.cnt}</td>
+                    <td class=\"text-center\">${formatearNumero(bandeja.cnt)}</td>
                     <td class=\"text-right\">${formatearPeso(pesoBruto)}</td>
                     <td class=\"text-right\">${pesoContenedor > 0 ? formatearPeso(pesoContenedor) : '-'}</td>
                     <td class=\"text-right\">${formatearPeso(pesoNeto)}</td>
@@ -260,7 +260,7 @@ $(document).ready(function() {
         });
 
         // Actualizar totales
-        $('#detalleTotalCantidad').text(totalCantidad);
+        $('#detalleTotalCantidad').text(formatearNumero(totalCantidad));
         $('#detalleTotalPesoBruto').text(formatearPeso(totalPesoBruto));
         $('#detalleTotalPesoContenedor').text(formatearPeso(totalPesoContenedor));
         $('#detalleTotalPesoNeto').text(formatearPeso(totalPesoNeto));
@@ -416,34 +416,29 @@ $(document).ready(function() {
 
         mostrarCargando('Generando reporte...');
 
-        fetch(`api/stock-deposito/${formato}?${queryString}`)
-            .then(response => response.json())
-            .then(data => {
-                Swal.close();
-                if (data.success) {
-                    // Descargar el archivo
-                    const link = document.createElement('a');
-                    link.href = data.url;
-                    link.download = data.url.split('/').pop();
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Reporte generado',
-                        text: 'El reporte se ha descargado exitosamente',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    mostrarError(data.error || 'Error al generar el reporte');
-                }
-            })
-            .catch(error => {
-                Swal.close();
-                mostrarError('Error de conexión: ' + error.message);
+        // Crear un iframe oculto para la descarga
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = `api/stock-deposito/${formato}?${queryString}`;
+        
+        document.body.appendChild(iframe);
+        
+        // Esperar un momento y cerrar el loading
+        setTimeout(() => {
+            Swal.close();
+            Swal.fire({
+                icon: 'success',
+                title: 'Reporte generado',
+                text: 'El reporte se está descargando',
+                timer: 2000,
+                showConfirmButton: false
             });
+            
+            // Limpiar iframe después de 10 segundos
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 10000);
+        }, 1500);
     }
 
     function limpiarFiltros() {
@@ -455,8 +450,14 @@ $(document).ready(function() {
     }
 
     // Funciones auxiliares
+    function formatearNumero(numero) {
+        // Eliminar decimales innecesarios
+        const num = parseFloat(numero);
+        return num % 1 === 0 ? num.toString() : num.toFixed(3).replace(/\.?0+$/, '');
+    }
+
     function formatearPeso(peso) {
-        return parseFloat(peso).toFixed(2) + ' kg';
+        return formatearNumero(peso) + ' kg';
     }
 
     function formatearFecha(fecha) {

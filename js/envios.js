@@ -110,11 +110,11 @@ $(document).ready(function() {
             let cantidad, peso;
             
             if (tipo === '20') {
-                // Código de cantidad (unidades)
-                cantidad = parseInt(cantidadRaw) / 1000; // Los 5 dígitos representan cantidad * 1000
+                // Código de cantidad (unidades) - valor directo, no se divide por 1000
+                cantidad = parseInt(cantidadRaw);
                 peso = null;
             } else if (tipo === '21') {
-                // Código de peso (kilogramos)
+                // Código de peso (kilogramos) - se divide por 1000 para convertir gramos a kg
                 cantidad = null;
                 peso = parseInt(cantidadRaw) / 1000; // Los 5 dígitos representan peso * 1000
             } else {
@@ -154,12 +154,16 @@ $(document).ready(function() {
         });
         
         let url = `api/envios/productos-disponibles?codigo=${encodeURIComponent(codigo)}`;
-        if (cantidad !== null) {
-            url += `&cantidad=${cantidad}`;
-        }
+        
+        // Para productos por peso, filtrar por peso exacto
         if (peso !== null) {
             url += `&peso=${peso}`;
         }
+        
+        // Para productos por unidades, NO filtrar por cantidad - buscar cualquier cantidad disponible
+        // Solo usar el código del producto para encontrar stock disponible
+        
+        console.log('URL de búsqueda:', url);
         
         $.get(url)
         .done(function(response) {
@@ -205,9 +209,17 @@ $(document).ready(function() {
                     });
                 }
             } else {
+                console.log('Respuesta del servidor:', response);
                 Swal.fire({
                     title: 'Producto no encontrado',
-                    text: `No se encontró ningún producto disponible con el código ${codigo}.`,
+                    html: `
+                        <p>No se encontró stock disponible para:</p>
+                        <strong>Código: ${codigo}</strong><br>
+                        ${peso ? `<strong>Peso: ${peso.toFixed(3)} kg</strong><br>` : ''}
+                        ${cantidad ? `<strong>Cantidad: ${cantidad} unidades</strong><br>` : ''}
+                        <br>
+                        <small>Verifique que el producto esté en estado NUEVO en el depósito central.</small>
+                    `,
                     icon: 'warning'
                 });
             }
@@ -275,11 +287,11 @@ $(document).ready(function() {
             let cantidad, peso;
             
             if (tipo === '20') {
-                // Código de cantidad (unidades)
-                cantidad = parseInt(cantidadRaw) / 1000;
+                // Código de cantidad (unidades) - valor directo
+                cantidad = parseInt(cantidadRaw);
                 peso = null;
             } else if (tipo === '21') {
-                // Código de peso (kilogramos)
+                // Código de peso (kilogramos) - dividir por 1000 para convertir gramos a kg
                 cantidad = null;
                 peso = parseInt(cantidadRaw) / 1000;
             } else {
@@ -317,7 +329,17 @@ $(document).ready(function() {
             }
         });
         
-        $.get(`api/envios/productos-disponibles?codigo=${encodeURIComponent(codigo)}&cantidad=${cantidad}&peso=${peso}`)
+        let url = `api/envios/productos-disponibles?codigo=${encodeURIComponent(codigo)}`;
+        
+        // Para productos por peso, filtrar por peso exacto
+        if (peso !== null) {
+            url += `&peso=${peso}`;
+        }
+        
+        // Para productos por unidades, NO filtrar por cantidad - buscar cualquier cantidad disponible
+        console.log('URL de búsqueda (segunda función):', url);
+        
+        $.get(url)
             .done(function(response) {
                 Swal.close();
                 

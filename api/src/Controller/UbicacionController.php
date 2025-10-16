@@ -17,9 +17,15 @@ class UbicacionController {
     public function listar(Request $request, Response $response) {
         try {
             $ubicaciones = $this->ubicacion->obtenerTodas();
-            return responseJson($response, ['ubicaciones' => $ubicaciones]);
+            return responseJson($response, [
+                'success' => true,
+                'ubicaciones' => $ubicaciones
+            ]);
         } catch (\Exception $e) {
-            return responseJson($response, ['error' => $e->getMessage()], 500);
+            return responseJson($response, [
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

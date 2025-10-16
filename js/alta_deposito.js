@@ -360,6 +360,12 @@ function cancelarSeleccion() {
   productoSeleccionado = null;
   document.getElementById("productoSeleccionado").style.display = "none";
   document.getElementById("altaProductoForm").reset();
+  
+  // Asegurarse de resetear el contenedor a "Sin contenedor" explícitamente
+  document.getElementById("contenedorProducto").value = "";
+  
+  // Resetear también el display del peso total
+  actualizarPesoTotal();
 }
 
 async function verificarRegistroDuplicado(producto_id, cantidad, peso) {
@@ -653,8 +659,30 @@ function seleccionarContenedorAutomatico(contenedorId, codigoEscaneado) {
     return;
   }
 
-  // Buscar el contenedor en el select
   const selectContenedor = document.getElementById("contenedorProducto");
+  
+  // 🎯 Caso especial: ID 0 significa "Sin contenedor"
+  if (contenedorId === 0) {
+    selectContenedor.value = ""; // Seleccionar opción vacía
+    actualizarPesoTotal();
+    
+    Swal.fire({
+      title: '✅ Sin Contenedor',
+      text: 'Producto sin contenedor seleccionado',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    // Guardar automáticamente después de 1 segundo
+    setTimeout(() => {
+      guardarRegistroAutomatico();
+    }, 1000);
+    
+    return;
+  }
+
+  // Buscar el contenedor en el select
   const opcionContenedor = Array.from(selectContenedor.options).find(
     option => option.value == contenedorId
   );

@@ -4,8 +4,10 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Configurar zona horaria para Buenos Aires aaaaaaaaaa
-date_default_timezone_set('America/Argentina/Buenos_Aires');
+// Configurar zona horaria para Buenos Aires 
+date_default_timezone_set('America/Argentina/Buenos_Aires'); // date_default_timezone_set comodoro Rivadavia
+//date_default_timezone_set('America/Argentina/ComodRivadavia');
+
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/comun.php';
@@ -21,8 +23,8 @@ use App\Controller\StockDepositoController;
 use App\Controller\ContenedorController;
 
 $app = AppFactory::create();
+// $app->setBasePath('/api');
 $app->setBasePath('/mikelo/api');
-// $app->setBasePath('/mikelo/api');
 $app->addBodyParsingMiddleware();
 
 // Agregar middleware para debug de rutas
@@ -79,6 +81,25 @@ $app->get('/ubicaciones', function (Request $request, Response $response) use ($
     return $controller->listar($request, $response);
 });
 
+$app->get('/estados', function (Request $request, Response $response) use ($db) {
+    try {
+        $stmt = $db->prepare("SELECT id, nombre as descripcion FROM estados ORDER BY id");
+        $stmt->execute();
+        $estados = $stmt->fetchAll();
+
+        return responseJson($response, [
+            'success' => true,
+            'estados' => $estados
+        ]);
+    } catch (Exception $e) {
+        error_log("Error en /estados: " . $e->getMessage());
+        return responseJson($response, [
+            'success' => false,
+            'error' => 'Error al obtener estados: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
 $app->get('/productos/buscar', function (Request $request, Response $response) use ($db) {
     $controller = new ProductoController($db);
     return $controller->buscar($request, $response);
@@ -92,6 +113,11 @@ $app->get('/productos/nuevos', function (Request $request, Response $response) u
 $app->get('/contenedores', function (Request $request, Response $response) use ($db) {
     $controller = new ContenedorController($db);
     return $controller->listarContenedores($request, $response);
+});
+
+$app->get('/contenedores/codigos-barras', function (Request $request, Response $response) use ($db) {
+    $controller = new ContenedorController($db);
+    return $controller->generarPDFCodigosBarras($request, $response);
 });
 
 $app->get('/contenedores/codigos-barras/pdf', function (Request $request, Response $response) use ($db) {
@@ -108,6 +134,12 @@ $app->post('/movimientos', function (Request $request, Response $response) use (
 $app->post('/movimientos/alta-deposito', function (Request $request, Response $response) use ($db) {
     $controller = new MovimientoController($db);
     return $controller->crearAltaDeposito($request, $response);
+});
+
+// Nueva ruta para obtener registros de alta de depósito por fecha
+$app->get('/movimientos/alta-deposito/registros', function (Request $request, Response $response) use ($db) {
+    $controller = new MovimientoController($db);
+    return $controller->obtenerRegistrosAltaDeposito($request, $response);
 });
 
 $app->post('/movimientos/{id}/items', function (Request $request, Response $response, $args) use ($db) {

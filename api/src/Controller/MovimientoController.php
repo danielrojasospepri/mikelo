@@ -93,7 +93,10 @@ class MovimientoController {
         $data = json_decode($request->getBody()->getContents(), true);
         
         if (!isset($data['producto_id']) || !isset($data['cantidad']) || !isset($data['peso']) || !isset($data['fecha'])) {
-            return responseJson($response, ['error' => 'Faltan datos requeridos'], 400);
+            return responseJson($response, [
+                'success' => false,
+                'error' => 'Faltan datos requeridos'
+            ], 400);
         }
 
         try {
@@ -105,11 +108,15 @@ class MovimientoController {
             );
             
             return responseJson($response, [
+                'success' => true,
                 'duplicado' => $duplicado,
                 'mensaje' => $duplicado ? 'Se encontró un registro similar' : 'No hay registros similares'
             ]);
         } catch (\Exception $e) {
-            return responseJson($response, ['error' => $e->getMessage()], 500);
+            return responseJson($response, [
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -161,11 +168,17 @@ class MovimientoController {
         
         // Validar datos requeridos
         if (!isset($data['ubicacion_destino'])) {
-            return responseJson($response, ['error' => 'La ubicación destino es requerida'], 400);
+            return responseJson($response, [
+                'success' => false,
+                'error' => 'La ubicación destino es requerida'
+            ], 400);
         }
         
-        if (!isset($data['productoId']) || !isset($data['cantidad'])) {
-            return responseJson($response, ['error' => 'Producto y cantidad son requeridos'], 400);
+        if (!isset($data['producto_id']) || !isset($data['cantidad'])) {
+            return responseJson($response, [
+                'success' => false,
+                'error' => 'Producto y cantidad son requeridos'
+            ], 400);
         }
 
         try {
@@ -179,10 +192,11 @@ class MovimientoController {
             // Agregar el item al movimiento
             $itemId = $this->movimiento->agregarItem(
                 $movimientoId,
-                $data['productoId'],
+                $data['producto_id'],
                 $data['cantidad'],
                 $data['peso'] ?? 0,
-                $data['contenedorId'] ?? null
+                null, // movimientoItemOrigenId
+                $data['contenedor_id'] ?? null
             );
             
             return responseJson($response, [
@@ -192,6 +206,24 @@ class MovimientoController {
                 'mensaje' => 'Registro de depósito creado exitosamente'
             ], 201);
             
+        } catch (\Exception $e) {
+            return responseJson($response, [
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function obtenerRegistrosAltaDeposito(Request $request, Response $response) {
+        $params = $request->getQueryParams();
+        $fecha = $params['fecha'] ?? date('Y-m-d');
+        
+        try {
+            $registros = $this->movimiento->obtenerRegistrosAltaDepositoPorFecha($fecha);
+            return responseJson($response, [
+                'success' => true,
+                'data' => $registros
+            ]);
         } catch (\Exception $e) {
             return responseJson($response, [
                 'success' => false,

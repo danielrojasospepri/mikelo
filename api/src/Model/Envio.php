@@ -291,29 +291,84 @@ class Envio {
     public function exportarPDF($id = null, $filtros = []) {
         require_once __DIR__ . '/../../vendor/autoload.php';
 
-        $mpdf = new \Mpdf\Mpdf([
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 15,
-            'margin_bottom' => 15,
-        ]);
+        try {
+            // Validar datos antes de procesar
+            if ($id) {
+                $data = $this->obtenerDetalleEnvio($id);
+                if (!$data || !isset($data['envio']) || !isset($data['productos'])) {
+                    throw new \Exception("No se encontraron datos para el envío #$id");
+                }
+            } else {
+                $data = $this->obtenerEnvios($filtros);
+                if (!is_array($data) || empty($data)) {
+                    throw new \Exception("No se encontraron envíos con los filtros especificados");
+                }
+            }
 
-        if ($id) {
-            $data = $this->obtenerDetalleEnvio($id);
-            $html = $this->generarHTMLDetalle($data);
-            $nombreArchivo = "envio_" . $id . ".pdf";
-        } else {
-            $data = $this->obtenerEnvios($filtros);
-            $html = $this->generarHTMLLista($data);
-            $nombreArchivo = "envios_" . date('Y-m-d') . ".pdf";
+            // Configuración absolutamente mínima para evitar errores de arrays
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'default_font_size' => 12,
+                'default_font' => 'helvetica'
+            ]);
+
+            // Generar HTML según el tipo
+            if ($id) {
+                $html = $this->generarHTMLDetalleMinimal($data);
+                $nombreArchivo = "envio_" . $id . ".pdf";
+            } else {
+                $html = $this->generarHTMLListaMinimal($data);
+                $nombreArchivo = "envios_" . date('Y-m-d') . ".pdf";
+            }
+
+            // Validar que el HTML no esté vacío
+            if (empty($html) || strlen(trim($html)) < 10) {
+                throw new \Exception("Error: HTML generado está vacío o es inválido");
+            }
+
+            $mpdf->WriteHTML($html);
+            
+            $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
+            
+            // Verificar que el directorio temp existe y tiene permisos
+            $dirTemp = dirname($rutaArchivo);
+            if (!is_dir($dirTemp)) {
+                if (!mkdir($dirTemp, 0755, true)) {
+                    throw new \Exception("No se pudo crear el directorio temp/. Verifique los permisos del servidor.");
+                }
+            }
+            
+            // Verificar permisos de escritura
+            if (!is_writable($dirTemp)) {
+                throw new \Exception("El directorio temp/ no tiene permisos de escritura. Permisos actuales: " . substr(sprintf('%o', fileperms($dirTemp)), -4));
+            }
+            
+            // Intentar guardar el PDF
+            try {
+                $mpdf->Output($rutaArchivo, 'F');
+            } catch (\Exception $e) {
+                throw new \Exception("Error al guardar el archivo PDF: " . $e->getMessage() . " - Verifique permisos en: " . $dirTemp);
+            }
+            
+            // Verificar que el archivo se creó correctamente
+            if (!file_exists($rutaArchivo)) {
+                throw new \Exception("El archivo PDF no se generó. Ruta: " . $rutaArchivo);
+            }
+            
+            error_log("PDF Envío generado exitosamente: " . $rutaArchivo . " (" . filesize($rutaArchivo) . " bytes)");
+            
+            return 'temp/' . $nombreArchivo;
+            
+        } catch (\Mpdf\MpdfException $e) {
+            error_log("Error específico de mPDF: " . $e->getMessage());
+            throw new \Exception("Error en la generación PDF: " . $e->getMessage());
+        } catch (\Exception $e) {
+            error_log("Error general PDF: " . $e->getMessage());
+            error_log("Archivo: " . $e->getFile() . " Línea: " . $e->getLine());
+            
+            throw new \Exception("Error al generar PDF: " . $e->getMessage());
         }
-
-        $mpdf->WriteHTML($html);
-        
-        $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
-        $mpdf->Output($rutaArchivo, 'F');
-        
-        return 'temp/' . $nombreArchivo;
     }
 
     public function exportarExcel($id = null, $filtros = []) {
@@ -346,7 +401,7 @@ class Envio {
         $html = '
         <style>
             body { 
-                font-family: Arial, sans-serif; 
+                font-family: courier; 
                 margin: 0; 
                 padding: 20px;
                 font-size: 12px;
@@ -493,7 +548,7 @@ class Envio {
         $html = '
         <style>
             body { 
-                font-family: Arial, sans-serif; 
+                font-family: courier; 
                 margin: 0; 
                 padding: 15px;
                 font-size: 11px;
@@ -971,5 +1026,238 @@ class Envio {
             $this->db->rollBack();
             throw $e;
         }
+    }
+
+    private function generarHTMLListaMinimal($envios) {
+        if (!is_array($envios) || empty($envios)) {
+            return '<h1>Lista de Envios</h1><p>No hay envíos para mostrar.</p>';
+        }
+
+        // Convertir logo a base64 para embedderlo en el PDF
+        $logoPath = __DIR__ . '/../../../img/logo_optimized.png';
+        $logoBase64 = '';
+        if (file_exists($logoPath)) {
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
+        }
+
+        $html = '
+        <style>
+            body { margin: 0; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .logo { max-width: 150px; margin-bottom: 10px; }
+            .title { font-size: 18px; font-weight: bold; margin: 10px 0; }
+            .fecha-generacion { font-size: 10px; color: #666; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #f0f0f0; font-weight: bold; padding: 8px; border: 1px solid #333; text-align: center; }
+            td { padding: 6px 8px; border: 1px solid #333; text-align: left; }
+            .numero { text-align: center; }
+            .peso { text-align: right; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; }
+        </style>
+        
+        <div class="header">';
+        
+        if ($logoBase64) {
+            $html .= '<img src="' . $logoBase64 . '" class="logo" alt="Logo">';
+        }
+        
+        $html .= '
+            <div class="title">Lista de Envíos</div>
+            <div class="fecha-generacion">Generado el: ' . date('d/m/Y H:i') . '</div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 15%;">Fecha</th>
+                    <th style="width: 20%;">Origen</th>
+                    <th style="width: 20%;">Destino</th>
+                    <th style="width: 15%;">Estado</th>
+                    <th style="width: 10%;">Items</th>
+                    <th style="width: 12%;">Peso Total</th>
+                </tr>
+            </thead>
+            <tbody>';
+        
+        foreach ($envios as $envio) {
+            if (!is_array($envio)) continue;
+            
+            $fecha = isset($envio['fechaAlta']) ? date('d/m/Y', strtotime($envio['fechaAlta'])) : 'N/A';
+            
+            $html .= '<tr>';
+            $html .= '<td class="numero">' . htmlspecialchars($envio['id'] ?? 'N/A') . '</td>';
+            $html .= '<td class="numero">' . htmlspecialchars($fecha) . '</td>';
+            $html .= '<td>' . htmlspecialchars($envio['origen'] ?? 'N/A') . '</td>';
+            $html .= '<td>' . htmlspecialchars($envio['destino'] ?? 'N/A') . '</td>';
+            $html .= '<td>' . htmlspecialchars($envio['ultimo_estado'] ?? 'N/A') . '</td>';
+            $html .= '<td class="numero">' . htmlspecialchars($envio['cantidad_items'] ?? '0') . '</td>';
+            $html .= '<td class="peso">' . number_format($envio['peso_total'] ?? 0, 2) . ' kg</td>';
+            $html .= '</tr>';
+        }
+        
+        $totalEnvios = count($envios);
+        $pesoTotal = array_sum(array_column($envios, 'peso_total'));
+        
+        $html .= '
+            </tbody>
+            <tfoot>
+                <tr style="background-color: #e0e0e0; font-weight: bold;">
+                    <td colspan="5" style="text-align: right; padding-right: 10px;">TOTALES:</td>
+                    <td class="numero">' . $totalEnvios . '</td>
+                    <td class="peso">' . number_format($pesoTotal, 2) . ' kg</td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div class="footer">
+            Sistema Mikelo - Gestión de Inventario de Helados<br>
+            Documento generado automáticamente
+        </div>';
+        
+        return $html;
+    }
+
+    private function generarHTMLDetalleMinimal($data) {
+        if (!is_array($data) || !isset($data['envio']) || !isset($data['productos'])) {
+            return '<h1>Error</h1><p>Datos de envío no válidos.</p>';
+        }
+
+        $envio = $data['envio'];
+        $productos = $data['productos'];
+        
+        // Convertir logo a base64
+        $logoPath = __DIR__ . '/../../../img/logo_optimized.png';
+        $logoBase64 = '';
+        if (file_exists($logoPath)) {
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
+        }
+
+        $html = '
+        <style>
+            body { margin: 0; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .logo { max-width: 150px; margin-bottom: 10px; }
+            .title { font-size: 18px; font-weight: bold; margin: 10px 0; }
+            .subtitle { font-size: 14px; font-weight: bold; margin: 15px 0 10px 0; }
+            .info-section { margin: 20px 0; }
+            .info-row { margin: 5px 0; }
+            .label { font-weight: bold; display: inline-block; width: 100px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th { background-color: #f0f0f0; font-weight: bold; padding: 8px; border: 1px solid #333; text-align: center; }
+            td { padding: 6px 8px; border: 1px solid #333; text-align: left; }
+            .numero { text-align: center; }
+            .peso { text-align: right; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 15px; }
+            .totals { background-color: #f8f8f8; padding: 10px; margin-top: 20px; border: 1px solid #333; }
+        </style>
+        
+        <div class="header">';
+        
+        if ($logoBase64) {
+            $html .= '<img src="' . $logoBase64 . '" class="logo" alt="Logo">';
+        }
+        
+        $html .= '
+            <div class="title">REMITO DE ENVÍO #' . htmlspecialchars($envio['id'] ?? 'N/A') . '</div>
+        </div>
+        
+        <div class="info-section">
+            <div class="subtitle">Información del Envío</div>
+            <div class="info-row">
+                <span class="label">Fecha:</span> ' . (isset($envio['fechaAlta']) ? date('d/m/Y H:i', strtotime($envio['fechaAlta'])) : 'N/A') . '
+            </div>
+            <div class="info-row">
+                <span class="label">Origen:</span> ' . htmlspecialchars($envio['origen'] ?? 'N/A') . '
+            </div>
+            <div class="info-row">
+                <span class="label">Destino:</span> ' . htmlspecialchars($envio['destino'] ?? 'N/A') . '
+            </div>
+            <div class="info-row">
+                <span class="label">Estado:</span> ' . htmlspecialchars($envio['estado'] ?? 'N/A') . '
+            </div>
+        </div>
+        
+        <div class="subtitle">Detalle de Productos</div>';
+        
+        if (!is_array($productos) || empty($productos)) {
+            $html .= '<p>No hay productos en este envío.</p>';
+        } else {
+            $html .= '
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">Código</th>
+                        <th style="width: 35%;">Descripción</th>
+                        <th style="width: 8%;">Cant.</th>
+                        <th style="width: 15%;">Contenedor</th>
+                        <th style="width: 10%;">Peso Bruto</th>
+                        <th style="width: 10%;">Peso Cont.</th>
+                        <th style="width: 10%;">Peso Neto</th>
+                    </tr>
+                </thead>
+                <tbody>';
+            
+            $totalItems = 0;
+            $pesoBrutoTotal = 0;
+            $pesoContenedorTotal = 0;
+            $pesoNetoTotal = 0;
+            
+            foreach ($productos as $producto) {
+                if (!is_array($producto)) continue;
+                
+                $cantidad = $producto['cnt'] ?? 0;
+                $pesoBruto = $producto['cnt_peso'] ?? 0;
+                $pesoContenedor = $producto['peso_contenedor'] ?? 0;
+                $pesoNeto = $producto['peso_neto'] ?? $pesoBruto;
+                $contenedor = $producto['contenedor'] ?? '-';
+                
+                // Si el peso neto es negativo, usar el peso bruto
+                if ($pesoNeto < 0) {
+                    $pesoNeto = $pesoBruto;
+                    $pesoContenedor = 0; // Resetear peso contenedor si da negativo
+                }
+                
+                $totalItems += $cantidad;
+                $pesoBrutoTotal += $pesoBruto;
+                $pesoContenedorTotal += $pesoContenedor;
+                $pesoNetoTotal += $pesoNeto;
+                
+                $html .= '<tr>';
+                $html .= '<td class="numero">' . htmlspecialchars($producto['codigo'] ?? 'N/A') . '</td>';
+                $html .= '<td>' . htmlspecialchars($producto['descripcion'] ?? 'N/A') . '</td>';
+                $html .= '<td class="numero">' . number_format($cantidad, 3) . '</td>';
+                $html .= '<td>' . htmlspecialchars($contenedor) . '</td>';
+                $html .= '<td class="peso">' . number_format($pesoBruto, 3) . ' kg</td>';
+                $html .= '<td class="peso">' . number_format($pesoContenedor, 3) . ' kg</td>';
+                $html .= '<td class="peso">' . number_format($pesoNeto, 3) . ' kg</td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '
+                </tbody>
+                <tfoot>
+                    <tr style="background-color: #e0e0e0; font-weight: bold;">
+                        <td colspan="2" style="text-align: right; padding-right: 10px;">TOTALES:</td>
+                        <td class="numero">' . number_format($totalItems) . '</td>
+                        <td></td>
+                        <td class="peso">' . number_format($pesoBrutoTotal, 3) . ' kg</td>
+                        <td class="peso">' . number_format($pesoContenedorTotal, 3) . ' kg</td>
+                        <td class="peso">' . number_format($pesoNetoTotal, 3) . ' kg</td>
+                    </tr>
+                </tfoot>
+            </table>';
+        }
+        
+        $html .= '
+        <div class="footer">
+            Sistema Mikelo - Gestión de Inventario de Helados<br>
+            Remito generado el ' . date('d/m/Y H:i') . '<br>
+            Documento válido para control de envíos
+        </div>';
+        
+        return $html;
     }
 }

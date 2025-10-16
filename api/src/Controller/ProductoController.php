@@ -19,14 +19,23 @@ class ProductoController {
         $termino = $params['q'] ?? '';
         
         if (strlen($termino) < 2) {
-            return responseJson($response, ['error' => 'El término de búsqueda debe tener al menos 2 caracteres'], 400);
+            return responseJson($response, [
+                'success' => false, 
+                'error' => 'El término de búsqueda debe tener al menos 2 caracteres'
+            ], 400);
         }
 
         try {
             $productos = $this->producto->buscarPorCodigoONombre($termino);
-            return responseJson($response, ['productos' => $productos]);
+            return responseJson($response, [
+                'success' => true,
+                'data' => $productos
+            ]);
         } catch (\Exception $e) {
-            return responseJson($response, ['error' => $e->getMessage()], 500);
+            return responseJson($response, [
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -35,7 +44,10 @@ class ProductoController {
         $termino = $params['q'] ?? '';
         
         if (strlen($termino) < 2) {
-            return responseJson($response, ['error' => 'El término de búsqueda debe tener al menos 2 caracteres'], 400);
+            return responseJson($response, [
+                'success' => false,
+                'error' => 'El término de búsqueda debe tener al menos 2 caracteres'
+            ], 400);
         }
 
         try {
@@ -44,13 +56,22 @@ class ProductoController {
             $depositoCentral = $ubicacion->obtenerDepositoCentral();
             
             if (!$depositoCentral) {
-                return responseJson($response, ['error' => 'No se encontró el depósito central'], 404);
+                return responseJson($response, [
+                    'success' => false,
+                    'error' => 'No se encontró el depósito central'
+                ], 404);
             }
 
             $productos = $this->producto->buscarProductosNuevosEnDeposito($termino, $depositoCentral['id']);
-            return responseJson($response, ['productos' => $productos]);
+            return responseJson($response, [
+                'success' => true,
+                'data' => $productos
+            ]);
         } catch (\Exception $e) {
-            return responseJson($response, ['error' => $e->getMessage()], 500);
+            return responseJson($response, [
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

@@ -1,4 +1,7 @@
 <?php
+// Configurar zona horaria de PHP para Argentina
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
 function getDB() {
     $config = require __DIR__ . '/config.php';
     try {
@@ -10,6 +13,10 @@ function getDB() {
         );
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        
+        // Configurar zona horaria de MySQL para Argentina
+        $pdo->exec("SET time_zone = '-03:00'");
+        
         return $pdo;
     } catch(PDOException $e) {
         error_log("Error de conexión a la base de datos: " . $e->getMessage());

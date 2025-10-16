@@ -49,134 +49,141 @@ class ContenedorController {
             // Crear instancia de mPDF
             $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
-                'format' => 'A4',
+                'format' => 'A4', // A4 Portrait (vertical)
                 'orientation' => 'P', // Portrait
-                'margin_left' => 20,
-                'margin_right' => 20,
-                'margin_top' => 20,
-                'margin_bottom' => 20
+                'margin_left' => 12,
+                'margin_right' => 12,
+                'margin_top' => 10,
+                'margin_bottom' => 10,
+                'default_font' => 'Arial',        // Usar Arial en lugar de DejaVu
+                'fontDir' => [],                  // No usar directorio de fuentes custom
+                'autoScriptToLang' => false,      // Deshabilitar auto-detección
+                'autoLangToFont' => false,        // Deshabilitar auto-fuentes
             ]);
+
+            // Configurar fuente explícitamente
+            $mpdf->SetDefaultFont('Arial');
 
             // CSS para el documento
             $css = "
             body { 
                 font-family: Arial, sans-serif; 
-                font-size: 9px;
-                line-height: 1.1;
+                font-size: 7px;
+                line-height: 0.9;
                 margin: 0;
                 padding: 0;
             }
             .header { 
                 text-align: center; 
-                margin-bottom: 12px; 
+                margin-bottom: 4px; 
                 border-bottom: 1px solid #2c3e50;
-                padding-bottom: 6px;
+                padding-bottom: 2px;
             }
             .header h1 { 
                 color: #2c3e50; 
                 margin: 0; 
-                font-size: 14px; 
+                font-size: 10px; 
                 font-weight: bold;
             }
             .header h2 { 
                 color: #7f8c8d; 
                 margin: 1px 0; 
-                font-size: 10px; 
+                font-size: 6px; 
             }
             .contenedores-grid {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-                justify-content: space-between;
+                width: 100%;
             }
             .contenedor-card {
                 border: 1px solid #3498db;
-                border-radius: 4px;
-                padding: 6px;
+                border-radius: 3px;
+                padding: 5px;
                 background-color: #f8f9fa;
-                width: 48%;
-                margin-bottom: 6px;
-                page-break-inside: avoid;
+                width: 48%; /* 2 columnas para A4 vertical */
+                margin: 3px 1%;
+                display: inline-block;
+                vertical-align: top;
                 box-sizing: border-box;
+                min-height: 120px; /* Más espacio en vertical */
             }
-            .contenedor-card:nth-child(5) {
-                width: 100%;
-                text-align: center;
+            .contenedor-card.sin-contenedor {
+                width: 48%;
+                background-color: #fff3cd; 
+                border-color: #ffc107;
             }
             .contenedor-titulo {
-                font-size: 11px;
+                font-size: 9px;
                 font-weight: bold;
                 color: #2c3e50;
                 text-align: center;
-                margin-bottom: 4px;
+                margin-bottom: 2px;
                 text-transform: uppercase;
             }
             .contenedor-info {
-                display: flex;
-                justify-content: space-around;
-                margin-bottom: 6px;
-                font-size: 8px;
+                text-align: center;
+                margin-bottom: 3px;
+                font-size: 7px;
             }
             .info-item {
-                text-align: center;
+                display: inline-block;
+                margin: 0 3px;
             }
             .info-label {
                 font-weight: bold;
                 color: #7f8c8d;
-                font-size: 7px;
+                font-size: 6px;
                 text-transform: uppercase;
             }
             .info-value {
-                font-size: 9px;
+                font-size: 8px;
                 color: #2c3e50;
                 font-weight: bold;
-                margin-top: 1px;
             }
             .codigo-barras {
                 text-align: center;
                 background-color: white;
                 border: 1px solid #bdc3c7;
-                border-radius: 3px;
-                padding: 4px;
-                margin: 4px 0;
+                border-radius: 1px;
+                padding: 2px;
+                margin: 2px 0;
             }
             .codigo-barras-label {
                 font-size: 7px;
                 color: #7f8c8d;
-                margin-bottom: 3px;
+                margin-bottom: 2px;
                 font-weight: bold;
             }
             .codigo-barras-numero {
-                font-size: 12px;
+                font-size: 10px;
                 font-weight: bold;
                 color: #e74c3c;
                 font-family: monospace;
-                letter-spacing: 1px;
-                margin: 3px 0 4px 0;
+                letter-spacing: 0.5px;
+                margin: 2px 0 3px 0;
             }
             .barcode-image {
-                margin: 3px 0;
+                margin: 2px 0;
+                max-height: 30px;
             }
             .instrucciones {
                 background-color: #e8f5e8;
                 border: 1px solid #27ae60;
                 border-radius: 3px;
                 padding: 6px;
-                margin: 8px 0;
+                margin: 6px 0;
                 font-size: 8px;
             }
             .instrucciones-titulo {
                 font-weight: bold;
                 color: #27ae60;
-                margin-bottom: 4px;
+                margin-bottom: 3px;
                 font-size: 9px;
             }
             .footer {
                 text-align: center;
-                margin-top: 10px;
-                padding-top: 6px;
+                margin-top: 6px;
+                padding-top: 4px;
                 border-top: 1px solid #bdc3c7;
-                font-size: 7px;
+                font-size: 6px;
                 color: #7f8c8d;
             }
             ";
@@ -201,11 +208,49 @@ class ContenedorController {
             <div class='contenedores-grid'>
             ";
 
+            // Agregar primero el código especial para "Sin Contenedor"
+            $codigoSinContenedor = '0000000'; // Código especial para "Sin Contenedor"
+            
+            try {
+                $barcodeData = $generator->getBarcode($codigoSinContenedor, $generator::TYPE_CODE_128, 2, 30);
+                $barcodeBase64 = base64_encode($barcodeData);
+                $barcodeImage = 'data:image/png;base64,' . $barcodeBase64;
+            } catch (\Exception $e) {
+                $barcodeData = $generator->getBarcode($codigoSinContenedor, $generator::TYPE_CODE_39, 2, 30);
+                $barcodeBase64 = base64_encode($barcodeData);
+                $barcodeImage = 'data:image/png;base64,' . $barcodeBase64;
+            }
+            
+            $html .= "
+            <div class='contenedor-card sin-contenedor'>
+                <div class='contenedor-titulo' style='color: #856404;'>🚫 SIN CONTENEDOR</div>
+                
+                <div class='contenedor-info'>
+                    <div class='info-item'>
+                        <div class='info-label'>Tipo</div>
+                        <div class='info-value'>Especial</div>
+                    </div>
+                    <div class='info-item'>
+                        <div class='info-label'>Peso</div>
+                        <div class='info-value'>0.000kg</div>
+                    </div>
+                </div>
+
+                <div class='codigo-barras'>
+                    <div class='codigo-barras-label'>🔍 ESCANEAR PARA QUITAR CONTENEDOR</div>
+                    <div class='codigo-barras-numero'>{$codigoSinContenedor}</div>
+                    <div class='barcode-image'>
+                        <img src='{$barcodeImage}' alt='Código {$codigoSinContenedor}' style='height: 30px; width: auto;'>
+                    </div>
+                </div>
+            </div>
+            ";
+
             foreach ($contenedores as $index => $contenedor) {
                 // Generar código de barras con patrón 00000 + ID del contenedor (2 dígitos)
                 $codigoBarras = '00000' . str_pad($contenedor['id'], 2, '0', STR_PAD_LEFT);
                 
-                // Generar imagen del código de barras (Code 128) más pequeña
+                // Generar imagen del código de barras (Code 128) 
                 try {
                     $barcodeData = $generator->getBarcode($codigoBarras, $generator::TYPE_CODE_128, 2, 30);
                     $barcodeBase64 = base64_encode($barcodeData);

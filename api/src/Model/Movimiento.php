@@ -142,7 +142,9 @@ class Movimiento {
     }
 
     public function verificarDuplicado($productoId, $cantidad, $peso, $fecha) {
-        $sql = "SELECT COUNT(*) as total
+        $sql = "SELECT COUNT(*) as total,
+                       MAX(m.fechaAlta) as ultima_fecha,
+                       MAX(mi.cnt_peso) as ultimo_peso
                 FROM movimientos m
                 JOIN movimientos_items mi ON mi.id_movimientos = m.id
                 WHERE DATE(m.fechaAlta) = :fecha
@@ -180,7 +182,11 @@ class Movimiento {
             'margin_top' => 20,
             'margin_bottom' => 20,
             'margin_header' => 5,
-            'margin_footer' => 5
+            'margin_footer' => 5,
+            'default_font' => 'Arial',
+            'fontDir' => [],
+            'autoScriptToLang' => false,
+            'autoLangToFont' => false
         ]);
 
         // CSS para el documento
@@ -405,6 +411,37 @@ class Movimiento {
         $writer->save($rutaCompleta);
 
         return 'temp/' . $nombreArchivo;
+    }
+
+    public function obtenerRegistrosAltaDepositoPorFecha($fecha) {
+        $sql = "SELECT 
+                    mi.id,
+                    p.codigo,
+                    p.descripcion,
+                    mi.cnt,
+                    mi.cnt_peso,
+                    c.nombre as contenedor_nombre,
+                    e.nombre as estado,
+                    m.fechaAlta
+                FROM movimientos_items mi
+                INNER JOIN movimientos m ON m.id = mi.id_movimientos
+                INNER JOIN productos p ON p.id = mi.id_productos
+                LEFT JOIN contenedores c ON c.id = mi.id_contenedor
+                INNER JOIN estados_items_movimientos eim ON eim.id_movimientos_items = mi.id
+                INNER JOIN estados e ON e.id = eim.id_estados
+                WHERE DATE(m.fechaAlta) = :fecha 
+                AND m.id_ubicacion_destino = 1  -- Depósito central
+                AND eim.fecha_alta = (
+                    SELECT MAX(eim2.fecha_alta) 
+                    FROM estados_items_movimientos eim2 
+                    WHERE eim2.id_movimientos_items = mi.id
+                )
+                ORDER BY m.fechaAlta DESC, mi.id DESC";
+                
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':fecha', $fecha);
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     private function getEstadoBadgeClass($estado) {

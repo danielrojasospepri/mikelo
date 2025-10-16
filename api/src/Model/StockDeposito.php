@@ -15,6 +15,14 @@ class StockDeposito {
             WHERE mi2.id_movimientos_items_origen = mi.id
         )";
         
+        // Excluir productos dados de baja
+        $whereConditions[] = "NOT EXISTS (
+            SELECT 1 FROM estados_items_movimientos eim
+            JOIN estados e ON eim.id_estados = e.id
+            WHERE eim.id_movimientos_items = mi.id
+            AND e.nombre = 'BAJA'
+        )";
+        
         $params = [];
 
         // Aplicar filtros
@@ -47,7 +55,7 @@ class StockDeposito {
                 p.id as id_producto,
                 p.codigo,
                 p.descripcion,
-                COUNT(mi.id) as total_unidades,
+                SUM(mi.cnt) as total_unidades,
                 SUM(mi.cnt_peso) as total_peso_bruto,
                 SUM(
                     CASE 
@@ -79,6 +87,14 @@ class StockDeposito {
         $whereConditions[] = "NOT EXISTS (
             SELECT 1 FROM movimientos_items mi2 
             WHERE mi2.id_movimientos_items_origen = mi.id
+        )";
+        
+        // Excluir productos dados de baja
+        $whereConditions[] = "NOT EXISTS (
+            SELECT 1 FROM estados_items_movimientos eim
+            JOIN estados e ON eim.id_estados = e.id
+            WHERE eim.id_movimientos_items = mi.id
+            AND e.nombre = 'BAJA'
         )";
         
         $params = [$idProducto];
@@ -169,14 +185,14 @@ class StockDeposito {
         try {
             $this->db->beginTransaction();
 
-            // Obtener el ID del estado "DADO_DE_BAJA" (asumiendo que existe)
-            $stmt = $this->db->prepare("SELECT id FROM estados WHERE nombre = 'DADO_DE_BAJA' LIMIT 1");
+            // Obtener el ID del estado "BAJA" (asumiendo que existe)
+            $stmt = $this->db->prepare("SELECT id FROM estados WHERE nombre = 'BAJA' LIMIT 1");
             $stmt->execute();
             $estadoBaja = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             if (!$estadoBaja) {
-                // Crear el estado si no existe
-                $stmt = $this->db->prepare("INSERT INTO estados (nombre, descripcion) VALUES ('DADO_DE_BAJA', 'Producto dado de baja')");
+                // Crear el estado si no existe (tabla estados solo tiene: id, nombre)
+                $stmt = $this->db->prepare("INSERT INTO estados (nombre) VALUES ('BAJA')");
                 $stmt->execute();
                 $idEstadoBaja = $this->db->lastInsertId();
             } else {
@@ -184,17 +200,17 @@ class StockDeposito {
             }
 
             foreach ($bandejas as $idBandeja) {
-                // Crear registro de estado de baja
+                // Crear registro de estado de baja (tabla NO tiene columna observaciones)
                 $stmt = $this->db->prepare("
-                    INSERT INTO estados_items_movimientos (id_movimientos_items, id_estados, fecha_alta, observaciones, usuario_alta)
-                    VALUES (?, ?, NOW(), ?, ?)
+                    INSERT INTO estados_items_movimientos (id_movimientos_items, id_estados, fecha_alta, usuario_alta)
+                    VALUES (?, ?, NOW(), ?)
                 ");
-                $stmt->execute([$idBandeja, $idEstadoBaja, $motivo, $_SESSION['usuario'] ?? 'sistema']);
+                $stmt->execute([$idBandeja, $idEstadoBaja, $_SESSION['usuario'] ?? 'sistema']);
 
-                // Registrar el cambio en auditoría
+                // Registrar el cambio en auditoría (aquí SÍ va el motivo)
                 $stmt = $this->db->prepare("
                     INSERT INTO movimientos_cambios (id_movimientos_items, tipo_cambio, valor_anterior, valor_nuevo, motivo, fecha_cambio, usuario)
-                    VALUES (?, 'BAJA', 'DISPONIBLE', 'DADO_DE_BAJA', ?, NOW(), ?)
+                    VALUES (?, 'BAJA', 'DISPONIBLE', 'BAJA', ?, NOW(), ?)
                 ");
                 $stmt->execute([$idBandeja, $motivo, $_SESSION['usuario'] ?? 'sistema']);
             }
@@ -210,23 +226,69 @@ class StockDeposito {
     public function exportarPDF($filtros = []) {
         require_once __DIR__ . '/../../vendor/autoload.php';
 
-        $data = $this->obtenerStockAgrupado($filtros);
-        $html = $this->generarHTMLStock($data);
+        try {
+            $data = $this->obtenerStockAgrupado($filtros);
+            
+            if (!is_array($data) || empty($data)) {
+                throw new \Exception("No se encontraron datos de stock");
+            }
 
-        $mpdf = new \Mpdf\Mpdf([
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 15,
-            'margin_bottom' => 15,
-        ]);
+            // Configuración minimal para máxima compatibilidad (igual que Envío)
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'default_font_size' => 12,
+                'default_font' => 'helvetica'
+            ]);
 
-        $mpdf->WriteHTML($html);
-        
-        $nombreArchivo = "stock_deposito_" . date('Y-m-d') . ".pdf";
-        $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
-        $mpdf->Output($rutaArchivo, 'F');
-        
-        return '/mikelo/temp/' . $nombreArchivo;
+            $html = $this->generarHTMLStock($data);
+            
+            // Validar HTML
+            if (empty($html) || strlen(trim($html)) < 10) {
+                throw new \Exception("Error: HTML generado está vacío o es inválido");
+            }
+
+            $mpdf->WriteHTML($html);
+            
+            $nombreArchivo = "stock_deposito_" . date('Y-m-d') . ".pdf";
+            $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
+            
+            // Verificar que el directorio temp existe y tiene permisos
+            $dirTemp = dirname($rutaArchivo);
+            if (!is_dir($dirTemp)) {
+                if (!mkdir($dirTemp, 0755, true)) {
+                    throw new \Exception("No se pudo crear el directorio temp/. Verifique los permisos del servidor.");
+                }
+            }
+            
+            // Verificar permisos de escritura
+            if (!is_writable($dirTemp)) {
+                throw new \Exception("El directorio temp/ no tiene permisos de escritura. Permisos actuales: " . substr(sprintf('%o', fileperms($dirTemp)), -4));
+            }
+            
+            // Intentar guardar el PDF
+            try {
+                $mpdf->Output($rutaArchivo, 'F');
+            } catch (\Exception $e) {
+                throw new \Exception("Error al guardar el archivo PDF: " . $e->getMessage() . " - Verifique permisos en: " . $dirTemp);
+            }
+            
+            // Verificar que el archivo se creó correctamente
+            if (!file_exists($rutaArchivo)) {
+                throw new \Exception("El archivo PDF no se generó. Ruta: " . $rutaArchivo);
+            }
+            
+            error_log("PDF Stock generado exitosamente: " . $rutaArchivo . " (" . filesize($rutaArchivo) . " bytes)");
+            
+            return 'temp/' . $nombreArchivo;
+            
+        } catch (\Mpdf\MpdfException $e) {
+            error_log("Error específico de mPDF en Stock: " . $e->getMessage());
+            throw new \Exception("Error en la generación PDF: " . $e->getMessage());
+        } catch (\Exception $e) {
+            error_log("Error general PDF Stock: " . $e->getMessage());
+            throw new \Exception("Error al generar PDF: " . $e->getMessage());
+        }
     }
 
     public function exportarExcel($filtros = []) {
@@ -245,7 +307,7 @@ class StockDeposito {
         
         $writer->save($rutaArchivo);
         
-        return '/mikelo/temp/' . $nombreArchivo;
+        return 'temp/' . $nombreArchivo;
     }
 
     private function generarHTMLStock($data) {
@@ -254,158 +316,98 @@ class StockDeposito {
         $totalPesoBruto = array_sum(array_column($data, 'total_peso_bruto'));
         $totalPesoNeto = array_sum(array_column($data, 'total_peso_neto'));
         
+        // Función para formatear números sin decimales innecesarios
+        $formatNumber = function($num) {
+            return rtrim(rtrim(number_format($num, 3, '.', ''), '0'), '.');
+        };
+        
+        // Convertir logo a base64 para embedderlo en el PDF
+        $logoPath = __DIR__ . '/../../../img/logo_optimized.png';
+        $logoBase64 = '';
+        if (file_exists($logoPath)) {
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
+        }
+        
         $html = '
         <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                margin: 0; 
-                padding: 15px;
-                font-size: 11px;
-                line-height: 1.3;
-            }
-            .header {
-                text-align: center;
-                margin-bottom: 20px;
-                border-bottom: 2px solid #333;
-                padding-bottom: 10px;
-            }
-            .company-name {
-                font-size: 20px;
-                font-weight: bold;
-                color: #333;
-                margin-bottom: 5px;
-            }
-            .document-title {
-                font-size: 16px;
-                font-weight: bold;
-                color: #666;
-                margin: 8px 0;
-            }
-            .fecha-reporte {
-                font-size: 12px;
-                color: #666;
-                margin-top: 5px;
-            }
-            .resumen-box {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                padding: 15px;
-                margin: 15px 0;
-                border-radius: 5px;
-            }
-            .resumen-titulo {
-                font-weight: bold;
-                font-size: 14px;
-                color: #333;
-                margin-bottom: 8px;
-                text-align: center;
-            }
-            .resumen-contenido {
-                display: table;
-                width: 100%;
-            }
-            .resumen-item {
-                display: table-cell;
-                width: 25%;
-                text-align: center;
-                padding: 5px;
-                font-size: 11px;
-            }
-            .resumen-numero {
-                font-weight: bold;
-                font-size: 14px;
-                color: #007bff;
-                display: block;
-            }
-            .stock-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 15px 0;
-                font-size: 10px;
-            }
-            .stock-table th {
-                background-color: #333;
-                color: white;
-                padding: 8px 4px;
-                text-align: left;
-                font-weight: bold;
-                font-size: 9px;
-            }
-            .stock-table td {
-                border: 1px solid #ddd;
-                padding: 6px 4px;
-                text-align: left;
-                font-size: 9px;
-            }
-            .stock-table tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-            .footer {
-                margin-top: 30px;
-                text-align: center;
-                font-size: 8px;
-                color: #666;
-                border-top: 1px solid #ccc;
-                padding-top: 10px;
-            }
+            body { margin: 0; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .logo { max-width: 150px; margin-bottom: 10px; }
+            .title { font-size: 18px; font-weight: bold; margin: 10px 0; }
+            .subtitle { font-size: 12px; color: #666; }
+            .resumen { background-color: #f0f0f0; padding: 15px; margin: 20px 0; border: 1px solid #333; }
+            .resumen-title { font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 10px; }
+            .resumen-grid { width: 100%; }
+            .resumen-item { display: inline-block; width: 24%; text-align: center; padding: 5px; }
+            .resumen-numero { font-weight: bold; font-size: 16px; display: block; }
+            .resumen-label { font-size: 9px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th { background-color: #f0f0f0; font-weight: bold; padding: 8px; border: 1px solid #333; text-align: center; }
+            td { padding: 6px; border: 1px solid #333; text-align: left; }
+            .numero { text-align: center; }
+            .peso { text-align: right; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; }
         </style>
         
-        <div class="header">
-            <div class="company-name">MIKELO</div>
-            <div style="font-size: 12px; color: #666;">Sistema de Gestión de Helados</div>
-            <div class="document-title">REPORTE DE STOCK EN DEPÓSITO</div>
-            <div class="fecha-reporte">Generado el ' . date('d/m/Y H:i') . '</div>
+        <div class="header">';
+        
+        if ($logoBase64) {
+            $html .= '<img src="' . $logoBase64 . '" class="logo" alt="Logo">';
+        }
+        
+        $html .= '
+            <div class="title">REPORTE DE STOCK EN DEPÓSITO</div>
+            <div class="subtitle">Generado el ' . date('d/m/Y H:i') . '</div>
         </div>
         
-        <div class="resumen-box">
-            <div class="resumen-titulo">RESUMEN GENERAL</div>
-            <div class="resumen-contenido">
+        <div class="resumen">
+            <div class="resumen-title">RESUMEN GENERAL</div>
+            <div class="resumen-grid">
                 <div class="resumen-item">
                     <span class="resumen-numero">' . $totalProductos . '</span>
-                    Productos Distintos
+                    <span class="resumen-label">Productos</span>
                 </div>
                 <div class="resumen-item">
-                    <span class="resumen-numero">' . $totalUnidades . '</span>
-                    Total Unidades
+                    <span class="resumen-numero">' . $formatNumber($totalUnidades) . '</span>
+                    <span class="resumen-label">Unidades</span>
                 </div>
                 <div class="resumen-item">
-                    <span class="resumen-numero">' . number_format($totalPesoBruto, 2) . '</span>
-                    Kg Brutos
+                    <span class="resumen-numero">' . $formatNumber($totalPesoBruto) . '</span>
+                    <span class="resumen-label">Kg Brutos</span>
                 </div>
                 <div class="resumen-item">
-                    <span class="resumen-numero">' . number_format($totalPesoNeto, 2) . '</span>
-                    Kg Netos
+                    <span class="resumen-numero">' . $formatNumber($totalPesoNeto) . '</span>
+                    <span class="resumen-label">Kg Netos</span>
                 </div>
             </div>
         </div>
         
-        <table class="stock-table">
+        <table>
             <thead>
                 <tr>
                     <th style="width: 10%;">Código</th>
-                    <th style="width: 35%;">Descripción</th>
-                    <th style="width: 8%;">Unidades</th>
+                    <th style="width: 30%;">Descripción</th>
+                    <th style="width: 10%;">Unidades</th>
                     <th style="width: 12%;">Peso Bruto</th>
                     <th style="width: 12%;">Peso Neto</th>
-                    <th style="width: 15%;">Contenedores</th>
-                    <th style="width: 8%;">Fecha Más Antigua</th>
+                    <th style="width: 16%;">Contenedores</th>
+                    <th style="width: 10%;">Fecha Ant.</th>
                 </tr>
             </thead>
             <tbody>';
         
         foreach ($data as $producto) {
-            $html .= "
+            $html .= '
                 <tr>
-                    <td style='font-weight: bold;'>{$producto['codigo']}</td>
-                    <td>{$producto['descripcion']}</td>
-                    <td class='text-center'>{$producto['total_unidades']}</td>
-                    <td class='text-right'>" . number_format($producto['total_peso_bruto'], 2) . " kg</td>
-                    <td class='text-right'>" . number_format($producto['total_peso_neto'], 2) . " kg</td>
-                    <td style='font-size: 8px;'>" . ($producto['contenedores'] ?: '-') . "</td>
-                    <td class='text-center' style='font-size: 8px;'>" . date('d/m/Y', strtotime($producto['fecha_mas_antigua'])) . "</td>
-                </tr>";
+                    <td class="numero">' . htmlspecialchars($producto['codigo']) . '</td>
+                    <td>' . htmlspecialchars($producto['descripcion']) . '</td>
+                    <td class="numero">' . $formatNumber($producto['total_unidades']) . '</td>
+                    <td class="peso">' . $formatNumber($producto['total_peso_bruto']) . ' kg</td>
+                    <td class="peso">' . $formatNumber($producto['total_peso_neto']) . ' kg</td>
+                    <td>' . htmlspecialchars($producto['contenedores'] ?: '-') . '</td>
+                    <td class="numero">' . date('d/m/Y', strtotime($producto['fecha_mas_antigua'])) . '</td>
+                </tr>';
         }
         
         $html .= '
@@ -413,8 +415,8 @@ class StockDeposito {
         </table>
         
         <div class="footer">
-            Sistema MIKELO - Reporte generado automáticamente<br>
-            Fecha: ' . date('d/m/Y H:i:s') . ' | Usuario: ' . ($_SESSION['usuario'] ?? 'Sistema') . '
+            Sistema Mikelo - Gestión de Inventario de Helados<br>
+            Reporte generado automáticamente el ' . date('d/m/Y H:i:s') . '
         </div>';
         
         return $html;

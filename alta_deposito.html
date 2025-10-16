@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alta de Productos - Depósito Central</title>
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="img/logo-1681247675350.png">
-    <link rel="shortcut icon" type="image/png" href="img/logo-1681247675350.png">
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <link rel="shortcut icon" type="image/png" href="img/logo.png">
     <!-- Agregar diferentes tamaños para mejor compatibilidad -->
-    <link rel="apple-touch-icon" sizes="180x180" href="img/logo-1681247675350.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="img/logo-1681247675350.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="img/logo-1681247675350.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/logo.png">
     <!-- Estilos -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -32,7 +32,7 @@
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <a href="index.html" class="brand-link">
-                <img src="img/logo-1681247675350.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
                 <span class="brand-text font-weight-light">J . A . R . V . I . S</span>
             </a>
 
@@ -78,11 +78,10 @@
                             <h1>Alta de Productos - Depósito Central</h1>
                         </div>
                         <div class="col-sm-6">
-                            <div class="float-right">
-                                <button class="btn btn-info btn-sm" id="btnGenerarCodigosBarras">
-                                    <i class="fas fa-barcode"></i> Generar Códigos de Barras
-                                </button>
-                            </div>
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="index.html">Inicio</a></li>
+                                <li class="breadcrumb-item active">Alta en Depósito</li>
+                            </ol>
                         </div>
                     </div>
                 </div>
@@ -91,155 +90,276 @@
             <!-- Main content -->
             <section class="content">
                 <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
+                    
+                    <!-- Panel de Estado y Control -->
+                    <div class="row mb-3">
+                        <div class="col-lg-8 col-12">
+                            <div class="card card-primary">
                                 <div class="card-header">
-                                    <h3 class="card-title">Nuevo Producto</h3>
+                                    <h3 class="card-title">
+                                        <i class="fas fa-barcode mr-2"></i>Registro de Productos
+                                    </h3>
                                 </div>
                                 <div class="card-body">
-                                    <form id="altaProductoForm">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Buscar Producto (por código o nombre)</label>
-                                                    <div class="input-group">
-                                                        <input type="text" class="form-control" id="buscarProducto" placeholder="Ingrese código o nombre del producto...">
-                                                        <div class="input-group-append">
-                                                            <button class="btn btn-secondary" type="button" id="limpiarBusqueda">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                            <button class="btn btn-primary" type="button" id="btnEscanearQR" title="Escanear código de barras">
-                                                                <i class="fas fa-barcode"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <!-- Modal para el escáner de códigos -->
-                                                    <div class="modal fade" id="qrModal" tabindex="-1" role="dialog" aria-labelledby="qrModalLabel" aria-hidden="true">
-                                                        <div class="modal-dialog" role="document">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header">
-                                                                    <h5 class="modal-title" id="qrModalLabel">Escanear Código de Barras</h5>
-                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                        <span aria-hidden="true">&times;</span>
-                                                                    </button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <div id="qr-reader" style="width: 100%"></div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div id="productoSeleccionado" class="mt-4" style="display: none;">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">Producto Seleccionado</h5>
-                                                    <div class="row">
-                                                        <div class="col-md-3">
-                                                            <div class="form-group">
-                                                                <label>Código</label>
-                                                                <input type="text" class="form-control" id="codigoProducto" readonly>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <div class="form-group">
-                                                                <label>Descripción</label>
-                                                                <input type="text" class="form-control" id="descripcionProducto" readonly>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-group">
-                                                                <label>Cantidad</label>
-                                                                <input type="number" class="form-control" id="cantidadProducto" min="1" value="1">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-group">
-                                                                <label>Peso (kg)</label>
-                                                                <input type="number" class="form-control" id="pesoProducto" min="0" step="0.001" value="0">
-                                                                <small class="form-text text-muted" id="pesoTotalDisplay">Peso Total: 0 kg</small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <div class="form-group">
-                                                                <label>Contenedor</label>
-                                                                <select class="form-control" id="contenedorProducto">
-                                                                    <option value="">Sin contenedor</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row mt-3">
-                                                        <div class="col-12">
-                                                            <button type="button" class="btn btn-primary" id="btnGuardar">
-                                                                <i class="fas fa-save"></i> Guardar
-                                                            </button>
-                                                            <button type="button" class="btn btn-secondary" id="btnCancelar">
-                                                                <i class="fas fa-times"></i> Cancelar
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-
-                                    <div id="resultadosBusqueda" class="mt-4" style="display: none;">
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h3 class="card-title">Resultados de la búsqueda</h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered table-hover">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Código</th>
-                                                                <th>Descripción</th>
-                                                                <th>Acciones</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="resultadosTable">
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                    <!-- Campo principal de entrada -->
+                                    <div class="form-group">
+                                        <label for="buscarProducto" class="text-lg">
+                                            <i class="fas fa-search mr-1"></i>Escanear Código o Buscar Producto
+                                        </label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="text" 
+                                                   class="form-control form-control-lg" 
+                                                   id="buscarProducto" 
+                                                   placeholder="Escanear código de barras, código de contenedor (00000XX) o escribir producto..."
+                                                   autocomplete="off"
+                                                   autofocus>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button" id="limpiarTodo" title="Limpiar todo (Escape)">
+                                                    <i class="fas fa-eraser"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Registros del día -->
-                                    <div class="mt-4">
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h3 class="card-title">Registros del día</h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered table-hover">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Hora</th>
-                                                                <th>Código</th>
-                                                                <th>Descripción</th>
-                                                                <th>Cantidad</th>
-                                                                <th>Peso</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="registrosDiaTable">
-                                                        </tbody>
-                                                    </table>
+                                    <!-- Indicador de estado -->
+                                    <div id="estadoOperacion" class="alert alert-info" style="display: none;">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        <span id="estadoTexto">Listo para escanear producto o contenedor</span>
+                                    </div>
+
+                                    <!-- Resultados de búsqueda (solo para búsqueda manual) -->
+                                    <div id="resultadosBusqueda" style="display: none;">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Código</th>
+                                                        <th>Descripción</th>
+                                                        <th>Acción</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tablaResultados"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Formulario de producto seleccionado -->
+                                    <div id="formularioProducto" style="display: none;">
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Producto Seleccionado</label>
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text"><i class="fas fa-cube"></i></span>
+                                                        </div>
+                                                        <input type="text" class="form-control" id="productoSeleccionadoDisplay" readonly>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Cantidad</label>
+                                                    <input type="number" class="form-control" id="cantidadProducto" min="1" step="1" value="1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Peso (kg)</label>
+                                                    <input type="number" class="form-control" id="pesoProducto" min="0" step="0.001" value="0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Contenedor</label>
+                                                    <select class="form-control" id="contenedorProducto">
+                                                        <option value="0">Sin contenedor</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Peso Contenedor</label>
+                                                    <input type="text" class="form-control" id="pesoContenedorDisplay" readonly value="0.000 kg">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Peso Total</label>
+                                                    <input type="text" class="form-control font-weight-bold" id="pesoTotalDisplay" readonly value="0.000 kg">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Botones de acción -->
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <button type="button" class="btn btn-success btn-lg mr-2" id="btnGuardar">
+                                                    <i class="fas fa-save mr-1"></i>Guardar (Ctrl+Enter)
+                                                </button>
+                                                <button type="button" class="btn btn-secondary" id="btnCancelar">
+                                                    <i class="fas fa-times mr-1"></i>Cancelar
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Panel de estado del contenedor -->
+                        <div class="col-lg-4 col-12">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-box mr-2"></i>Contenedor Activo
+                                    </h3>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div id="contenedorActivo">
+                                        <div class="info-box bg-light">
+                                            <span class="info-box-icon bg-info">
+                                                <i class="fas fa-box"></i>
+                                            </span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Contenedor</span>
+                                                <span class="info-box-number" id="contenedorActivoNombre">Sin contenedor</span>
+                                                <span class="info-box-more" id="contenedorActivoPeso">Peso: 0.000 kg</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="btnCambiarContenedor">
+                                            <i class="fas fa-edit"></i> Cambiar Contenedor
+                                        </button>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fas fa-info-circle"></i>
+                                            Escanear código 00000XX o usar botón arriba
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estadísticas de la sesión -->
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-chart-line mr-2"></i>Sesión Actual
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner p-2">
+                                                    <h4 id="contadorProductos">0</h4>
+                                                    <p class="small mb-0">Productos</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner p-2">
+                                                    <h4 id="tiempoPromedio">0s</h4>
+                                                    <p class="small mb-0">Tiempo Prom.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botón de códigos de barras -->
+                            <div class="card card-secondary">
+                                <div class="card-body text-center">
+                                    <button class="btn btn-info btn-block" id="btnGenerarCodigosBarras">
+                                        <i class="fas fa-barcode mr-1"></i>Generar Códigos de Barras
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Tabla de registros del día -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list mr-2"></i>Registros de Hoy
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-sm btn-primary" id="btnActualizarRegistros">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Código</th>
+                                        <th>Descripción</th>
+                                        <th>Cantidad</th>
+                                        <th>Peso</th>
+                                        <th>Contenedor</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaRegistros">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Panel de ayuda rápida -->
+                    <div class="card card-secondary collapse" id="panelAyuda">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-question-circle mr-2"></i>Ayuda Rápida
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h5><i class="fas fa-barcode text-primary"></i> Códigos de Barras</h5>
+                                    <ul class="list-unstyled">
+                                        <li><strong>20XXXXX:</strong> Productos por unidad</li>
+                                        <li><strong>21XXXXX:</strong> Productos por peso</li>
+                                        <li><strong>00000XX:</strong> Códigos de contenedor</li>
+                                        <li><strong>0000000:</strong> Sin contenedor</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5><i class="fas fa-keyboard text-success"></i> Atajos de Teclado</h5>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Ctrl+Enter:</strong> Guardar producto</li>
+                                        <li><strong>Escape:</strong> Limpiar todo</li>
+                                        <li><strong>F3:</strong> Focus en búsqueda</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5><i class="fas fa-cog text-warning"></i> Flujo de Trabajo</h5>
+                                    <ul class="list-unstyled">
+                                        <li>1. Escanear contenedor (opcional)</li>
+                                        <li>2. Escanear productos</li>
+                                        <li>3. Guardado automático</li>
+                                        <li>4. Listo para siguiente</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de ayuda flotante (solo móvil) -->
+                    <button class="btn btn-info btn-sm d-md-none" 
+                            style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; border-radius: 50%; width: 50px; height: 50px;"
+                            data-toggle="collapse" 
+                            data-target="#panelAyuda">
+                        <i class="fas fa-question"></i>
+                    </button>
+
                 </div>
             </section>
         </div>
@@ -251,6 +371,6 @@
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script src="js/alta_deposito.js"></script>
+    <script src="js/alta_deposito_v2.js"></script>
 </body>
 </html>

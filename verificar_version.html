@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verificación de Versión - Stock Deposito JS</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .version-info { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .code-block { background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Verificación de Versión - stock_deposito.js</h1>
+    
+    <div class="version-info">
+        <h2>Instrucciones:</h2>
+        <ol>
+            <li>Abre las DevTools del navegador (F12)</li>
+            <li>Ve a la pestaña "Console"</li>
+            <li>Copia y pega este código:</li>
+        </ol>
+        
+        <div class="code-block">
+fetch('js/stock_deposito.js')
+    .then(r => r.text())
+    .then(code => {
+        const usaIframe = code.includes('iframe.src = `api/stock-deposito/${formato}');
+        const usaFetch = code.includes('fetch(`api/stock-deposito/pdf');
+        
+        console.log('=== ANÁLISIS DE VERSIÓN ===');
+        console.log('Archivo: js/stock_deposito.js');
+        console.log('----------------------------');
+        console.log('✅ Usa iframe para descarga:', usaIframe ? 'SÍ (CORRECTO)' : 'NO (INCORRECTO)');
+        console.log('❌ Usa fetch con JSON:', usaFetch ? 'SÍ (INCORRECTO)' : 'NO (CORRECTO)');
+        console.log('----------------------------');
+        
+        if (usaIframe && !usaFetch) {
+            console.log('✅ VERSIÓN CORRECTA - El archivo está actualizado');
+        } else if (usaFetch) {
+            console.log('❌ VERSIÓN ANTIGUA - El archivo necesita actualizarse');
+            console.log('   El código aún usa fetch() esperando JSON');
+        } else if (!usaIframe) {
+            console.log('⚠️ VERSIÓN DESCONOCIDA - Revisar código manualmente');
+        }
+        
+        // Mostrar fragmento relevante
+        const exportarMatch = code.match(/function exportarStock[\s\S]{0,800}/);
+        if (exportarMatch) {
+            console.log('\n📄 Fragmento de función exportarStock():');
+            console.log(exportarMatch[0].substring(0, 500) + '...');
+        }
+    })
+    .catch(err => {
+        console.error('❌ Error leyendo archivo:', err);
+    });
+        </div>
+        
+        <h2 style="margin-top: 30px;">Resultados Esperados:</h2>
+        <div style="padding: 15px; background: #e8f5e9; border-radius: 5px; margin-top: 10px;">
+            <p><strong class="success">✅ VERSIÓN CORRECTA:</strong></p>
+            <ul>
+                <li>Usa iframe para descarga: <strong>SÍ</strong></li>
+                <li>Usa fetch con JSON: <strong>NO</strong></li>
+                <li>Mensaje: "VERSIÓN CORRECTA - El archivo está actualizado"</li>
+            </ul>
+        </div>
+        
+        <div style="padding: 15px; background: #ffebee; border-radius: 5px; margin-top: 10px;">
+            <p><strong class="error">❌ VERSIÓN ANTIGUA:</strong></p>
+            <ul>
+                <li>Usa iframe para descarga: <strong>NO</strong></li>
+                <li>Usa fetch con JSON: <strong>SÍ</strong></li>
+                <li>Mensaje: "VERSIÓN ANTIGUA - El archivo necesita actualizarse"</li>
+                <li><strong>Acción:</strong> Subir js/stock_deposito.js actualizado a producción</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="version-info">
+        <h2>📋 Archivos a Subir a Producción:</h2>
+        <ol>
+            <li><code>api/src/Model/StockDeposito.php</code> - Retorna rutas relativas</li>
+            <li><code>api/src/Controller/StockDepositoController.php</code> - Retorna PDF binario</li>
+            <li><code>js/stock_deposito.js</code> - Usa iframe para descarga</li>
+        </ol>
+    </div>
+</body>
+</html>

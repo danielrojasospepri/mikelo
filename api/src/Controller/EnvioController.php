@@ -108,11 +108,28 @@ class EnvioController {
         ];
 
         try {
-            $rutaArchivo = $this->envio->exportarPDF($id, $filtros);
-            return responseJson($response, [
-                'success' => true,
-                'archivo' => $rutaArchivo
-            ]);
+            $rutaRelativa = $this->envio->exportarPDF($id, $filtros);
+            $rutaCompleta = __DIR__ . '/../../../' . $rutaRelativa;
+            
+            if (!file_exists($rutaCompleta)) {
+                return responseJson($response, ['error' => 'Archivo no encontrado'], 404);
+            }
+
+            $nombreArchivo = basename($rutaRelativa);
+            
+            // Configurar headers para descarga
+            $response = $response
+                ->withHeader('Content-Type', 'application/pdf')
+                ->withHeader('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+                ->withHeader('Content-Length', filesize($rutaCompleta));
+
+            // Leer y enviar archivo
+            $response->getBody()->write(file_get_contents($rutaCompleta));
+            
+            // Opcional: eliminar archivo temporal después de enviarlo
+            // unlink($rutaCompleta);
+            
+            return $response;
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
         }
@@ -129,11 +146,28 @@ class EnvioController {
         ];
 
         try {
-            $rutaArchivo = $this->envio->exportarExcel($id, $filtros);
-            return responseJson($response, [
-                'success' => true,
-                'archivo' => $rutaArchivo
-            ]);
+            $rutaRelativa = $this->envio->exportarExcel($id, $filtros);
+            $rutaCompleta = __DIR__ . '/../../../' . $rutaRelativa;
+            
+            if (!file_exists($rutaCompleta)) {
+                return responseJson($response, ['error' => 'Archivo no encontrado'], 404);
+            }
+
+            $nombreArchivo = basename($rutaRelativa);
+            
+            // Configurar headers para descarga
+            $response = $response
+                ->withHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                ->withHeader('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+                ->withHeader('Content-Length', filesize($rutaCompleta));
+
+            // Leer y enviar archivo
+            $response->getBody()->write(file_get_contents($rutaCompleta));
+            
+            // Opcional: eliminar archivo temporal después de enviarlo
+            // unlink($rutaCompleta);
+            
+            return $response;
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
         }
