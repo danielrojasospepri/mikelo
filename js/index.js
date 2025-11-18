@@ -11,10 +11,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Cargar ubicaciones en el filtro
     cargarUbicaciones();
+    cargarFamilias();
     
     // Agregar eventos a los filtros
     document.getElementById('fechaDesde').addEventListener('change', buscarMovimientos);
     document.getElementById('fechaHasta').addEventListener('change', buscarMovimientos);
+    document.getElementById('familia').addEventListener('change', buscarMovimientos);
     document.getElementById('ubicacion').addEventListener('change', buscarMovimientos);
     document.getElementById('estado').addEventListener('change', buscarMovimientos);
     
@@ -47,9 +49,29 @@ function cargarUbicaciones() {
         });
 }
 
+function cargarFamilias() {
+    fetch('api/tipos-producto')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                const select = document.getElementById('familia');
+                select.innerHTML = '<option value="">Todas las familias</option>';
+                
+                data.data.forEach(tipo => {
+                    select.add(new Option(tipo.nombre, tipo.id));
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarMensaje('Error al cargar familias', 'error');
+        });
+}
+
 function buscarMovimientos() {
     const fechaDesde = document.getElementById('fechaDesde').value;
     const fechaHasta = document.getElementById('fechaHasta').value;
+    const familia = document.getElementById('familia').value;
     const ubicacion = document.getElementById('ubicacion').value;
     const estado = document.getElementById('estado').value;
     const producto = document.getElementById('producto').value.trim();
@@ -59,6 +81,7 @@ function buscarMovimientos() {
     
     if (fechaDesde) params.append('fecha_desde', fechaDesde);
     if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+    if (familia) params.append('familia', familia);
     if (ubicacion) params.append('ubicacion', ubicacion);
     if (estado) params.append('estado', estado);
     if (producto) params.append('producto', producto);

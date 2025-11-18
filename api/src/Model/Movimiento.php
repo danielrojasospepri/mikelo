@@ -85,16 +85,18 @@ class Movimiento {
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado, $producto = null) {
+    public function buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado, $producto = null, $familia = null) {
         $sql = "SELECT m.id, m.fechaAlta, 
                        uo.nombre as ubicacion_origen, ud.nombre as ubicacion_destino,
                        p.codigo, p.descripcion, mi.cnt, mi.cnt_peso, 
+                       c.nombre as contenedor, c.peso as peso_contenedor,
                        e.nombre as estado
                 FROM movimientos m
                 LEFT JOIN ubicaciones uo ON uo.id = m.id_ubicacion_origen
                 JOIN ubicaciones ud ON ud.id = m.id_ubicacion_destino
                 JOIN movimientos_items mi ON mi.id_movimientos = m.id
                 JOIN productos p ON p.id = mi.id_productos
+                LEFT JOIN contenedores c ON c.id = mi.id_contenedor
                 JOIN (
                     SELECT eim.id_movimientos_items, eim.id_estados, eim.fecha_alta,
                            ROW_NUMBER() OVER (PARTITION BY eim.id_movimientos_items ORDER BY eim.fecha_alta DESC) as rn
@@ -123,6 +125,11 @@ class Movimiento {
         if ($estado) {
             $sql .= " AND e.id = :estado";
             $params[':estado'] = $estado;
+        }
+        
+        if ($familia) {
+            $sql .= " AND p.id_tipo_producto = :familia";
+            $params[':familia'] = $familia;
         }
         
         if ($producto) {
@@ -170,7 +177,8 @@ class Movimiento {
             $filtros['fecha_hasta'] ?? null,
             $filtros['ubicacion'] ?? null,
             $filtros['estado'] ?? null,
-            $filtros['producto'] ?? null
+            $filtros['producto'] ?? null,
+            $filtros['familia'] ?? null
         );
 
         // Crear instancia de mPDF
@@ -301,7 +309,8 @@ class Movimiento {
             $filtros['fecha_hasta'] ?? null,
             $filtros['ubicacion'] ?? null,
             $filtros['estado'] ?? null,
-            $filtros['producto'] ?? null
+            $filtros['producto'] ?? null,
+            $filtros['familia'] ?? null
         );
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -322,8 +331,10 @@ class Movimiento {
             'D1' => 'Código',
             'E1' => 'Descripción',
             'F1' => 'Cantidad',
-            'G1' => 'Peso (kg)',
-            'H1' => 'Estado'
+            'G1' => 'Peso Bruto (kg)',
+            'H1' => 'Bacha',
+            'I1' => 'Peso Neto (kg)',
+            'J1' => 'Estado'
         ];
 
         foreach ($encabezados as $celda => $valor) {
@@ -336,7 +347,7 @@ class Movimiento {
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'color' => ['rgb' => '3498db']],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER]
         ];
-        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:J1')->applyFromArray($headerStyle);
 
         // Agregar datos
         $fila = 2;
@@ -346,17 +357,25 @@ class Movimiento {
         foreach ($movimientos as $movimiento) {
             $fechaFormateada = date('d/m/Y H:i', strtotime($movimiento['fechaAlta']));
             
+            // Calcular peso neto
+            $pesoBruto = floatval($movimiento['cnt_peso']);
+            $pesoContenedor = floatval($movimiento['peso_contenedor'] ?? 0);
+            $pesoNeto = $pesoBruto - $pesoContenedor;
+            $contenedor = $movimiento['contenedor'] ?? '-';
+            
             $sheet->setCellValue('A' . $fila, $fechaFormateada);
             $sheet->setCellValue('B' . $fila, $movimiento['ubicacion_origen'] ?: '-');
             $sheet->setCellValue('C' . $fila, $movimiento['ubicacion_destino']);
             $sheet->setCellValue('D' . $fila, $movimiento['codigo']);
             $sheet->setCellValue('E' . $fila, $movimiento['descripcion']);
             $sheet->setCellValue('F' . $fila, $movimiento['cnt']);
-            $sheet->setCellValue('G' . $fila, $movimiento['cnt_peso']);
-            $sheet->setCellValue('H' . $fila, $movimiento['estado']);
+            $sheet->setCellValue('G' . $fila, number_format($pesoBruto, 3));
+            $sheet->setCellValue('H' . $fila, $contenedor);
+            $sheet->setCellValue('I' . $fila, number_format($pesoNeto, 3));
+            $sheet->setCellValue('J' . $fila, $movimiento['estado']);
             
             $totalItems += $movimiento['cnt'];
-            $pesoTotal += $movimiento['cnt_peso'];
+            $pesoTotal += $pesoBruto;
             $fila++;
         }
 
@@ -365,14 +384,14 @@ class Movimiento {
             $filaTotal = $fila + 1;
             $sheet->setCellValue('E' . $filaTotal, 'TOTALES:');
             $sheet->setCellValue('F' . $filaTotal, $totalItems);
-            $sheet->setCellValue('G' . $filaTotal, $pesoTotal);
+            $sheet->setCellValue('G' . $filaTotal, number_format($pesoTotal, 3));
             
             // Estilo para totales
             $totalStyle = [
                 'font' => ['bold' => true],
                 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'color' => ['rgb' => 'f8f9fa']]
             ];
-            $sheet->getStyle('E' . $filaTotal . ':G' . $filaTotal)->applyFromArray($totalStyle);
+            $sheet->getStyle('E' . $filaTotal . ':I' . $filaTotal)->applyFromArray($totalStyle);
         }
 
         // Ajustar anchos de columnas
@@ -382,8 +401,10 @@ class Movimiento {
         $sheet->getColumnDimension('D')->setWidth(12);
         $sheet->getColumnDimension('E')->setWidth(30);
         $sheet->getColumnDimension('F')->setWidth(12);
-        $sheet->getColumnDimension('G')->setWidth(12);
-        $sheet->getColumnDimension('H')->setWidth(12);
+        $sheet->getColumnDimension('G')->setWidth(15);
+        $sheet->getColumnDimension('H')->setWidth(15);
+        $sheet->getColumnDimension('I')->setWidth(15);
+        $sheet->getColumnDimension('J')->setWidth(12);
 
         // Aplicar bordes a toda la tabla
         if ($fila > 2) {
@@ -395,7 +416,7 @@ class Movimiento {
                     ]
                 ]
             ];
-            $sheet->getStyle('A1:H' . ($fila - 1))->applyFromArray($borderStyle);
+            $sheet->getStyle('A1:J' . ($fila - 1))->applyFromArray($borderStyle);
         }
 
         // Generar archivo

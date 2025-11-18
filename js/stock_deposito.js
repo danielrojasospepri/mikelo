@@ -59,6 +59,7 @@ $(document).ready(function() {
 
     // Funciones principales
     function inicializarPagina() {
+        cargarFamilias();
         cargarContenedores();
         cargarStock();
         
@@ -69,6 +70,25 @@ $(document).ready(function() {
         
         $('#fechaHasta').val(hoy.toISOString().split('T')[0]);
         $('#fechaDesde').val(hace30Dias.toISOString().split('T')[0]);
+    }
+
+    function cargarFamilias() {
+        fetch('api/tipos-producto')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const $select = $('#filtroFamilia');
+                    $select.empty();
+                    $select.append('<option value="">Todas</option>');
+                    
+                    data.data.forEach(tipo => {
+                        $select.append(`<option value="${tipo.id}">${tipo.nombre}</option>`);
+                    });
+                }
+            })
+            .catch(error => {
+                mostrarError('Error al cargar familias: ' + error.message);
+            });
     }
 
     function cargarContenedores() {
@@ -127,6 +147,7 @@ $(document).ready(function() {
 
     function obtenerFiltros() {
         return {
+            familia: $('#filtroFamilia').val(),
             producto: $('#filtroProducto').val(),
             contenedor: $('#filtroContenedor').val(),
             fechaDesde: $('#fechaDesde').val(),
@@ -200,7 +221,7 @@ $(document).ready(function() {
         }, { productos: 0, disponibles: 0, kilosBrutos: 0, kilosNetos: 0 });
 
         $('#totalProductos').text(resumen.productos);
-        $('#totalDisponibles').text(formatearNumero(resumen.disponibles));
+        $('#totalUnidades').text(formatearNumero(resumen.disponibles));
         $('#totalKilos').text(formatearPeso(resumen.kilosBrutos));
         $('#totalKilosNetos').text(formatearPeso(resumen.kilosNetos));
     }

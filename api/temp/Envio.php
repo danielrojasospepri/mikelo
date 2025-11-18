@@ -1,69 +1,18 @@
 <?php
+
 namespace App\Model;
 
-class Envio {
-    /**
-     * Edita un envío existente: actualiza destino y productos
-     * @param int $idMovimiento
-     * @param int $destino
-     * @param array $productos
-     * @return bool
-     */
-    public function editar($idMovimiento, $destino, $productos) {
-        try {
-            $this->db->beginTransaction();
-
-            // 1. Actualizar destino del movimiento
-            $stmt = $this->db->prepare("UPDATE movimientos SET id_ubicacion_destino = ? WHERE id = ?");
-            $stmt->execute([$destino, $idMovimiento]);
-
-            // 2. Eliminar productos actuales del envío
-            $stmt = $this->db->prepare("DELETE FROM movimientos_items WHERE id_movimientos = ?");
-            $stmt->execute([$idMovimiento]);
-
-            // 3. Insertar productos nuevos/actualizados
-            foreach ($productos as $producto) {
-                $idContenedor = isset($producto['id_contenedor']) ? $producto['id_contenedor'] : null;
-                $idMovItemOrigen = isset($producto['id_movimientos_items_origen']) ? $producto['id_movimientos_items_origen'] : null;
-                $stmt = $this->db->prepare("
-                    INSERT INTO movimientos_items (
-                        id_movimientos, id_productos, cnt, cnt_peso,
-                        id_movimientos_items_origen, id_contenedor
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([
-                    $idMovimiento,
-                    $producto['id_productos'],
-                    $producto['cantidad'],
-                    $producto['peso'],
-                    $idMovItemOrigen,
-                    $idContenedor
-                ]);
-                $idMovimientoItem = $this->db->lastInsertId();
-
-                // Registrar el estado inicial (NUEVO)
-                $stmt = $this->db->prepare("
-                    INSERT INTO estados_items_movimientos (
-                        id_estados, id_movimientos_items, fecha_alta, usuario_alta
-                    ) VALUES (1, ?, NOW(), ?)
-                ");
-                $stmt->execute([$idMovimientoItem, $_SESSION['usuario'] ?? 'sistema']);
-            }
-
-            $this->db->commit();
-            return true;
-        } catch (\Exception $e) {
-            $this->db->rollBack();
-            throw $e;
-        }
-    }
+class Envio
+{
     private $db;
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->db = $db;
     }
 
-    public function crear($destino, $productos) {
+    public function crear($destino, $productos)
+    {
         try {
             $this->db->beginTransaction();
 
@@ -77,46 +26,40 @@ class Envio {
 
             // 2. Insertar los productos del envio
             foreach ($productos as $producto) {
-                if (isset($producto['id_movimientos_items_origen'])) {
-                    // EDICIÓN: Validar cantidad disponible ANTES de insertar
-                    $stmt = $this->db->prepare("
-                        SELECT 
-                            mi.cnt as cnt_original,
-                            (mi.cnt - IFNULL((
-                                SELECT IFNULL(SUM(mi2.cnt), 0)
-                                FROM movimientos_items mi2
-                                WHERE mi2.id_movimientos_items_origen = mi.id
-                            ), 0)) as cnt_disponible
-                        FROM movimientos_items mi
-                        WHERE mi.id = ?
-                    ");
-                    $stmt->execute([$producto['id_movimientos_items_origen']]);
-                    $disponibilidad = $stmt->fetch(\PDO::FETCH_ASSOC);
-                    
-                    if (!$disponibilidad) {
-                        throw new \Exception("Producto origen no encontrado: {$producto['id_movimientos_items_origen']}");
-                    }
-                    
-                    if ($producto['cantidad'] > $disponibilidad['cnt_disponible']) {
-                        throw new \Exception(
-                            "Cantidad solicitada ({$producto['cantidad']}) excede cantidad disponible ({$disponibilidad['cnt_disponible']})"
-                        );
-                    }
-                    
-                    // Obtener el contenedor del item origen
-                    $stmt = $this->db->prepare("
-                        SELECT id_contenedor FROM movimientos_items 
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([$producto['id_movimientos_items_origen']]);
-                    $itemOrigen = $stmt->fetch();
-                    $idContenedor = $itemOrigen ? $itemOrigen['id_contenedor'] : null;
-                    $idMovItemOrigen = $producto['id_movimientos_items_origen'];
-                } else {
-                    // ALTA NUEVA: No hay referencia, ni validación de stock ni contenedor
-                    $idContenedor = null;
-                    $idMovItemOrigen = null;
+                // Validar cantidad disponible ANTES de insertar
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        mi.cnt as cnt_original,
+                        (mi.cnt - IFNULL((
+                            SELECT IFNULL(SUM(mi2.cnt), 0)
+                            FROM movimientos_items mi2
+                            WHERE mi2.id_movimientos_items_origen = mi.id
+                        ), 0)) as cnt_disponible
+                    FROM movimientos_items mi
+                    WHERE mi.id = ?
+                ");
+                $stmt->execute([$producto['id_movimientos_items_origen']]);
+                $disponibilidad = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+                if (!$disponibilidad) {
+                    throw new \Exception("Producto origen no encontrado: {$producto['id_movimientos_items_origen']}");
                 }
+
+                if ($producto['cantidad'] > $disponibilidad['cnt_disponible']) {
+                    throw new \Exception(
+                        "Cantidad solicitada ({$producto['cantidad']}) excede cantidad disponible ({$disponibilidad['cnt_disponible']})"
+                    );
+                }
+
+                // Obtener el contenedor del item origen
+                $stmt = $this->db->prepare("
+                    SELECT id_contenedor FROM movimientos_items 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$producto['id_movimientos_items_origen']]);
+                $itemOrigen = $stmt->fetch();
+                $idContenedor = $itemOrigen ? $itemOrigen['id_contenedor'] : null;
+
                 // Insertar el item del movimiento
                 $stmt = $this->db->prepare("
                     INSERT INTO movimientos_items (
@@ -126,10 +69,10 @@ class Envio {
                 ");
                 $stmt->execute([
                     $idMovimiento,
-                    isset($producto['id_productos']) ? $producto['id_productos'] : null,
-                    isset($producto['cantidad']) ? $producto['cantidad'] : null,
-                    isset($producto['peso']) ? $producto['peso'] : null,
-                    $idMovItemOrigen,
+                    $producto['id_productos'],
+                    $producto['cantidad'],
+                    $producto['peso'],
+                    $producto['id_movimientos_items_origen'],
                     $idContenedor
                 ]);
                 $idMovimientoItem = $this->db->lastInsertId();
@@ -151,7 +94,8 @@ class Envio {
         }
     }
 
-    public function obtenerEnvios($filtros = []) {
+    public function obtenerEnvios($filtros = [])
+    {
         $sql = "
             SELECT DISTINCT
                 m.id,
@@ -174,16 +118,10 @@ class Envio {
             JOIN ubicaciones uo ON uo.id = m.id_ubicacion_origen
             JOIN ubicaciones ud ON ud.id = m.id_ubicacion_destino
             JOIN movimientos_items mi ON mi.id_movimientos = m.id
-            JOIN productos p ON p.id = mi.id_productos
             WHERE 1=1
         ";
 
         $params = [];
-
-        if (!empty($filtros['familia'])) {
-            $sql .= " AND p.id_tipo_producto = ?";
-            $params[] = $filtros['familia'];
-        }
 
         if (!empty($filtros['fechaDesde'])) {
             $sql .= " AND DATE(m.fechaAlta) >= ?";
@@ -223,7 +161,8 @@ class Envio {
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function obtenerDetalleEnvio($id) {
+    public function obtenerDetalleEnvio($id)
+    {
         // Obtener informacion del envio
         $stmt = $this->db->prepare("
             SELECT 
@@ -316,7 +255,8 @@ class Envio {
      * @return array Lista de productos disponibles con campos: id_movimiento_item, id_producto, 
      *               codigo, descripcion, cnt, cnt_peso, contenedor, peso_contenedor, peso_neto, etc.
      */
-    public function obtenerProductosDisponibles($filtros = []) {
+    public function obtenerProductosDisponibles($filtros = [])
+    {
         $sql = "
             SELECT 
                 mi.id as id_movimiento_item,
@@ -409,18 +349,21 @@ class Envio {
         }else{
             $sql .= " ORDER BY m.fechaAlta DESC";
         }
+
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function obtenerContenedores() {
+    public function obtenerContenedores()
+    {
         $stmt = $this->db->prepare("SELECT * FROM contenedores ORDER BY nombre");
         $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function exportarPDF($id = null, $filtros = []) {
+    public function exportarPDF($id = null, $filtros = [])
+    {
         require_once __DIR__ . '/../../vendor/autoload.php';
 
         try {
@@ -460,9 +403,9 @@ class Envio {
             }
 
             $mpdf->WriteHTML($html);
-            
+
             $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
-            
+
             // Verificar que el directorio temp existe y tiene permisos
             $dirTemp = dirname($rutaArchivo);
             if (!is_dir($dirTemp)) {
@@ -470,40 +413,40 @@ class Envio {
                     throw new \Exception("No se pudo crear el directorio temp/. Verifique los permisos del servidor.");
                 }
             }
-            
+
             // Verificar permisos de escritura
             if (!is_writable($dirTemp)) {
                 throw new \Exception("El directorio temp/ no tiene permisos de escritura. Permisos actuales: " . substr(sprintf('%o', fileperms($dirTemp)), -4));
             }
-            
+
             // Intentar guardar el PDF
             try {
                 $mpdf->Output($rutaArchivo, 'F');
             } catch (\Exception $e) {
                 throw new \Exception("Error al guardar el archivo PDF: " . $e->getMessage() . " - Verifique permisos en: " . $dirTemp);
             }
-            
+
             // Verificar que el archivo se creo correctamente
             if (!file_exists($rutaArchivo)) {
                 throw new \Exception("El archivo PDF no se genero. Ruta: " . $rutaArchivo);
             }
-            
+
             error_log("PDF Envio generado exitosamente: " . $rutaArchivo . " (" . filesize($rutaArchivo) . " bytes)");
-            
+
             return 'temp/' . $nombreArchivo;
-            
         } catch (\Mpdf\MpdfException $e) {
             error_log("Error especifico de mPDF: " . $e->getMessage());
             throw new \Exception("Error en la generacion PDF: " . $e->getMessage());
         } catch (\Exception $e) {
             error_log("Error general PDF: " . $e->getMessage());
             error_log("Archivo: " . $e->getFile() . " Linea: " . $e->getLine());
-            
+
             throw new \Exception("Error al generar PDF: " . $e->getMessage());
         }
     }
 
-    public function exportarExcel($id = null, $filtros = []) {
+    public function exportarExcel($id = null, $filtros = [])
+    {
         require_once __DIR__ . '/../../vendor/autoload.php';
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -522,14 +465,15 @@ class Envio {
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $rutaArchivo = __DIR__ . '/../../../temp/' . $nombreArchivo;
         $writer->save($rutaArchivo);
-        
+
         return 'temp/' . $nombreArchivo;
     }
 
-    private function generarHTMLLista($envios) {
+    private function generarHTMLLista($envios)
+    {
         $totalEnvios = count($envios);
         $fechaGeneracion = date('d/m/Y H:i');
-        
+
         $html = '
         <style>
             body { 
@@ -628,18 +572,18 @@ class Envio {
                 </tr>
             </thead>
             <tbody>';
-        
+
         $pesoTotalGeneral = 0;
         $itemsTotalGeneral = 0;
-        
+
         foreach ($envios as $envio) {
             $fechaFormateada = date('d/m/Y', strtotime($envio['fechaAlta']));
             $horaFormateada = date('H:i', strtotime($envio['fechaAlta']));
             $estadoClass = 'estado-' . strtolower(str_replace(' ', '-', $envio['ultimo_estado']));
-            
+
             $pesoTotalGeneral += floatval($envio['peso_total']);
             $itemsTotalGeneral += intval($envio['cantidad_items']);
-            
+
             $html .= "
                 <tr>
                     <td style='font-weight: bold; text-align: center;'>" . str_pad($envio['id'], 6, '0', STR_PAD_LEFT) . "</td>
@@ -651,7 +595,7 @@ class Envio {
                     <td style='text-align: right;'>" . number_format($envio['peso_total'], 2) . " kg</td>
                 </tr>";
         }
-        
+
         $html .= '</tbody></table>
         
         <div class="summary">
@@ -664,19 +608,20 @@ class Envio {
         <div class="footer">
             <p>Reporte generado automaticamente por Sistema Mikelo - ' . $fechaGeneracion . '</p>
         </div>';
-        
+
         return $html;
     }
 
-    private function generarHTMLDetalle($data) {
+    private function generarHTMLDetalle($data)
+    {
         $envio = $data['envio'];
         $productos = $data['productos'];
-        
+
         // Calcular totales
         $totalItems = count($productos);
         $pesoTotal = array_sum(array_column($productos, 'cnt_peso'));
         $fechaFormateada = date('d/m/Y', strtotime($envio['fechaAlta']));
-        
+
         $html = '
         <style>
             body { 
@@ -839,7 +784,7 @@ class Envio {
                 </tr>
             </thead>
             <tbody>';
-        
+
         foreach ($productos as $index => $producto) {
             $html .= "
                 <tr>
@@ -851,7 +796,7 @@ class Envio {
                     <td style='text-align: right;'>" . number_format($producto['peso_neto'], 2) . " kg</td>
                 </tr>";
         }
-        
+
         // Rellenar filas vacias si hay menos de 8 productos (para mantener estructura)
         for ($i = count($productos); $i < 8; $i++) {
             $html .= "
@@ -864,7 +809,7 @@ class Envio {
                     <td>&nbsp;</td>
                 </tr>";
         }
-        
+
         $html .= '
             </tbody>
         </table>
@@ -896,32 +841,33 @@ class Envio {
         <div class="footer">
             <p>Documento generado automaticamente por Sistema Mikelo - ' . date('d/m/Y H:i') . '</p>
         </div>';
-        
+
         return $html;
     }
 
-    private function generarExcelLista($sheet, $envios) {
+    private function generarExcelLista($sheet, $envios)
+    {
         $sheet->setTitle('Reporte de Envios');
-        
+
         // Encabezado de la empresa
         $sheet->setCellValue('A1', 'MIKELO - Sistema de Gestion de Helados');
         $sheet->mergeCells('A1:G1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        
+
         $sheet->setCellValue('A2', 'REPORTE DE ENVIOS');
         $sheet->mergeCells('A2:G2');
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        
+
         $sheet->setCellValue('A3', 'Generado el: ' . date('d/m/Y H:i'));
         $sheet->mergeCells('A3:G3');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        
+
         // Encabezados
         $headers = ['Ndeg Envio', 'Fecha', 'Hora', 'Origen', 'Destino', 'Estado', 'Items', 'Peso Total (kg)'];
         $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-        
+
         $headerRow = 5;
         foreach ($headers as $index => $header) {
             $sheet->setCellValue($cols[$index] . $headerRow, $header);
@@ -930,50 +876,50 @@ class Envio {
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                 ->getStartColor()->setRGB('CCCCCC');
         }
-        
+
         // Datos
         $row = 6;
         $totalItems = 0;
         $totalPeso = 0;
-        
+
         foreach ($envios as $envio) {
-            $sheet->setCellValue('A'.$row, str_pad($envio['id'], 6, '0', STR_PAD_LEFT));
-            $sheet->setCellValue('B'.$row, date('d/m/Y', strtotime($envio['fechaAlta'])));
-            $sheet->setCellValue('C'.$row, date('H:i', strtotime($envio['fechaAlta'])));
-            $sheet->setCellValue('D'.$row, $envio['origen']);
-            $sheet->setCellValue('E'.$row, $envio['destino']);
-            $sheet->setCellValue('F'.$row, $envio['ultimo_estado']);
-            $sheet->setCellValue('G'.$row, $envio['cantidad_items']);
-            $sheet->setCellValue('H'.$row, number_format($envio['peso_total'], 3));
-            
+            $sheet->setCellValue('A' . $row, str_pad($envio['id'], 6, '0', STR_PAD_LEFT));
+            $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($envio['fechaAlta'])));
+            $sheet->setCellValue('C' . $row, date('H:i', strtotime($envio['fechaAlta'])));
+            $sheet->setCellValue('D' . $row, $envio['origen']);
+            $sheet->setCellValue('E' . $row, $envio['destino']);
+            $sheet->setCellValue('F' . $row, $envio['ultimo_estado']);
+            $sheet->setCellValue('G' . $row, $envio['cantidad_items']);
+            $sheet->setCellValue('H' . $row, number_format($envio['peso_total'], 2));
+
             $totalItems += intval($envio['cantidad_items']);
             $totalPeso += floatval($envio['peso_total']);
-            
+
             // Colorear estado
             switch (strtolower($envio['ultimo_estado'])) {
                 case 'nuevo':
-                    $sheet->getStyle('F'.$row)->getFont()->getColor()->setRGB('2196F3');
+                    $sheet->getStyle('F' . $row)->getFont()->getColor()->setRGB('2196F3');
                     break;
                 case 'enviado':
-                    $sheet->getStyle('F'.$row)->getFont()->getColor()->setRGB('4CAF50');
+                    $sheet->getStyle('F' . $row)->getFont()->getColor()->setRGB('4CAF50');
                     break;
                 case 'cancelado':
-                    $sheet->getStyle('F'.$row)->getFont()->getColor()->setRGB('F44336');
+                    $sheet->getStyle('F' . $row)->getFont()->getColor()->setRGB('F44336');
                     break;
             }
-            
+
             $row++;
         }
-        
+
         // Totales
         $row += 2;
-        $sheet->setCellValue('E'.$row, 'TOTALES:');
-        $sheet->getStyle('E'.$row)->getFont()->setBold(true);
-        $sheet->setCellValue('F'.$row, count($envios) . ' envios');
-        $sheet->setCellValue('G'.$row, $totalItems . ' items');
-        $sheet->setCellValue('H'.$row, number_format($totalPeso, 2) . ' kg');
-        $sheet->getStyle('E'.$row.':H'.$row)->getFont()->setBold(true);
-        
+        $sheet->setCellValue('E' . $row, 'TOTALES:');
+        $sheet->getStyle('E' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('F' . $row, count($envios) . ' envios');
+        $sheet->setCellValue('G' . $row, $totalItems . ' items');
+        $sheet->setCellValue('H' . $row, number_format($totalPeso, 2) . ' kg');
+        $sheet->getStyle('E' . $row . ':H' . $row)->getFont()->setBold(true);
+
         // Autoajustar columnas
         $sheet->getColumnDimension('A')->setWidth(12);
         $sheet->getColumnDimension('B')->setWidth(15);
@@ -983,7 +929,7 @@ class Envio {
         $sheet->getColumnDimension('F')->setWidth(15);
         $sheet->getColumnDimension('G')->setWidth(10);
         $sheet->getColumnDimension('H')->setWidth(18);
-        
+
         // Agregar bordes
         $styleArray = [
             'borders' => [
@@ -996,27 +942,28 @@ class Envio {
         $sheet->getStyle('A5:H' . ($row - 3))->applyFromArray($styleArray);
     }
 
-    private function generarExcelDetalle($sheet, $data) {
+    private function generarExcelDetalle($sheet, $data)
+    {
         $envio = $data['envio'];
         $productos = $data['productos'];
-        
+
         $sheet->setTitle('Remito ' . str_pad($envio['id'], 6, '0', STR_PAD_LEFT));
-        
+
         // Encabezado de la empresa
         $sheet->setCellValue('A1', 'MIKELO - Sistema de Gestion de Helados');
         $sheet->mergeCells('A1:F1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        
+
         $sheet->setCellValue('A2', 'REMITO Nro ' . str_pad($envio['id'], 8, '0', STR_PAD_LEFT));
         $sheet->mergeCells('A2:F2');
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        
+
         // Informacion del envio
         $sheet->setCellValue('A4', 'INFORMACION DEL ENVIO');
         $sheet->getStyle('A4')->getFont()->setBold(true);
-        
+
         $sheet->setCellValue('A5', 'Fecha:');
         $sheet->setCellValue('B5', date('d/m/Y H:i', strtotime($envio['fechaAlta'])));
         $sheet->setCellValue('A6', 'Origen:');
@@ -1027,12 +974,12 @@ class Envio {
         $sheet->setCellValue('B8', $envio['ultimo_estado'] ?? 'N/A');
         $sheet->setCellValue('A9', 'Usuario:');
         $sheet->setCellValue('B9', $envio['usuario_alta'] ?? 'Sistema');
-        
+
         // Encabezados de productos
         $row = 11;
         $headers = ['Codigo', 'Descripcion', 'Cantidad', 'Contenedor', 'Peso Bruto (kg)', 'Peso Neto (kg)'];
         $cols = ['A', 'B', 'C', 'D', 'E', 'F'];
-        
+
         foreach ($headers as $index => $header) {
             $sheet->setCellValue($cols[$index] . $row, $header);
             $sheet->getStyle($cols[$index] . $row)->getFont()->setBold(true);
@@ -1040,7 +987,7 @@ class Envio {
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                 ->getStartColor()->setRGB('CCCCCC');
         }
-        
+
         // Datos de productos
         $row++;
         foreach ($productos as $producto) {
@@ -1048,21 +995,21 @@ class Envio {
             $sheet->setCellValue('B' . $row, $producto['descripcion']);
             $sheet->setCellValue('C' . $row, $producto['cnt']);
             $sheet->setCellValue('D' . $row, $producto['contenedor'] ?: '-');
-            $sheet->setCellValue('E' . $row, number_format($producto['cnt_peso'], 3));
-            $sheet->setCellValue('F' . $row, number_format($producto['peso_neto'], 3));
+            $sheet->setCellValue('E' . $row, number_format($producto['cnt_peso'], 2));
+            $sheet->setCellValue('F' . $row, number_format($producto['peso_neto'], 2));
             $row++;
         }
-        
+
         // Totales
         $totalItems = count($productos);
         $pesoTotal = array_sum(array_column($productos, 'cnt_peso'));
-        
+
         $row += 2;
         $sheet->setCellValue('D' . $row, 'TOTALES:');
         $sheet->getStyle('D' . $row)->getFont()->setBold(true);
         $sheet->setCellValue('E' . $row, 'Items: ' . $totalItems);
         $sheet->setCellValue('F' . $row, 'Peso: ' . number_format($pesoTotal, 2) . ' kg');
-        
+
         // Ajustar anchos de columna
         $sheet->getColumnDimension('A')->setWidth(15);
         $sheet->getColumnDimension('B')->setWidth(40);
@@ -1070,7 +1017,7 @@ class Envio {
         $sheet->getColumnDimension('D')->setWidth(20);
         $sheet->getColumnDimension('E')->setWidth(15);
         $sheet->getColumnDimension('F')->setWidth(15);
-        
+
         // Agregar bordes
         $styleArray = [
             'borders' => [
@@ -1083,7 +1030,8 @@ class Envio {
         $sheet->getStyle('A10:F' . ($row - 3))->applyFromArray($styleArray);
     }
 
-    public function confirmarEnvio($idEnvio) {
+    public function confirmarEnvio($idEnvio)
+    {
         try {
             $this->db->beginTransaction();
 
@@ -1113,7 +1061,8 @@ class Envio {
         }
     }
 
-    public function cancelarEnvio($idEnvio, $motivo) {
+    public function cancelarEnvio($idEnvio, $motivo)
+    {
         try {
             $this->db->beginTransaction();
 
@@ -1139,7 +1088,7 @@ class Envio {
 
             // SOLUCIIN IPTIMA: En lugar de eliminar registros, limpiar las referencias
             // Esto mantiene el historial completo pero libera los productos al stock
-            
+
             // Para cada item del envio cancelado, limpiar su id_movimientos_items_origen
             // Esto hace que el producto original vuelva a estar disponible
             $stmt = $this->db->prepare("
@@ -1162,7 +1111,8 @@ class Envio {
         }
     }
 
-    private function generarHTMLListaMinimal($envios) {
+    private function generarHTMLListaMinimal($envios)
+    {
         if (!is_array($envios) || empty($envios)) {
             return '<h1>Lista de Envios</h1><p>No hay envios para mostrar.</p>';
         }
@@ -1191,11 +1141,11 @@ class Envio {
         </style>
         
         <div class="header">';
-        
+
         if ($logoBase64) {
             $html .= '<img src="' . $logoBase64 . '" class="logo" alt="Logo">';
         }
-        
+
         $html .= '
             <div class="title">Lista de Envios</div>
             <div class="fecha-generacion">Generado el: ' . date('d/m/Y H:i') . '</div>
@@ -1214,12 +1164,12 @@ class Envio {
                 </tr>
             </thead>
             <tbody>';
-        
+
         foreach ($envios as $envio) {
             if (!is_array($envio)) continue;
-            
+
             $fecha = isset($envio['fechaAlta']) ? date('d/m/Y', strtotime($envio['fechaAlta'])) : 'N/A';
-            
+
             $html .= '<tr>';
             $html .= '<td class="numero">' . htmlspecialchars($envio['id'] ?? 'N/A') . '</td>';
             $html .= '<td class="numero">' . htmlspecialchars($fecha) . '</td>';
@@ -1230,10 +1180,10 @@ class Envio {
             $html .= '<td class="peso">' . number_format($envio['peso_total'] ?? 0, 2) . ' kg</td>';
             $html .= '</tr>';
         }
-        
+
         $totalEnvios = count($envios);
         $pesoTotal = array_sum(array_column($envios, 'peso_total'));
-        
+
         $html .= '
             </tbody>
             <tfoot>
@@ -1249,18 +1199,19 @@ class Envio {
             Sistema Mikelo - Gestion de Inventario de Helados<br>
             Documento generado automaticamente
         </div>';
-        
+
         return $html;
     }
 
-    private function generarHTMLDetalleMinimal($data) {
+    private function generarHTMLDetalleMinimal($data)
+    {
         if (!is_array($data) || !isset($data['envio']) || !isset($data['productos'])) {
             return '<h1>Error</h1><p>Datos de envio no validos.</p>';
         }
 
         $envio = $data['envio'];
         $productos = $data['productos'];
-        
+
         // Convertir logo a base64
         $logoPath = __DIR__ . '/../../../img/logo_optimized.png';
         $logoBase64 = '';
@@ -1289,11 +1240,11 @@ class Envio {
         </style>
         
         <div class="header">';
-        
+
         if ($logoBase64) {
             $html .= '<img src="' . $logoBase64 . '" class="logo" alt="Logo">';
         }
-        
+
         $html .= '
             <div class="title">REMITO DE ENVIO #' . htmlspecialchars($envio['id'] ?? 'N/A') . '</div>
         </div>
@@ -1315,7 +1266,7 @@ class Envio {
         </div>
         
         <div class="subtitle">Detalle de Productos</div>';
-        
+
         if (!is_array($productos) || empty($productos)) {
             $html .= '<p>No hay productos en este envio.</p>';
         } else {
@@ -1333,32 +1284,32 @@ class Envio {
                     </tr>
                 </thead>
                 <tbody>';
-            
+
             $totalItems = 0;
             $pesoBrutoTotal = 0;
             $pesoContenedorTotal = 0;
             $pesoNetoTotal = 0;
-            
+
             foreach ($productos as $producto) {
                 if (!is_array($producto)) continue;
-                
+
                 $cantidad = $producto['cnt'] ?? 0;
                 $pesoBruto = $producto['cnt_peso'] ?? 0;
                 $pesoContenedor = $producto['peso_contenedor'] ?? 0;
                 $pesoNeto = $producto['peso_neto'] ?? $pesoBruto;
                 $contenedor = $producto['contenedor'] ?? '-';
-                
+
                 // Si el peso neto es negativo, usar el peso bruto
                 if ($pesoNeto < 0) {
                     $pesoNeto = $pesoBruto;
                     $pesoContenedor = 0; // Resetear peso contenedor si da negativo
                 }
-                
+
                 $totalItems += $cantidad;
                 $pesoBrutoTotal += $pesoBruto;
                 $pesoContenedorTotal += $pesoContenedor;
                 $pesoNetoTotal += $pesoNeto;
-                
+
                 $html .= '<tr>';
                 $html .= '<td class="numero">' . htmlspecialchars($producto['codigo'] ?? 'N/A') . '</td>';
                 $html .= '<td>' . htmlspecialchars($producto['descripcion'] ?? 'N/A') . '</td>';
@@ -1369,7 +1320,7 @@ class Envio {
                 $html .= '<td class="peso">' . number_format($pesoNeto, 3) . ' kg</td>';
                 $html .= '</tr>';
             }
-            
+
             $html .= '
                 </tbody>
                 <tfoot>
@@ -1384,21 +1335,22 @@ class Envio {
                 </tfoot>
             </table>';
         }
-        
+
         $html .= '
         <div class="footer">
             Sistema Mikelo - Gestion de Inventario de Helados<br>
             Remito generado el ' . date('d/m/Y H:i') . '<br>
             Documento valido para control de envios
         </div>';
-        
+
         return $html;
     }
 
     /**
      * Exportar remito preimpreso en PDF (guarda en temp/ como los otros reportes)
      */
-    public function exportarPDFPreimpreso($id = null, $filtros = []) {
+    public function exportarPDFPreimpreso($id = null, $filtros = [])
+    {
         require_once __DIR__ . '/../../vendor/autoload.php';
 
         try {
@@ -1435,7 +1387,6 @@ class Envio {
             $mpdf->Output($rutaArchivo, 'F');
 
             return 'temp/' . $nombreArchivo;
-
         } catch (\Exception $e) {
             error_log("Error al generar PDF preimpreso: " . $e->getMessage());
             throw new \Exception("Error al generar PDF: " . $e->getMessage());
@@ -1468,23 +1419,24 @@ class Envio {
      * Si el envio tiene mas productos que PRODUCTOS_MAX_POR_HOJA, se generan
      * multiples paginas con el mismo header/footer y numeracion "Hoja X de Y"
      */
-    public function generarHTMLRemitoPreimpreso($idMovimiento) {
+    public function generarHTMLRemitoPreimpreso($idMovimiento)
+    {
         // ========== CONFIGURACION DE PAGINACION ==========
         // AJUSTAR ESTE VALOR segun espacio disponible en papel preimpreso
         $PRODUCTOS_MAX_POR_HOJA = 25;
-        
+
         // ========== CONFIGURACION DE POSICIONES (en mm) ==========
         $POS_CLIENTE_TOP = 60;      // Distancia desde arriba a banda cliente
         $POS_CLIENTE_ALTO = 15;     // Alto de banda cliente
         $POS_TABLA_TOP = 95;        // Distancia desde arriba a tabla productos
         $POS_FOOTER_BOTTOM = 30;    // Distancia desde abajo a footer gris
-        $POS_DATOS_BOTTOM = 25;     // Distancia desde abajo a datos remito (subir 2 renglones)
-        
+        $POS_DATOS_BOTTOM = 10;     // Distancia desde abajo a datos remito
+
         // ========== CONFIGURACION DE TABLA ==========
-$TABLA_FONT_SIZE = '8pt';        // Achicar letra
-$TABLA_PADDING = '0.5mm 1mm';    // Menos espacio vertical
-$TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
-        
+        $TABLA_FONT_SIZE = '7pt';   // Tamano fuente tabla (7pt para compactar)
+        $TABLA_PADDING = '0.5mm 0.5mm'; // Padding celdas (reducido para mas filas)
+        $TABLA_HEADER_ALTO = '6mm'; // Alto encabezado tabla
+
         // Obtener datos del envio
         $stmt = $this->db->prepare("
             SELECT 
@@ -1547,16 +1499,16 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             $pesoBruto = floatval($producto['peso_bruto']);
             $pesoContenedor = floatval($producto['peso_contenedor'] ?? 0);
             $pesoNeto = $pesoBruto - $pesoContenedor;
-            
+
             // Agregar peso neto al array
             $producto['peso_neto'] = $pesoNeto;
-            
+
             $pesoTotalBruto += $pesoBruto;
             $pesoTotalNeto += $pesoNeto;
             $cantidadTotal += floatval($producto['cnt']);
         }
         unset($producto); // Romper referencia
-        
+
         // Calcular paginacion
         $totalProductos = count($productos);
         $totalPaginas = ceil($totalProductos / $PRODUCTOS_MAX_POR_HOJA);
@@ -1572,29 +1524,27 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
                 }
                 body { 
                     font-family: Arial, sans-serif; 
-                    margin: 0 15mm; 
+                    margin: 0 10mm; 
                     padding: 0;
                     box-sizing: border-box;
                 }
                 .cliente-info {
                     position: absolute;
                     top: ' . $POS_CLIENTE_TOP . 'mm;
-                    left: 15mm;
-                    right: 15mm;
+                    left: 10mm;
+                    right: 10mm;
                     height: ' . $POS_CLIENTE_ALTO . 'mm;
                     background-color: #f0f0f0;
-                    padding: 3mm 5mm;
+                    padding: 2mm 5mm;
                     box-sizing: border-box;
                     font-size: 11pt;
-                    line-height: 1.3;
-                    border: 1px solid #999;
-                    overflow: hidden;
+                    line-height: 1.2;
                 }
                 .tabla-productos {
                     position: absolute;
                     top: ' . $POS_TABLA_TOP . 'mm;
-                    left: 15mm;
-                    right: 15mm;
+                    left: 10mm;
+                    right: 10mm;
                     font-size: ' . $TABLA_FONT_SIZE . ';
                 }
                 .tabla-productos table {
@@ -1621,15 +1571,15 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
                 .footer-info {
                     position: absolute;
                     bottom: ' . $POS_FOOTER_BOTTOM . 'mm;
-                    left: 15mm;
-                    right: 15mm;
+                    left: 10mm;
+                    right: 10mm;
                     height: 15mm;
                     background-color: #f0f0f0;
                 }
                 .remito-datos {
                     position: absolute;
                     bottom: ' . $POS_DATOS_BOTTOM . 'mm;
-                    right: 15mm;
+                    right: 10mm;
                     font-size: 8pt;
                     color: #666;
                 }
@@ -1639,25 +1589,25 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             </style>
         </head>
         <body>';
-        
+
         // ========== GENERAR PAGINAS ==========
         $paginaActual = 1;
-        
+
         foreach ($paginasProductos as $productosPagina) {
             // Si no es la primera pagina, agregar salto de pagina
             if ($paginaActual > 1) {
                 $html .= '<div class="page-break"></div>';
             }
-            
+
             // 1. Banda de informacion del cliente
             $html .= '<div class="cliente-info">';
             $html .= '<b>' . htmlspecialchars($movimiento['razon_social'] ?: $movimiento['ubicacion_destino']) . '</b>';
-            
+
             // Agregar estado del envio
             if (isset($movimiento['estado_actual'])) {
                 $html .= ' - <b>Estado: ' . htmlspecialchars($movimiento['estado_actual']) . '</b>';
             }
-            
+
             $html .= '<br>';
             if ($movimiento['domicilio']) {
                 $html .= '<span style="font-size:10pt">';
@@ -1673,11 +1623,11 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             $html .= '<table>';
             $html .= '<thead>';
             $html .= '<tr>';
-            $html .= '<th style="width:40%; text-align:left;">Descripcion</th>';
+            $html .= '<th style="width:35%;">Descripcion</th>';
             $html .= '<th style="width:20%;">Contenedor</th>';
-            $html .= '<th style="width:13%; text-align:center;">Cantidad</th>';
-            $html .= '<th style="width:13%; text-align:center;">P. Bruto</th>';
-            $html .= '<th style="width:14%; text-align:center;">P. Neto</th>';
+            $html .= '<th style="width:15%; text-align:center;">Cantidad</th>';
+            $html .= '<th style="width:15%; text-align:center;">P. Bruto</th>';
+            $html .= '<th style="width:15%; text-align:center;">P. Neto</th>';
             $html .= '</tr>';
             $html .= '</thead>';
             $html .= '<tbody>';
@@ -1685,19 +1635,12 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             // Productos de esta pagina
             foreach ($productosPagina as $producto) {
                 $cantidad = number_format($producto['cnt'], 0, ',', '.');
-                
-                // Si peso es cero, dejar celda vacia
-                $pesoBruto = ($producto['peso_bruto'] > 0) 
-                    ? number_format($producto['peso_bruto'], 3, ',', '.') 
-                    : '';
-                $pesoNeto = ($producto['peso_neto'] > 0) 
-                    ? number_format($producto['peso_neto'], 3, ',', '.') 
-                    : '';
-                
+                $pesoBruto = number_format($producto['peso_bruto'], 3, ',', '.');
+                $pesoNeto = number_format($producto['peso_neto'], 3, ',', '.');
                 $contenedor = $producto['contenedor'] ?: '-';
-                
+
                 $html .= '<tr>';
-                $html .= '<td style="text-align:left;">' . htmlspecialchars($producto['descripcion']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($producto['descripcion']) . '</td>';
                 $html .= '<td>' . htmlspecialchars($contenedor) . '</td>';
                 $html .= '<td style="text-align:center;">' . $cantidad . '</td>';
                 $html .= '<td style="text-align:right;">' . $pesoBruto . '</td>';
@@ -1714,7 +1657,7 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
                 $html .= '<td style="text-align:right;">' . number_format($pesoTotalNeto, 3, ',', '.') . '</td>';
                 $html .= '</tr>';
             }
-            
+
             $html .= '</tbody></table></div>';
 
             // 3. Franja gris del pie de pagina
@@ -1724,19 +1667,18 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             $html .= '<div class="remito-datos">';
             $html .= 'Remito Nro: ' . str_pad($idMovimiento, 8, '0', STR_PAD_LEFT);
             $html .= ' - Fecha: ' . date('d/m/Y', strtotime($movimiento['fechaAlta']));
-            
+
             // Agregar numero de pagina si hay multiples paginas
             if ($totalPaginas > 1) {
                 $html .= ' - Hoja ' . $paginaActual . ' de ' . $totalPaginas;
             }
-            
+
             $html .= '</div>';
-            
+
             $paginaActual++;
         }
 
         $html .= '</body></html>';
         return $html;
     }
-
 }

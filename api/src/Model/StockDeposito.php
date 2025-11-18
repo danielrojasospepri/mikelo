@@ -27,6 +27,11 @@ class StockDeposito {
         $params = [];
 
         // Aplicar filtros
+        if (!empty($filtros['familia'])) {
+            $whereConditions[] = "p.id_tipo_producto = ?";
+            $params[] = $filtros['familia'];
+        }
+
         if (!empty($filtros['producto'])) {
             $whereConditions[] = "(p.codigo LIKE ? OR p.descripcion LIKE ?)";
             $searchTerm = '%' . $filtros['producto'] . '%';

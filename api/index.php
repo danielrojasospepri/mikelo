@@ -24,7 +24,7 @@ use App\Controller\ContenedorController;
 
 $app = AppFactory::create();
 // $app->setBasePath('/api');
-$app->setBasePath('/mikelo/api');
+$app->setBasePath('/test/api');
 $app->addBodyParsingMiddleware();
 
 // Agregar middleware para debug de rutas
@@ -123,6 +123,25 @@ $app->get('/contenedores/codigos-barras', function (Request $request, Response $
 $app->get('/contenedores/codigos-barras/pdf', function (Request $request, Response $response) use ($db) {
     $controller = new ContenedorController($db);
     return $controller->generarPDFCodigosBarras($request, $response);
+});
+
+$app->get('/tipos-producto', function (Request $request, Response $response) use ($db) {
+    try {
+        $stmt = $db->prepare("SELECT id, nombre, descripcion FROM tipo_producto ORDER BY nombre");
+        $stmt->execute();
+        $tipos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return responseJson($response, [
+            'success' => true,
+            'data' => $tipos
+        ]);
+    } catch (Exception $e) {
+        error_log("Error en /tipos-producto: " . $e->getMessage());
+        return responseJson($response, [
+            'success' => false,
+            'error' => 'Error al obtener tipos de producto: ' . $e->getMessage()
+        ], 500);
+    }
 });
 
 $app->post('/movimientos', function (Request $request, Response $response) use ($db) {
@@ -251,9 +270,29 @@ $app->get('/envios/{id}/pdf', function (Request $request, Response $response, $a
     return $controller->exportarPDF($request, $response, $args);
 });
 
+// Ruta para remito preimpreso
+$app->get('/envios/{id}/pdf-preimpreso', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->exportarPDFPreimpreso($request, $response, $args);
+});
+
+// Ruta para cancelar envío
+$app->post('/envios/{id}/cancelar', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new EnvioController($db);
+    return $controller->cancelarEnvio($request, $response, $args);
+});
+
 $app->get('/envios/{id}/excel', function (Request $request, Response $response, $args) use ($db) {
     $controller = new EnvioController($db);
     return $controller->exportarExcel($request, $response, $args);
+});
+
+// DEBUG: Ver HTML del remito preimpreso
+$app->get('/envios/{id}/html-preimpreso', function (Request $request, Response $response, $args) use ($db) {
+    $envio = new \App\Model\Envio($db);
+    $html = $envio->generarHTMLRemitoPreimpreso($args['id']);
+    $response->getBody()->write($html);
+    return $response->withHeader('Content-Type', 'text/html; charset=utf-8');
 });
 
 // Rutas para confirmar y cancelar envíos

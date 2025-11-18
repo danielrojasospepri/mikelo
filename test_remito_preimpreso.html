@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Remito Preimpreso</title>
+</head>
+<body>
+    <h1>Prueba de Remito Preimpreso</h1>
+    <p>Abrir en el navegador: <a href="http://localhost/mikelo/api/envios/1/pdf-preimpreso" target="_blank">Generar Remito Envío #1</a></p>
+    <p>Si hay un error, revisar la consola del navegador y los logs de PHP.</p>
+    
+    <hr>
+    <h2>Checklist de Implementación:</h2>
+    <ul>
+        <li>✅ Script SQL ejecutado (campos ya existen en tabla ubicaciones)</li>
+        <li>✅ Método generarHTMLRemitoPreimpreso() agregado en Envio.php</li>
+        <li>✅ Método generarPDFPreimpreso() agregado en EnvioController.php</li>
+        <li>✅ Ruta /envios/{id}/pdf-preimpreso agregada en api/index.php</li>
+        <li>✅ Función exportarRemitoPreimpreso() agregada en envios.js</li>
+        <li>✅ Botón amarillo agregado en tabla de envíos</li>
+    </ul>
+    
+    <hr>
+    <h2>Siguientes Pasos:</h2>
+    <ol>
+        <li>Actualizar datos de ubicación destino con información completa:
+            <pre>
+UPDATE ubicaciones 
+SET 
+    razon_social = 'SANTOS NESTOR MIGUEL',
+    domicilio = 'DE SAN LORENZO 162',
+    localidad = 'NEUQUEN',
+    codigo_postal = '8300',
+    provincia = 'Neuquén',
+    cuit = '20-30042937-9',
+    condicion_iva = 'Responsable Inscripto'
+WHERE id = 2; -- Ajustar según el ID de tu ubicación destino
+            </pre>
+        </li>
+        <li>Probar generando un envío y luego hacer clic en el botón amarillo de impresora</li>
+        <li>Ajustar CSS si las posiciones no coinciden perfectamente con el papel preimpreso</li>
+        <li>Imprimir sobre papel preimpreso STARK IND para verificar alineación</li>
+    </ol>
+    
+    <hr>
+    <h2>Especificaciones del Diseño:</h2>
+    <ul>
+        <li><strong>Formato:</strong> A4 Portrait (210mm x 297mm)</li>
+        <li><strong>Encabezado preimpreso:</strong> 0-60mm (no imprime sistema)</li>
+        <li><strong>Datos cliente (franja gris):</strong> 60-75mm</li>
+        <li><strong>Envío N° y Fecha:</strong> 78mm</li>
+        <li><strong>Encabezados tabla (franja gris):</strong> 95-105mm</li>
+        <li><strong>Productos:</strong> 105-252mm</li>
+        <li><strong>Firma (franja gris):</strong> 252-267mm</li>
+        <li><strong>Pie preimpreso:</strong> 267-297mm (no imprime sistema)</li>
+        <li><strong>Márgenes laterales:</strong> 10mm cada lado</li>
+    </ul>
+</body>
+</html>

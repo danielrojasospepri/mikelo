@@ -26,7 +26,7 @@ class EnvioController {
             return responseJson($response, [
                 'success' => true,
                 'id' => $envioId,
-                'mensaje' => 'Envío creado exitosamente'
+                'mensaje' => 'EnvÃ­o creado exitosamente'
             ], 201);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);
@@ -36,9 +36,10 @@ class EnvioController {
     public function listar(Request $request, Response $response) {
         $params = $request->getQueryParams();
         $filtros = [
-            'fechaDesde' => $params['fechaDesde'] ?? null,
-            'fechaHasta' => $params['fechaHasta'] ?? null,
-            'destino' => $params['destino'] ?? null,
+            'familia' => $params['familia'] ?? null,
+            'fechaDesde' => $params['fechaDesde'] ?? $params['fecha_desde'] ?? null,
+            'fechaHasta' => $params['fechaHasta'] ?? $params['fecha_hasta'] ?? null,
+            'destino' => $params['destino'] ?? $params['ubicacion_destino'] ?? null,
             'estado' => $params['estado'] ?? null
         ];
 
@@ -126,7 +127,7 @@ class EnvioController {
             // Leer y enviar archivo
             $response->getBody()->write(file_get_contents($rutaCompleta));
             
-            // Opcional: eliminar archivo temporal después de enviarlo
+            // Opcional: eliminar archivo temporal despuÃ©s de enviarlo
             // unlink($rutaCompleta);
             
             return $response;
@@ -164,6 +165,44 @@ class EnvioController {
             // Leer y enviar archivo
             $response->getBody()->write(file_get_contents($rutaCompleta));
             
+            // Opcional: eliminar archivo temporal despuÃ©s de enviarlo
+            // unlink($rutaCompleta);
+            
+            return $response;
+        } catch (\Exception $e) {
+            return responseJson($response, ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarPDFPreimpreso(Request $request, Response $response, $args) {
+        $params = $request->getQueryParams();
+        $id = $args['id'] ?? null;
+        $filtros = [
+            'fechaDesde' => $params['fechaDesde'] ?? null,
+            'fechaHasta' => $params['fechaHasta'] ?? null,
+            'destino' => $params['destino'] ?? null,
+            'estado' => $params['estado'] ?? null
+        ];
+
+        try {
+            $rutaRelativa = $this->envio->exportarPDFPreimpreso($id, $filtros);
+            $rutaCompleta = __DIR__ . '/../../../' . $rutaRelativa;
+            
+            if (!file_exists($rutaCompleta)) {
+                return responseJson($response, ['error' => 'Archivo no encontrado'], 404);
+            }
+
+            $nombreArchivo = basename($rutaRelativa);
+            
+            // Configurar headers para mostrar el PDF en el navegador
+            $response = $response
+                ->withHeader('Content-Type', 'application/pdf')
+                ->withHeader('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"')
+                ->withHeader('Content-Length', filesize($rutaCompleta));
+
+            // Leer y enviar archivo
+            $response->getBody()->write(file_get_contents($rutaCompleta));
+            
             // Opcional: eliminar archivo temporal después de enviarlo
             // unlink($rutaCompleta);
             
@@ -180,7 +219,7 @@ class EnvioController {
             $this->envio->confirmarEnvio($id);
             return responseJson($response, [
                 'success' => true,
-                'mensaje' => 'Envío confirmado exitosamente'
+                'mensaje' => 'EnvÃ­o confirmado exitosamente'
             ]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);

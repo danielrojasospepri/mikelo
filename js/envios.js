@@ -4,7 +4,7 @@ $(document).ready(function() {
     let tablaProductos = null;
     let html5QrcodeScanner = null;
 
-    // Inicialización
+    // InicializaciÃ³n
     cargarUbicaciones();
     cargarEnvios();
 
@@ -14,13 +14,13 @@ $(document).ready(function() {
     });
 
     $('#btnAgregarProducto').click(function() {
-        // Limpiar búsqueda anterior
+        // Limpiar bÃºsqueda anterior
         $('#buscarProducto').val('');
         $('#productosDisponiblesTable').empty();
         
         $('#modalSeleccionProductos').modal('show');
         
-        // Focus en el input después de que se muestre el modal
+        // Focus en el input despuÃ©s de que se muestre el modal
         $('#modalSeleccionProductos').on('shown.bs.modal', function () {
             $('#buscarProducto').focus();
             $(this).off('shown.bs.modal'); // Remover el evento para no acumularlo
@@ -31,11 +31,11 @@ $(document).ready(function() {
         iniciarEscaneoCodigoBarras();
     });
 
-    // Modal events para limpiar el escáner
+    // Modal events para limpiar el escÃ¡ner
     $('#modalEscaneo').on('hidden.bs.modal', function () {
         if (html5QrcodeScanner) {
             html5QrcodeScanner.clear().catch(error => {
-                console.error("Error al limpiar el escáner:", error);
+                console.error("Error al limpiar el escÃ¡ner:", error);
             });
             html5QrcodeScanner = null;
         }
@@ -57,7 +57,7 @@ $(document).ready(function() {
         guardarEnvio();
     });
 
-    // NUEVA FUNCIONALIDAD: Búsqueda mejorada con soporte para códigos de barras
+    // NUEVA FUNCIONALIDAD: BÃºsqueda mejorada con soporte para cÃ³digos de barras
     $('#buscarProducto').on('keyup', function() {
         const texto = $(this).val().trim();
         
@@ -67,7 +67,7 @@ $(document).ready(function() {
             return;
         }
         
-        // Verificar si es un código de barras
+        // Verificar si es un cÃ³digo de barras
         if (texto.length === 13 && /^\d{13}$/.test(texto)) {
             procesarCodigoBarrasEnSeleccion(texto);
             return;
@@ -87,7 +87,7 @@ $(document).ready(function() {
         exportarLista('excel');
     });
 
-    // NUEVA FUNCIÓN: Buscar productos desde el servidor con filtro
+    // NUEVA FUNCIÃ“N: Buscar productos desde el servidor con filtro
     function buscarProductosDisponibles(filtro) {
         $.get(`api/envios/productos-disponibles?filtro=${encodeURIComponent(filtro)}`)
         .done(function(response) {
@@ -100,7 +100,7 @@ $(document).ready(function() {
         });
     }
     
-    // NUEVA FUNCIÓN: Procesar códigos de barras en la selección de productos
+    // NUEVA FUNCIÃ“N: Procesar cÃ³digos de barras en la selecciÃ³n de productos
     function procesarCodigoBarrasEnSeleccion(codigo) {
         try {
             const tipo = codigo.substring(0, 2);
@@ -110,18 +110,18 @@ $(document).ready(function() {
             let cantidad, peso;
             
             if (tipo === '20') {
-                // Código de cantidad (unidades) - valor directo, no se divide por 1000
+                // CÃ³digo de cantidad (unidades) - valor directo, no se divide por 1000
                 cantidad = parseInt(cantidadRaw);
                 peso = null;
             } else if (tipo === '21') {
-                // Código de peso (kilogramos) - se divide por 1000 para convertir gramos a kg
+                // CÃ³digo de peso (kilogramos) - se divide por 1000 para convertir gramos a kg
                 cantidad = null;
-                peso = parseInt(cantidadRaw) / 1000; // Los 5 dígitos representan peso * 1000
+                peso = parseInt(cantidadRaw) / 1000; // Los 5 dÃ­gitos representan peso * 1000
             } else {
-                throw new Error(`Tipo de código no reconocido: ${tipo}`);
+                throw new Error(`Tipo de cÃ³digo no reconocido: ${tipo}`);
             }
             
-            console.log('Código de barras procesado en selección:', {
+            console.log('CÃ³digo de barras procesado en selecciÃ³n:', {
                 tipo,
                 codigoProducto,
                 cantidad,
@@ -129,20 +129,20 @@ $(document).ready(function() {
                 codigoOriginal: codigo
             });
             
-            // Buscar productos que coincidan con el código
+            // Buscar productos que coincidan con el cÃ³digo
             buscarYSeleccionarProductoPorCodigo(codigoProducto, cantidad, peso);
             
         } catch (error) {
-            console.error('Error procesando código de barras:', error);
+            console.error('Error procesando cÃ³digo de barras:', error);
             Swal.fire({
                 title: 'Error',
-                text: `Error al procesar el código de barras: ${error.message}`,
+                text: `Error al procesar el cÃ³digo de barras: ${error.message}`,
                 icon: 'error'
             });
         }
     }
     
-    // NUEVA FUNCIÓN: Buscar y seleccionar automáticamente productos por código de barras
+    // NUEVA FUNCIÃ“N: Buscar y seleccionar automÃ¡ticamente productos por cÃ³digo de barras
     function buscarYSeleccionarProductoPorCodigo(codigo, cantidad, peso) {
         // Mostrar indicador de carga
         Swal.fire({
@@ -161,9 +161,9 @@ $(document).ready(function() {
         }
         
         // Para productos por unidades, NO filtrar por cantidad - buscar cualquier cantidad disponible
-        // Solo usar el código del producto para encontrar stock disponible
+        // Solo usar el cÃ³digo del producto para encontrar stock disponible
         
-        console.log('URL de búsqueda:', url);
+        console.log('URL de bÃºsqueda:', url);
         
         $.get(url)
         .done(function(response) {
@@ -176,34 +176,34 @@ $(document).ready(function() {
                     // Solo hay un producto que coincide exactamente
                     const producto = productosCoincidentes[0];
                     
-                    // Verificar si ya está en la lista
+                    // Verificar si ya estÃ¡ en la lista
                     const yaSeleccionado = productosSeleccionados.find(p => p.id_movimiento_item === producto.id_movimiento_item);
                     if (yaSeleccionado) {
                         Swal.fire({
                             title: 'Producto ya seleccionado',
-                            text: `El producto ${producto.codigo} - ${producto.descripcion} ya está en la lista de envío.`,
+                            text: `El producto ${producto.codigo} - ${producto.descripcion} ya estÃ¡ en la lista de envÃ­o.`,
                             icon: 'warning'
                         });
                         return;
                     }
                     
-                    // Agregar automáticamente
+                    // Agregar automÃ¡ticamente
                     agregarProductoAEnvio(producto);
                     $('#modalSeleccionProductos').modal('hide');
                     $('#buscarProducto').val('');
                     
                     Swal.fire({
                         title: 'Producto agregado',
-                        text: `${producto.codigo} - ${producto.descripcion} agregado al envío.`,
+                        text: `${producto.codigo} - ${producto.descripcion} agregado al envÃ­o.`,
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 } else {
-                    // Múltiples productos coinciden, mostrar para selección manual
+                    // MÃºltiples productos coinciden, mostrar para selecciÃ³n manual
                     mostrarProductosDisponibles(productosCoincidentes);
                     Swal.fire({
-                        title: 'Múltiples productos encontrados',
+                        title: 'MÃºltiples productos encontrados',
                         text: `Se encontraron ${productosCoincidentes.length} productos que coinciden. Seleccione el producto deseado.`,
                         icon: 'info'
                     });
@@ -213,12 +213,12 @@ $(document).ready(function() {
                 Swal.fire({
                     title: 'Producto no encontrado',
                     html: `
-                        <p>No se encontró stock disponible para:</p>
-                        <strong>Código: ${codigo}</strong><br>
+                        <p>No se encontrÃ³ stock disponible para:</p>
+                        <strong>CÃ³digo: ${codigo}</strong><br>
                         ${peso ? `<strong>Peso: ${peso.toFixed(3)} kg</strong><br>` : ''}
                         ${cantidad ? `<strong>Cantidad: ${cantidad} unidades</strong><br>` : ''}
                         <br>
-                        <small>Verifique que el producto esté en estado NUEVO en el depósito central.</small>
+                        <small>Verifique que el producto estÃ© en estado NUEVO en el depÃ³sito central.</small>
                     `,
                     icon: 'warning'
                 });
@@ -235,14 +235,14 @@ $(document).ready(function() {
         });
     }
 
-    // Funciones de escaneo de código de barras
+    // Funciones de escaneo de cÃ³digo de barras
     function iniciarEscaneoCodigoBarras() {
         $('#modalEscaneo').modal('show');
         
-        // Configuración del escáner optimizada para códigos de barras
+        // ConfiguraciÃ³n del escÃ¡ner optimizada para cÃ³digos de barras
         const config = {
             fps: 10,
-            qrbox: { width: 400, height: 150 }, // Más ancho para códigos de barras
+            qrbox: { width: 400, height: 150 }, // MÃ¡s ancho para cÃ³digos de barras
             aspectRatio: 2.0,
             formatsToSupport: [
                 Html5QrcodeSupportedFormats.EAN_13,
@@ -260,12 +260,12 @@ $(document).ready(function() {
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Código escaneado: ${decodedText}`);
+        console.log(`CÃ³digo escaneado: ${decodedText}`);
         
         // Cerrar el modal primero
         $('#modalEscaneo').modal('hide');
         
-        // Procesar el código de barras
+        // Procesar el cÃ³digo de barras
         procesarCodigoBarras(decodedText);
     }
 
@@ -275,9 +275,9 @@ $(document).ready(function() {
 
     function procesarCodigoBarras(codigo) {
         try {
-            // Validar que sea un código de 13 dígitos
+            // Validar que sea un cÃ³digo de 13 dÃ­gitos
             if (!/^\d{13}$/.test(codigo)) {
-                throw new Error("El código debe tener exactamente 13 dígitos numéricos");
+                throw new Error("El cÃ³digo debe tener exactamente 13 dÃ­gitos numÃ©ricos");
             }
             
             const tipo = codigo.substring(0, 2);
@@ -287,18 +287,18 @@ $(document).ready(function() {
             let cantidad, peso;
             
             if (tipo === '20') {
-                // Código de cantidad (unidades) - valor directo
+                // CÃ³digo de cantidad (unidades) - valor directo
                 cantidad = parseInt(cantidadRaw);
                 peso = null;
             } else if (tipo === '21') {
-                // Código de peso (kilogramos) - dividir por 1000 para convertir gramos a kg
+                // CÃ³digo de peso (kilogramos) - dividir por 1000 para convertir gramos a kg
                 cantidad = null;
                 peso = parseInt(cantidadRaw) / 1000;
             } else {
-                throw new Error(`Tipo de código no reconocido: ${tipo}`);
+                throw new Error(`Tipo de cÃ³digo no reconocido: ${tipo}`);
             }
             
-            console.log('Código procesado:', {
+            console.log('CÃ³digo procesado:', {
                 tipo,
                 codigoProducto,
                 cantidad,
@@ -306,14 +306,14 @@ $(document).ready(function() {
                 codigoOriginal: codigo
             });
             
-            // Buscar el producto por código
+            // Buscar el producto por cÃ³digo
             buscarProductoPorCodigo(codigoProducto, cantidad, peso);
             
         } catch (error) {
-            console.error('Error procesando código de barras:', error);
+            console.error('Error procesando cÃ³digo de barras:', error);
             Swal.fire({
                 title: 'Error',
-                text: `Error al procesar el código de barras: ${error.message}`,
+                text: `Error al procesar el cÃ³digo de barras: ${error.message}`,
                 icon: 'error'
             });
         }
@@ -337,7 +337,7 @@ $(document).ready(function() {
         }
         
         // Para productos por unidades, NO filtrar por cantidad - buscar cualquier cantidad disponible
-        console.log('URL de búsqueda (segunda función):', url);
+        console.log('URL de bÃºsqueda (segunda funciÃ³n):', url);
         
         $.get(url)
             .done(function(response) {
@@ -351,18 +351,18 @@ $(document).ready(function() {
                         // Solo hay un producto que coincide exactamente
                         const producto = productosCoincidentes[0];
                         
-                        // Verificar si ya está en la lista
+                        // Verificar si ya estÃ¡ en la lista
                         const yaSeleccionado = productosSeleccionados.find(p => p.id_movimiento_item === producto.id_movimiento_item);
                         if (yaSeleccionado) {
                             Swal.fire({
                                 title: 'Producto ya seleccionado',
-                                text: `El producto ${producto.codigo} - ${producto.descripcion} ya está en la lista de envío.`,
+                                text: `El producto ${producto.codigo} - ${producto.descripcion} ya estÃ¡ en la lista de envÃ­o.`,
                                 icon: 'warning'
                             });
                             return;
                         }
                         
-                        // Agregar automáticamente el producto
+                        // Agregar automÃ¡ticamente el producto
                         agregarProductoAEnvio(producto);
                         
                         Swal.fire({
@@ -373,12 +373,12 @@ $(document).ready(function() {
                             showConfirmButton: false
                         });
                     } else {
-                        // Múltiples productos coinciden, mostrar modal de selección
+                        // MÃºltiples productos coinciden, mostrar modal de selecciÃ³n
                         mostrarProductosDisponibles(productosCoincidentes);
                         $('#modalSeleccionProductos').modal('show');
                         
                         Swal.fire({
-                            title: 'Múltiples productos encontrados',
+                            title: 'MÃºltiples productos encontrados',
                             text: `Se encontraron ${productosCoincidentes.length} productos que coinciden. Seleccione el producto deseado.`,
                             icon: 'info'
                         });
@@ -386,7 +386,7 @@ $(document).ready(function() {
                 } else {
                     Swal.fire({
                         title: 'Producto no encontrado',
-                        text: `No se encontró ningún producto con el código ${codigo}.`,
+                        text: `No se encontrÃ³ ningÃºn producto con el cÃ³digo ${codigo}.`,
                         icon: 'warning'
                     });
                 }
@@ -409,7 +409,7 @@ $(document).ready(function() {
             if (response.ubicaciones) {
                 let opciones = '<option value="">Seleccione destino...</option>';
                 response.ubicaciones.forEach(function(ubicacion) {
-                    // No mostrar el depósito central (ID 1) como destino
+                    // No mostrar el depÃ³sito central (ID 1) como destino
                     if (ubicacion.id != 1) {
                         opciones += `<option value="${ubicacion.id}">${ubicacion.nombre}</option>`;
                     }
@@ -451,7 +451,7 @@ $(document).ready(function() {
             }
         })
         .fail(function(xhr) {
-            mostrarError('Error al cargar envíos');
+            mostrarError('Error al cargar envÃ­os');
         });
     }
 
@@ -467,7 +467,7 @@ $(document).ready(function() {
         });
     }
 
-    // Funciones de visualización
+    // Funciones de visualizaciÃ³n
     function mostrarEnvios(envios) {
         let html = '';
         envios.forEach(function(envio) {
@@ -488,6 +488,9 @@ $(document).ready(function() {
                         </button>
                         <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); exportarDetalle(${envio.id}, 'excel')">
                             <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); exportarRemitoPreimpreso(${envio.id})" title="Remito Preimpreso">
+                            <i class="fas fa-print"></i>
                         </button>
                     </td>
                 </tr>
@@ -560,14 +563,14 @@ $(document).ready(function() {
         $('#productosEnvioTable').html(html);
     }
 
-    // Funciones de gestión de productos
+    // Funciones de gestiÃ³n de productos
     window.agregarProductoAEnvio = function(producto) {
-        // Verificar si el producto ya está seleccionado
+        // Verificar si el producto ya estÃ¡ seleccionado
         const yaSeleccionado = productosSeleccionados.find(p => p.id_movimiento_item === producto.id_movimiento_item);
         if (yaSeleccionado) {
             Swal.fire({
                 title: 'Producto ya seleccionado',
-                text: 'Este producto ya está en la lista de envío.',
+                text: 'Este producto ya estÃ¡ en la lista de envÃ­o.',
                 icon: 'warning'
             });
             return;
@@ -614,17 +617,17 @@ $(document).ready(function() {
         const producto = productosSeleccionados[index];
         nuevaCantidad = parseFloat(nuevaCantidad) || 0;
         
-        // Validar cantidad mínima
+        // Validar cantidad mÃ­nima
         if (nuevaCantidad < 1) {
             Swal.fire({
-                title: 'Cantidad inválida',
-                text: 'La cantidad mínima es 1 unidad.',
+                title: 'Cantidad invÃ¡lida',
+                text: 'La cantidad mÃ­nima es 1 unidad.',
                 icon: 'warning'
             });
             nuevaCantidad = 1;
         }
         
-        // Validar cantidad máxima
+        // Validar cantidad mÃ¡xima
         if (nuevaCantidad > producto.cnt_disponible) {
             Swal.fire({
                 title: 'Cantidad no disponible',
@@ -663,7 +666,7 @@ $(document).ready(function() {
         mostrarProductosEnvio();
     };
 
-    // Funciones de guardado y exportación
+    // Funciones de guardado y exportaciÃ³n
     function guardarEnvio() {
         if (!validarEnvio()) {
             return;
@@ -689,27 +692,27 @@ $(document).ready(function() {
             if (response.success) {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Envío creado',
-                    text: 'El envío se ha creado exitosamente.'
+                    title: 'EnvÃ­o creado',
+                    text: 'El envÃ­o se ha creado exitosamente.'
                 }).then(() => {
                     $('#modalNuevoEnvio').modal('hide');
                     cargarEnvios();
                     limpiarFormulario();
                 });
             } else {
-                mostrarError(response.error || 'Error al crear el envío');
+                mostrarError(response.error || 'Error al crear el envÃ­o');
             }
         })
         .fail(function(xhr) {
             console.error('Error:', xhr);
-            mostrarError('Error al guardar el envío: ' + (xhr.responseJSON?.error || xhr.statusText));
+            mostrarError('Error al guardar el envÃ­o: ' + (xhr.responseJSON?.error || xhr.statusText));
         });
     }
 
     function validarEnvio() {
         if (!$('#selectDestino').val()) {
             Swal.fire({
-                title: 'Error de validación',
+                title: 'Error de validaciÃ³n',
                 text: 'Debe seleccionar un destino.',
                 icon: 'error'
             });
@@ -718,8 +721,8 @@ $(document).ready(function() {
 
         if (productosSeleccionados.length === 0) {
             Swal.fire({
-                title: 'Error de validación',
-                text: 'Debe agregar al menos un producto al envío.',
+                title: 'Error de validaciÃ³n',
+                text: 'Debe agregar al menos un producto al envÃ­o.',
                 icon: 'error'
             });
             return false;
@@ -755,7 +758,7 @@ $(document).ready(function() {
             .then(data => {
                 Swal.close();
                 if (data.success) {
-                    // Descarga automática
+                    // Descarga automÃ¡tica
                     const link = document.createElement('a');
                     link.href = data.archivo;
                     link.download = data.archivo.split('/').pop();
@@ -796,7 +799,7 @@ $(document).ready(function() {
             .then(data => {
                 Swal.close();
                 if (data.success) {
-                    // Descarga automática
+                    // Descarga automÃ¡tica
                     const link = document.createElement('a');
                     link.href = data.archivo;
                     link.download = data.archivo.split('/').pop();
@@ -816,10 +819,10 @@ $(document).ready(function() {
             });
     }
 
-    // Exponer la función exportarDetalle globalmente para los botones HTML
+    // Exponer la funciÃ³n exportarDetalle globalmente para los botones HTML
     window.exportarDetalle = exportarDetalle;
 
-    // Funciones de gestión de envíos
+    // Funciones de gestiÃ³n de envÃ­os
     window.verDetalleEnvio = function(id) {
         console.log('verDetalleEnvio called with id:', id);
         
@@ -843,13 +846,13 @@ $(document).ready(function() {
                 mostrarDetalleEnvio(response.data);
                 $('#modalDetalleEnvio').modal('show');
             } else {
-                mostrarError(response.error || 'Error al cargar el detalle del envío');
+                mostrarError(response.error || 'Error al cargar el detalle del envÃ­o');
             }
         })
         .fail(function(xhr) {
             console.error('Error in verDetalleEnvio:', xhr);
             Swal.close();
-            mostrarError('Error al cargar el detalle del envío: ' + (xhr.responseJSON?.error || xhr.statusText));
+            mostrarError('Error al cargar el detalle del envÃ­o: ' + (xhr.responseJSON?.error || xhr.statusText));
         });
     };
 
@@ -859,19 +862,19 @@ $(document).ready(function() {
         let envio = data.envio;
         let productos = data.productos;
 
-        // Rellenar información del envío
+        // Rellenar informaciÃ³n del envÃ­o
         $('#detalleEnvioFecha').text(envio.fechaAlta || envio.fecha_alta);
         $('#detalleEnvioDestino').text(envio.destino);
         
-        // Manejar estado del envío
+        // Manejar estado del envÃ­o
         const estado = envio.ultimo_estado || 'NUEVO';
         $('#detalleEnvioEstado').html(`<span class="badge badge-${getBadgeClass(estado)}">${estado}</span>`);
         $('#detalleEnvioUsuario').text(envio.usuario_alta || 'Sistema');
 
-        // Establecer ID del envío seleccionado para los botones
+        // Establecer ID del envÃ­o seleccionado para los botones
         window.envioSeleccionadoId = envio.id;
         
-        // Mostrar/ocultar botones según el estado
+        // Mostrar/ocultar botones segÃºn el estado
         actualizarBotonesConfirmacion(estado);
 
         // Calcular totales
@@ -881,7 +884,7 @@ $(document).ready(function() {
 
         let productosHtml = '';
         productos.forEach(function(producto) {
-            // Convertir a números para cálculos
+            // Convertir a nÃºmeros para cÃ¡lculos
             const cantidad = parseFloat(producto.cnt) || 0;
             const pesoBruto = parseFloat(producto.cnt_peso) || 0;
             const pesoContenedor = parseFloat(producto.peso_contenedor) || 0;
@@ -912,7 +915,7 @@ $(document).ready(function() {
         $('#detalleTotalPesoNeto').text(totalPesoNeto.toFixed(3) + ' kg');
     }
 
-    // Función para mostrar/ocultar botones según el estado del envío
+    // FunciÃ³n para mostrar/ocultar botones segÃºn el estado del envÃ­o
     function actualizarBotonesConfirmacion(estado) {
         const btnConfirmar = $('#btnConfirmarEnvio');
         const btnCancelar = $('#btnCancelarEnvio');
@@ -926,7 +929,7 @@ $(document).ready(function() {
         }
     }
 
-    // Event listeners para los botones de confirmación
+    // Event listeners para los botones de confirmaciÃ³n
     $('#btnConfirmarEnvio').click(function() {
         confirmarEnvio();
     });
@@ -939,18 +942,26 @@ $(document).ready(function() {
         imprimirDetalle();
     });
 
+    $('#btnRemitoPreimpresoModal').click(function() {
+        if (window.envioSeleccionadoId) {
+            exportarRemitoPreimpreso(window.envioSeleccionadoId);
+        } else {
+            mostrarError('No hay envio seleccionado');
+        }
+    });
+
     function confirmarEnvio() {
         if (!window.envioSeleccionadoId) {
-            mostrarError('No hay envío seleccionado');
+            mostrarError('No hay envÃ­o seleccionado');
             return;
         }
 
         Swal.fire({
-            title: '¿Confirmar envío?',
-            text: 'Esta acción marcará el envío como enviado y no se podrá deshacer.',
+            title: 'Â¿Confirmar envÃ­o?',
+            text: 'Esta acciÃ³n marcarÃ¡ el envÃ­o como enviado y no se podrÃ¡ deshacer.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Sí, confirmar',
+            confirmButtonText: 'SÃ­, confirmar',
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -961,19 +972,19 @@ $(document).ready(function() {
                 .done(function(response) {
                     if (response.success) {
                         Swal.fire({
-                            title: 'Envío confirmado',
-                            text: 'El envío ha sido marcado como enviado.',
+                            title: 'EnvÃ­o confirmado',
+                            text: 'El envÃ­o ha sido marcado como enviado.',
                             icon: 'success'
                         }).then(() => {
                             $('#modalDetalleEnvio').modal('hide');
                             cargarEnvios();
                         });
                     } else {
-                        mostrarError(response.error || 'Error al confirmar el envío');
+                        mostrarError(response.error || 'Error al confirmar el envÃ­o');
                     }
                 })
                 .fail(function(xhr) {
-                    mostrarError('Error al confirmar el envío: ' + (xhr.responseJSON?.error || xhr.statusText));
+                    mostrarError('Error al confirmar el envÃ­o: ' + (xhr.responseJSON?.error || xhr.statusText));
                 });
             }
         });
@@ -981,16 +992,16 @@ $(document).ready(function() {
 
     function cancelarEnvio() {
         if (!window.envioSeleccionadoId) {
-            mostrarError('No hay envío seleccionado');
+            mostrarError('No hay envÃ­o seleccionado');
             return;
         }
 
         Swal.fire({
-            title: '¿Cancelar envío?',
-            text: 'Esta acción cancelará el envío y devolverá los productos al stock.',
+            title: 'Â¿Cancelar envÃ­o?',
+            text: 'Esta acciÃ³n cancelarÃ¡ el envÃ­o y devolverÃ¡ los productos al stock.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Sí, cancelar',
+            confirmButtonText: 'SÃ­, cancelar',
             cancelButtonText: 'No cancelar',
             confirmButtonColor: '#d33'
         }).then((result) => {
@@ -1004,19 +1015,19 @@ $(document).ready(function() {
                 .done(function(response) {
                     if (response.success) {
                         Swal.fire({
-                            title: 'Envío cancelado',
-                            text: 'El envío ha sido cancelado y los productos devueltos al stock.',
+                            title: 'EnvÃ­o cancelado',
+                            text: 'El envÃ­o ha sido cancelado y los productos devueltos al stock.',
                             icon: 'success'
                         }).then(() => {
                             $('#modalDetalleEnvio').modal('hide');
                             cargarEnvios();
                         });
                     } else {
-                        mostrarError(response.error || 'Error al cancelar el envío');
+                        mostrarError(response.error || 'Error al cancelar el envÃ­o');
                     }
                 })
                 .fail(function(xhr) {
-                    mostrarError('Error al cancelar el envío: ' + (xhr.responseJSON?.error || xhr.statusText));
+                    mostrarError('Error al cancelar el envÃ­o: ' + (xhr.responseJSON?.error || xhr.statusText));
                 });
             }
         });
@@ -1033,7 +1044,7 @@ $(document).ready(function() {
 
     function imprimirDetalle() {
         if (!window.envioSeleccionadoId) {
-            mostrarError('No hay envío seleccionado');
+            mostrarError('No hay envÃ­o seleccionado');
             return;
         }
 
@@ -1046,7 +1057,7 @@ $(document).ready(function() {
             }
         });
 
-        // Generar PDF del envío específico
+        // Generar PDF del envÃ­o especÃ­fico
         $.ajax({
             url: `api/envios/${window.envioSeleccionadoId}/pdf`,
             method: 'GET'
@@ -1057,7 +1068,7 @@ $(document).ready(function() {
                 // Abrir el PDF en una nueva ventana para imprimir
                 const pdfWindow = window.open(response.url, '_blank');
                 
-                // Intentar imprimir automáticamente cuando se cargue el PDF
+                // Intentar imprimir automÃ¡ticamente cuando se cargue el PDF
                 pdfWindow.onload = function() {
                     setTimeout(() => {
                         pdfWindow.print();
@@ -1066,7 +1077,7 @@ $(document).ready(function() {
 
                 Swal.fire({
                     title: 'PDF Generado',
-                    text: 'El documento se ha abierto en una nueva ventana. Puede imprimirlo desde allí.',
+                    text: 'El documento se ha abierto en una nueva ventana. Puede imprimirlo desde allÃ­.',
                     icon: 'success',
                     timer: 3000,
                     showConfirmButton: false
@@ -1085,7 +1096,7 @@ $(document).ready(function() {
     function mostrarExito(mensaje) {
         Swal.fire({
             icon: 'success',
-            title: 'Éxito',
+            title: 'Ã‰xito',
             text: mensaje,
             timer: 3000
         });
@@ -1098,4 +1109,64 @@ $(document).ready(function() {
             text: mensaje
         });
     }
+});
+
+    // Exportar remito preimpreso (formato STARK IND)
+    function exportarRemitoPreimpreso(idEnvio) {
+        Swal.fire({
+            title: 'Generando remito preimpreso...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const url = `api/envios/${idEnvio}/pdf-preimpreso`;
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Error al generar el remito');
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                Swal.close();
+                
+                // Crear URL temporal para el blob
+                const url = window.URL.createObjectURL(blob);
+                
+                // Abrir en nueva ventana para previsualizar/imprimir
+                window.open(url, '_blank');
+                
+                // Limpiar despuÃ©s de un momento
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+                
+                Swal.fire({
+                    title: 'Remito generado',
+                    text: 'El remito se ha abierto en una nueva ventana. ImprÃ­malo sobre papel preimpreso STARK IND.',
+                    icon: 'success',
+                    timer: 4000,
+                    showConfirmButton: true
+                });
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error al generar remito preimpreso:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Error al generar el remito preimpreso'
+                });
+            });
+    }
+
+    // Hacer la funciÃ³n global
+    window.exportarRemitoPreimpreso = exportarRemitoPreimpreso;
+
 });

@@ -80,9 +80,10 @@ class MovimientoController {
         $ubicacion = $params['ubicacion'] ?? null;
         $estado = $params['estado'] ?? null;
         $producto = $params['producto'] ?? null;
+        $familia = $params['familia'] ?? null;
 
         try {
-            $movimientos = $this->movimiento->buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado, $producto);
+            $movimientos = $this->movimiento->buscarMovimientos($fechaDesde, $fechaHasta, $ubicacion, $estado, $producto, $familia);
             return responseJson($response, ['movimientos' => $movimientos]);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);

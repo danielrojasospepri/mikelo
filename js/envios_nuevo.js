@@ -5,9 +5,13 @@ $(document).ready(function() {
     let html5QrcodeScanner = null;
     let timeoutBusqueda = null;
 
+    // Establecer fechas por defecto
+    establecerFechasPorDefecto();
+
     // Inicialización
     cargarUbicaciones();
     cargarEstados();
+    cargarFamilias();
     cargarEnvios();
 
     // === EVENTOS PRINCIPALES ===
@@ -107,7 +111,17 @@ $(document).ready(function() {
         }
     });
 
-    // Delegación de eventos para botones de la tabla (compatibilidad hosting)
+    // Botón remito preimpreso en modal
+    $('#btnRemitoPreimpresoModal').click(function() {
+        if (window.envioSeleccionadoId) {
+            exportarRemitoPreimpreso(window.envioSeleccionadoId);
+        } else {
+            Swal.fire('Error', 'No hay envío seleccionado', 'error');
+        }
+    });
+
+    // Delegación de eventos para botones de la tabla (ya no necesarios - se usa onclick directo)
+    /*
     $(document).on('click', '[data-action="ver-detalle"]', function() {
         const envioId = $(this).data('envio-id');
         verDetalleEnvio(envioId);
@@ -127,6 +141,7 @@ $(document).ready(function() {
         const envioId = $(this).data('envio-id');
         confirmarEnvio(envioId);
     });
+    */
 
     // === FUNCIONES PRINCIPALES ===
 
@@ -134,7 +149,10 @@ $(document).ready(function() {
         $('#panelFiltros, #panelTablaEnvios').hide();
         $('#panelNuevoEnvio').slideDown();
         $('#destinoEnvio').focus();
-        limpiarFormularioEnvio();
+        // Solo limpiar si no estamos editando
+        if (!window._editandoEnvio) {
+            limpiarFormularioEnvio();
+        }
     }
 
     function cerrarPanelNuevoEnvio() {
@@ -244,7 +262,18 @@ $(document).ready(function() {
                 if (data.success) {
                     const productos = data.data || data.productos || []; // Compatibilidad con ambas estructuras
                     if (productos.length === 0) {
-                        mostrarEstadoOperacion('No se encontraron productos disponibles', 'warning');
+                        // Mensaje específico según el tipo de búsqueda
+                        if (esCodigoBarras) {
+                            const tipoProducto = termino.substring(0, 2);
+                            if (tipoProducto === '21') {
+                                const peso = (parseInt(termino.substring(7, 12)) / 1000).toFixed(3);
+                                mostrarEstadoOperacion(`No hay stock con ese peso (${peso} kg)`, 'danger');
+                            } else {
+                                mostrarEstadoOperacion('No se encontró el producto en stock', 'warning');
+                            }
+                        } else {
+                            mostrarEstadoOperacion('No se encontraron productos disponibles', 'warning');
+                        }
                         $('#productosEncontrados').hide();
                     } else if (productos.length === 1 && esCodigoBarras) {
                         // Un solo producto con código de barras: agregar automáticamente
@@ -460,18 +489,34 @@ $(document).ready(function() {
 
         const datosEnvio = {
             destino: destinoId,
-            productos: productosEnEnvio.map(p => ({
-                id_movimientos_items_origen: p.id_movimiento_item,
-                id_productos: p.id_producto,
-                cantidad: p.cantidad || p.cnt,
-                peso: p.peso !== undefined ? p.peso : p.cnt_peso
-            }))
+            productos: productosEnEnvio.map(p => {
+                const producto = {
+                    id_productos: p.id_productos || p.id_producto,
+                    cantidad: p.cantidad || p.cnt,
+                    peso: p.peso !== undefined ? p.peso : p.cnt_peso
+                };
+                // Solo para productos ya existentes en el envío (edición)
+                if (p.id_movimiento_item) {
+                    producto.id_movimientos_items_origen = p.id_movimiento_item;
+                }
+                return producto;
+            })
         };
 
         console.log('Datos del envío a guardar:', datosEnvio);
 
-        fetch('api/envios', {
-            method: 'POST',
+        // Si estamos editando un envío existente, usar PUT y el endpoint de edición
+        let url = 'api/envios';
+        let method = 'POST';
+        let exitoMsg = 'Envío creado correctamente';
+        if (envioActual && envioActual.id) {
+            url = `api/envios/${envioActual.id}`;
+            method = 'PUT';
+            exitoMsg = 'Envío editado correctamente';
+        }
+
+        fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -489,11 +534,10 @@ $(document).ready(function() {
         .then(data => {
             console.log('Respuesta del servidor:', data);
             if (data.success) {
-                envioActual = { id: data.id };
-                
+                envioActual = { id: data.id || (envioActual && envioActual.id) };
                 Swal.fire({
                     title: 'Éxito',
-                    text: 'Envío creado correctamente',
+                    text: exitoMsg,
                     icon: 'success',
                     showCancelButton: true,
                     confirmButtonText: 'Confirmar Envío Ahora',
@@ -502,13 +546,13 @@ $(document).ready(function() {
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // Confirmar envío inmediatamente
-                        confirmarEnvio(data.id);
+                        confirmarEnvio(envioActual.id);
                     }
                     // En cualquier caso, cerrar panel y volver a la grilla
                     cerrarPanelNuevoEnvio();
                 });
             } else {
-                Swal.fire('Error', data.error || 'Error al crear el envío', 'error');
+                Swal.fire('Error', data.error || 'Error al guardar el envío', 'error');
             }
         })
         .catch(error => {
@@ -552,6 +596,21 @@ $(document).ready(function() {
     }
 
     // === CARGA DE DATOS ===
+
+    function establecerFechasPorDefecto() {
+        // Fecha de hoy
+        const hoy = new Date();
+        const fechaHoy = hoy.toISOString().split('T')[0];
+        
+        // Fecha de ayer
+        const ayer = new Date();
+        ayer.setDate(ayer.getDate() - 1);
+        const fechaAyer = ayer.toISOString().split('T')[0];
+        
+        // Establecer valores
+        $('#fechaDesde').val(fechaAyer);
+        $('#fechaHasta').val(fechaHoy);
+    }
 
     function cargarUbicaciones() {
         fetch('api/ubicaciones')
@@ -616,8 +675,32 @@ $(document).ready(function() {
             });
     }
 
+    function cargarFamilias() {
+        fetch('api/tipos-producto')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const selectFamilia = $('#filtroFamilia');
+                    selectFamilia.empty().append('<option value="">Todas</option>');
+                    
+                    data.data.forEach(tipo => {
+                        selectFamilia.append(`<option value="${tipo.id}">${tipo.nombre}</option>`);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando familias:', error);
+            });
+    }
+
     function cargarEnvios() {
         const filtros = {
+            familia: $('#filtroFamilia').val(),
             fecha_desde: $('#fechaDesde').val(),
             fecha_hasta: $('#fechaHasta').val(),
             ubicacion_destino: $('#filtroDestino').val(),
@@ -625,11 +708,12 @@ $(document).ready(function() {
         };
 
         let params = new URLSearchParams();
-        Object.keys(filtros).forEach(key => {
-            if (filtros[key]) {
-                params.append(key, filtros[key]);
-            }
-        });
+        // Mapear nombres de parámetros para que coincidan con el backend (camelCase)
+        if (filtros.familia) params.append('familia', filtros.familia);
+        if (filtros.fecha_desde) params.append('fechaDesde', filtros.fecha_desde);
+        if (filtros.fecha_hasta) params.append('fechaHasta', filtros.fecha_hasta);
+        if (filtros.ubicacion_destino) params.append('destino', filtros.ubicacion_destino);
+        if (filtros.estado) params.append('estado', filtros.estado);
 
         fetch(`api/envios?${params.toString()}`)
             .then(response => {
@@ -641,10 +725,14 @@ $(document).ready(function() {
             .then(data => {
                 console.log('Envios received:', data); // Debug
                 if (data.success) {
-                    const envios = data.data || data.envios || []; // Compatibilidad con ambas estructuras
+                    const envios = data.data || data.envios || [];
                     mostrarEnviosEnTabla(envios);
                 } else {
                     console.error('Error en respuesta envíos:', data);
+                    // Mostrar error si no es la carga inicial
+                    if ($('#fechaDesde').val() || $('#fechaHasta').val() || $('#filtroDestino').val() || $('#estado').val()) {
+                        Swal.fire('Error', data.error || 'No se pudieron cargar los envíos', 'error');
+                    }
                 }
             })
             .catch(error => {
@@ -675,23 +763,22 @@ $(document).ready(function() {
                         </button>
                         <button class="btn btn-sm btn-primary" 
                                 onclick="exportarDetalle(${envio.id}, 'pdf')" 
-                                data-action="exportar-pdf" 
-                                data-envio-id="${envio.id}" 
                                 title="Remito PDF">
                             <i class="fas fa-file-pdf"></i>
                         </button>
                         <button class="btn btn-sm btn-success" 
                                 onclick="exportarDetalle(${envio.id}, 'excel')" 
-                                data-action="exportar-excel" 
-                                data-envio-id="${envio.id}" 
                                 title="Detalle Excel">
                             <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" 
+                                onclick="exportarRemitoPreimpreso(${envio.id})" 
+                                title="Remito Preimpreso STARK IND">
+                            <i class="fas fa-print"></i>
                         </button>
                         ${envio.ultimo_estado === 'NUEVO' ? `
                             <button class="btn btn-sm btn-warning" 
                                     onclick="confirmarEnvio(${envio.id})" 
-                                    data-action="confirmar-envio" 
-                                    data-envio-id="${envio.id}" 
                                     title="Confirmar envío">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -740,12 +827,17 @@ $(document).ready(function() {
             }
         });
 
-        // Usar el endpoint correcto según el tipo
-        const endpoint = tipo === 'pdf' ? 'pdf' : 'excel';
-        const url = `api/envios/${endpoint}?${params.toString()}`;
-        
-        // Abrir directamente en nueva ventana para descarga
-        window.open(url, '_blank');
+    // Usar el endpoint correcto según el tipo
+    const endpoint = tipo === 'pdf' ? 'pdf' : 'excel';
+    // Mapear nombres de parámetros para backend
+    const filtrosBackend = new URLSearchParams();
+    if ($('#fechaDesde').val()) filtrosBackend.append('fechaDesde', $('#fechaDesde').val());
+    if ($('#fechaHasta').val()) filtrosBackend.append('fechaHasta', $('#fechaHasta').val());
+    if ($('#filtroDestino').val()) filtrosBackend.append('destino', $('#filtroDestino').val());
+    if ($('#estado').val()) filtrosBackend.append('estado', $('#estado').val());
+    const url = `api/envios/${endpoint}?${filtrosBackend.toString()}`;
+    // Abrir directamente en nueva ventana para descarga
+    window.open(url, '_blank');
     }
 
     // Funciones globales para botones de tabla
@@ -831,13 +923,38 @@ $(document).ready(function() {
         
         $('#detalleEnvioContenido').html(contenido);
         
-        // Mostrar botón de confirmar si el estado es NUEVO
-        if (detalle.envio.ultimo_estado === 'NUEVO') {
+        // Obtener el estado del envío
+        const estado = detalle.envio.ultimo_estado;
+        
+        // Mostrar/ocultar botones según el estado
+        
+        // Botón Confirmar Envío: solo visible si estado = 'NUEVO'
+        if (estado === 'NUEVO') {
             $('#btnConfirmarEnvioModal').show().off('click').on('click', function() {
                 confirmarEnvioDesdeModal(detalle.envio.id);
             });
         } else {
             $('#btnConfirmarEnvioModal').hide();
+        }
+        
+        // Botón Editar Envío: solo visible si estado = 'NUEVO'
+        if (estado === 'NUEVO') {
+            $('#btnEditarEnvioModal').show().off('click').on('click', function() {
+                $('#modalDetalleEnvio').modal('hide');
+                cargarEnvioParaEdicion(detalle.envio.id);
+            });
+        } else {
+            $('#btnEditarEnvioModal').hide();
+        }
+        
+        // Botón Cancelar Envío: visible si estado != 'CANCELADO' y != 'RECIBIDO'
+        if (estado !== 'CANCELADO' && estado !== 'RECIBIDO') {
+            $('#btnCancelarEnvioModal').show().off('click').on('click', function() {
+                $('#modalDetalleEnvio').modal('hide');
+                confirmarCancelacionEnvio(detalle.envio.id);
+            });
+        } else {
+            $('#btnCancelarEnvioModal').hide();
         }
     }
 
@@ -862,42 +979,11 @@ $(document).ready(function() {
     function exportarDetalle(id, formato) {
         console.log(`Exportando ${formato} para envío ${id}`); // Debug
         
-        // Mostrar loading
-        Swal.fire({
-            title: `Generando ${formato.toUpperCase()}...`,
-            text: 'Por favor espere mientras se genera el remito',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        // Usar endpoint directo para descarga
         const url = `api/envios/${id}/${formato}`;
         console.log(`URL de descarga: ${url}`); // Debug
         
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `envio_${id}.${formato}`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        
-        // Simular clic para iniciar descarga
-        link.click();
-        document.body.removeChild(link);
-        
-        // Cerrar loading después de un momento
-        setTimeout(() => {
-            Swal.close();
-            Swal.fire({
-                title: 'Descarga iniciada',
-                text: `El ${formato.toUpperCase()} del remito está siendo descargado`,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }, 500);
+        // Abrir directamente en nueva ventana - el navegador gestiona la descarga
+        window.open(url, '_blank');
     }
 
     // === IMPRIMIR DETALLE DESDE MODAL ===
@@ -927,16 +1013,218 @@ $(document).ready(function() {
         });
     }
 
+    // === REMITO PREIMPRESO (STARK IND) ===
+    
+    function exportarRemitoPreimpreso(envioId) {
+        Swal.fire({
+            title: 'Generando remito preimpreso...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const url = `api/envios/${envioId}/pdf-preimpreso`;
+        
+        // Abrir en nueva pestaña directamente
+        const pdfWindow = window.open(url, '_blank');
+        
+        Swal.close();
+
+        if (pdfWindow) {
+            pdfWindow.focus();
+            Swal.fire({
+                title: '¡Remito generado!',
+                text: 'El remito se ha abierto en una nueva pestaña. Imprímalo sobre papel preimpreso STARK IND.',
+                icon: 'success',
+                timer: 4000,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo abrir la ventana para el remito. Por favor, deshabilite el bloqueador de pop-ups.',
+                icon: 'error'
+            });
+        }
+    }
+
+    /**
+     * Carga un envío existente en el formulario para editarlo
+     */
+    function cargarEnvioParaEdicion(id) {
+        // Cargar detalle del envío
+        fetch(`api/envios/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const detalle = data.data;
+                    const envio = detalle.envio;
+                    
+                    // Verificar que esté en estado NUEVO
+                    if (envio.ultimo_estado !== 'NUEVO') {
+                        Swal.fire('Error', 'Solo se pueden editar envíos en estado NUEVO', 'error');
+                        return;
+                    }
+                    
+
+                    // Indicar que estamos editando para evitar limpiar el destino
+                    window._editandoEnvio = true;
+                    mostrarPanelNuevoEnvio();
+                    // Al terminar la edición, quitar el flag
+                    setTimeout(() => { window._editandoEnvio = false; }, 1000);
+                    
+
+                    // Esperar a que el select de destino esté poblado antes de seleccionar
+                    const setDestino = () => {
+                        if ($('#destinoEnvio option').length > 1) {
+                            // Usar el campo correcto del backend
+                            $('#destinoEnvio').val(envio.id_ubicacion_destino);
+                            $('#destinoEnvio').trigger('change');
+                        } else {
+                            setTimeout(setDestino, 100);
+                        }
+                    };
+                    setDestino();
+
+                    // Cargar productos del envío en el array global
+                    productosEnEnvio = [];
+                    if (detalle.productos && detalle.productos.length > 0) {
+                        detalle.productos.forEach(function(producto) {
+                            productosEnEnvio.push({
+                                id_movimiento_item: producto.id_movimiento_item,
+                                id_producto: producto.id_producto,
+                                id_productos: producto.id_productos || producto.id_producto,
+                                id_movimientos: producto.id_movimientos || envio.id,
+                                codigo: producto.codigo,
+                                descripcion: producto.descripcion,
+                                cantidad: parseInt(producto.cnt),
+                                peso: parseFloat(producto.cnt_peso),
+                                cnt_peso: parseFloat(producto.cnt_peso),
+                                cnt: parseInt(producto.cnt),
+                                contenedor: producto.contenedor || '-',
+                                id_contenedor: producto.id_contenedor || null,
+                                cnt_disponible: parseInt(producto.cnt), // Para el formulario
+                                peso_unitario: parseFloat(producto.cnt_peso) / parseInt(producto.cnt)
+                            });
+                        });
+                        // Mostrar la tabla de productos directamente
+                        actualizarTablaProductosEnvio();
+                        $('#productosEnvio').show();
+                    } else {
+                        // Si no hay productos, ocultar la tabla
+                        actualizarTablaProductosEnvio();
+                        $('#productosEnvio').hide();
+                    }
+                    
+                    // Scroll al formulario
+                    setTimeout(() => {
+                        $('html, body').animate({
+                            scrollTop: $('#panelNuevoEnvio').offset().top - 100
+                        }, 500);
+                    }, 300);
+                    
+                    Swal.fire('Éxito', 'Envío cargado para edición. Puede agregar o quitar productos.', 'success');
+                } else {
+                    Swal.fire('Error', data.error || 'Error al cargar el envío', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Error al cargar el envío para edición', 'error');
+            });
+    }
+
+    /**
+     * Confirma y ejecuta la cancelación de un envío
+     */
+    function confirmarCancelacionEnvio(id) {
+        Swal.fire({
+            title: '¿Cancelar Envío?',
+            html: 'Esta acción:<br>' +
+                  '- Cambiará el estado a <strong>CANCELADO</strong><br>' +
+                  '- Devolverá todos los productos al stock<br>' +
+                  '<br>¿Desea continuar?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, cancelar envío',
+            cancelButtonText: 'No, volver'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                cancelarEnvio(id);
+            }
+        });
+    }
+
+    /**
+     * Ejecuta la cancelación del envío via API
+     */
+    function cancelarEnvio(id) {
+        // Preguntar motivo
+        Swal.fire({
+            title: 'Motivo de cancelación',
+            input: 'textarea',
+            inputLabel: 'Ingrese el motivo de la cancelación',
+            inputPlaceholder: 'Ej: Cliente canceló pedido, error en productos, etc.',
+            inputAttributes: {
+                'aria-label': 'Motivo de cancelación'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Confirmar cancelación',
+            cancelButtonText: 'Volver',
+            inputValidator: (value) => {
+                if (!value || value.trim() === '') {
+                    return 'Debe ingresar un motivo'
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Enviar cancelación con motivo
+                $.ajax({
+                    url: 'api/envios/' + id + '/cancelar',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        motivo: result.value
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire('Éxito', 'Envío cancelado correctamente. Los productos han vuelto al stock.', 'success');
+                            cargarEnvios(); // Recargar grilla
+                        } else {
+                            Swal.fire('Error', response.message || 'Error al cancelar el envío', 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                            ? xhr.responseJSON.message 
+                            : 'Error al cancelar el envío';
+                        Swal.fire('Error', errorMsg, 'error');
+                    }
+                });
+            }
+        });
+    }
+
     // Funciones globales
     window.confirmarEnvio = confirmarEnvio;
     window.exportarDetalle = exportarDetalle;
     window.imprimirDetalle = imprimirDetalle;
+    window.exportarRemitoPreimpreso = exportarRemitoPreimpreso;
+    window.cargarEnvioParaEdicion = cargarEnvioParaEdicion;
+    window.confirmarCancelacionEnvio = confirmarCancelacionEnvio;
     
     // Verificación de carga exitosa
-    console.log('✅ Envios Nuevo JS cargado correctamente - v20251010');
+    console.log('✅ Envios Nuevo JS cargado correctamente - v20251021_edicion');
     console.log('Funciones disponibles:', {
         confirmarEnvio: typeof window.confirmarEnvio,
         exportarDetalle: typeof window.exportarDetalle,
-        imprimirDetalle: typeof window.imprimirDetalle
+        imprimirDetalle: typeof window.imprimirDetalle,
+        exportarRemitoPreimpreso: typeof window.exportarRemitoPreimpreso,
+        cargarEnvioParaEdicion: typeof window.cargarEnvioParaEdicion,
+        confirmarCancelacionEnvio: typeof window.confirmarCancelacionEnvio
     });
 });

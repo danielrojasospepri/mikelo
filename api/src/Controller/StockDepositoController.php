@@ -20,6 +20,7 @@ class StockDepositoController {
     public function obtenerStock(Request $request, Response $response) {
         $params = $request->getQueryParams();
         $filtros = [
+            'familia' => $params['familia'] ?? null,
             'producto' => $params['producto'] ?? null,
             'contenedor' => $params['contenedor'] ?? null,
             'fechaDesde' => $params['fechaDesde'] ?? null,

@@ -82,7 +82,32 @@ php api/test_db.php
 
 # Install dependencies
 cd api && composer install
+
+# Fix BOM UTF-8 in Envio.php (run after any edit)
+fix_bom.bat
+# OR manually:
+# [System.IO.File]::WriteAllText('c:\xampp7.4.30\htdocs\mikelo\api\src\Model\Envio.php', [System.IO.File]::ReadAllText('c:\xampp7.4.30\htdocs\mikelo\api\src\Model\Envio.php', [System.Text.Encoding]::UTF8), (New-Object System.Text.UTF8Encoding $false))
 ```
+
+## Critical: BOM UTF-8 Issue
+
+**IMPORTANT**: `api/src/Model/Envio.php` must be encoded as **UTF-8 without BOM**.
+
+VS Code and automated editing tools frequently add BOM (Byte Order Mark), causing:
+```
+Fatal error: Namespace declaration statement has to be the very first statement
+```
+
+**Solution**: After **EVERY** edit to `Envio.php`, automatically run:
+```powershell
+[System.IO.File]::WriteAllText('c:\xampp7.4.30\htdocs\mikelo\api\src\Model\Envio.php', [System.IO.File]::ReadAllText('c:\xampp7.4.30\htdocs\mikelo\api\src\Model\Envio.php', [System.Text.Encoding]::UTF8), (New-Object System.Text.UTF8Encoding $false))
+```
+
+Or use the convenience script: `fix_bom.bat`
+
+**Verification**: `php -l api/src/Model/Envio.php` should return "No syntax errors detected"
+
+See `docs/SOLUCION_BOM_UTF8.md` for complete documentation.
 
 ## Integration Points
 
