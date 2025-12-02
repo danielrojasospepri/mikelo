@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const hace30Dias = new Date();
     hace30Dias.setDate(hoy.getDate() - 30);
     
-    document.getElementById('fechaDesde').value = hace30Dias.toISOString().split('T')[0];
+    document.getElementById('fechaDesde').value = hoy.toISOString().split('T')[0]; // hace30Dias.toISOString().split('T')[0];
     document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
 
     // Cargar ubicaciones en el filtro

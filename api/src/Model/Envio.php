@@ -202,16 +202,16 @@ class Envio {
 
         if (!empty($filtros['estado'])) {
             $sql .= " AND EXISTS (
-                SELECT 1 FROM estados_items_movimientos eim2
-                WHERE eim2.id_movimientos_items IN (
-                    SELECT id FROM movimientos_items WHERE id_movimientos = m.id
-                )
-                AND eim2.id_estados = ?
-                AND eim2.fecha_alta = (
-                    SELECT MAX(fecha_alta)
-                    FROM estados_items_movimientos
-                    WHERE id_movimientos_items = eim2.id_movimientos_items
-                )
+                        SELECT 1 FROM estados_items_movimientos eim2
+                        WHERE eim2.id_movimientos_items IN (
+                            SELECT id FROM movimientos_items WHERE id_movimientos = m.id
+                        )
+                        AND eim2.id_estados = ?
+                        AND eim2.id = (
+                            SELECT MAX(id)
+                            FROM estados_items_movimientos
+                            WHERE id_movimientos_items = eim2.id_movimientos_items
+                        )
             )";
             $params[] = $filtros['estado'];
         }
@@ -374,22 +374,51 @@ class Envio {
         ";
 
         $params = [];
+        $hayBusquedaPorCantidad = !empty($filtros['cantidad']);
+        $hayBusquedaPorPeso = !empty($filtros['peso']);
+        $hayBusquedaPorCodigo = !empty($filtros['codigo']);
 
-        // Filtro por codigo de producto
-        if (!empty($filtros['codigo'])) {
+        // Filtro por codigo de producto (SIEMPRE se aplica si viene)
+        if ($hayBusquedaPorCodigo) {
             $sql .= " AND p.codigo = ?";
             $params[] = $filtros['codigo'];
         }
 
-        // Filtro por cantidad exacta
-        if (!empty($filtros['cantidad'])) {
-            $sql .= " AND mi.cnt = ?";
-            $params[] = $filtros['cantidad'];
+        // Filtro por cantidad: BÚSQUEDA INTELIGENTE 3-PASOS
+        if ($hayBusquedaPorCantidad) {
+            // PASO 1: Buscar cantidad EXACTA
+            $sqlPaso1 = $sql . " AND mi.cnt = ? ORDER BY m.fechaAlta ASC LIMIT 1";
+            $paramsPaso1 = array_merge($params, [$filtros['cantidad']]);
+            
+            $stmt = $this->db->prepare($sqlPaso1);
+            $stmt->execute($paramsPaso1);
+            $resultados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Si no encuentra exacto, PASO 2: Buscar cantidad SUPERIOR
+            if (empty($resultados)) {
+                $sqlPaso2 = $sql . " AND mi.cnt > ? ORDER BY mi.cnt ASC, m.fechaAlta ASC LIMIT 1";
+                $paramsPaso2 = array_merge($params, [$filtros['cantidad']]);
+                
+                $stmt = $this->db->prepare($sqlPaso2);
+                $stmt->execute($paramsPaso2);
+                $resultados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            }
+            
+            // Si tampoco encuentra, PASO 3: Buscar SIN restricción de cantidad (búsqueda manual)
+            if (empty($resultados)) {
+                $sqlPaso3 = $sql . " ORDER BY m.fechaAlta DESC";
+                
+                $stmt = $this->db->prepare($sqlPaso3);
+                $stmt->execute($params);
+                $resultados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            }
+            
+            return $resultados;
         }
 
         // Filtro por peso EXACTO (codigo de barras tipo 21)
         // Sin tolerancia: la etiqueta leida es la misma que se uso al dar de alta
-        if (!empty($filtros['peso'])) {
+        if ($hayBusquedaPorPeso) {
             $sql .= " AND mi.cnt_peso = ?";
             $params[] = $filtros['peso'];
         }
@@ -402,13 +431,15 @@ class Envio {
             $params[] = $filtroTexto;
         }
 
-        //$sql .= " ORDER BY m.fechaAlta DESC";
-        // Para búsqueda por peso exacto, tomar solo el más antiguo
-        if (!empty($filtros['filtro']) && (!empty($filtros['peso'])) || !empty($filtros['cantidad'])) {
+        // Ordenamiento por defecto
+        if (!empty($filtros['peso'])) {
+            // Para búsqueda por peso exacto, tomar el más antiguo
             $sql .= " ORDER BY m.fechaAlta ASC LIMIT 1";
-        }else{
+        } else {
+            // Para búsqueda manual o general, tomar más recientes primero
             $sql .= " ORDER BY m.fechaAlta DESC";
         }
+        
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -1061,7 +1092,7 @@ class Envio {
         $sheet->setCellValue('D' . $row, 'TOTALES:');
         $sheet->getStyle('D' . $row)->getFont()->setBold(true);
         $sheet->setCellValue('E' . $row, 'Items: ' . $totalItems);
-        $sheet->setCellValue('F' . $row, 'Peso: ' . number_format($pesoTotal, 2) . ' kg');
+        $sheet->setCellValue('F' . $row, 'Peso: ' . number_format($pesoTotal, 3) . ' kg');
         
         // Ajustar anchos de columna
         $sheet->getColumnDimension('A')->setWidth(15);
@@ -1478,7 +1509,7 @@ class Envio {
         $POS_CLIENTE_ALTO = 15;     // Alto de banda cliente
         $POS_TABLA_TOP = 95;        // Distancia desde arriba a tabla productos
         $POS_FOOTER_BOTTOM = 30;    // Distancia desde abajo a footer gris
-        $POS_DATOS_BOTTOM = 25;     // Distancia desde abajo a datos remito (subir 2 renglones)
+        $POS_DATOS_BOTTOM = 35;     // Distancia desde abajo a datos remito (subir 2 renglones)
         
         // ========== CONFIGURACION DE TABLA ==========
 $TABLA_FONT_SIZE = '8pt';        // Achicar letra
@@ -1652,6 +1683,8 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             // 1. Banda de informacion del cliente
             $html .= '<div class="cliente-info">';
             $html .= '<b>' . htmlspecialchars($movimiento['razon_social'] ?: $movimiento['ubicacion_destino']) . '</b>';
+
+            
             
             // Agregar estado del envio
             if (isset($movimiento['estado_actual'])) {
@@ -1659,6 +1692,13 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             }
             
             $html .= '<br>';
+///cuit----------------------------------
+            if (isset($movimiento['cuit'])) {
+                $html .= '<b>Cuit: ' . htmlspecialchars($movimiento['cuit']) . '</b>';
+                $html .= '<br>';
+            }
+
+
             if ($movimiento['domicilio']) {
                 $html .= '<span style="font-size:10pt">';
                 $html .= htmlspecialchars($movimiento['domicilio']);
@@ -1718,7 +1758,7 @@ $TABLA_HEADER_ALTO = '6mm';      // Encabezado más bajo
             $html .= '</tbody></table></div>';
 
             // 3. Franja gris del pie de pagina
-            $html .= '<div class="footer-info"></div>';
+            //$html .= '<div class="footer-info"></div>';
 
             // 4. Datos del remito con numeracion de paginas
             $html .= '<div class="remito-datos">';

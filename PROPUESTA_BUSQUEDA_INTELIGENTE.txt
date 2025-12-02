@@ -1,0 +1,138 @@
+# 📊 PROPUESTA: BÚSQUEDA INTELIGENTE DE STOCK POR CANTIDAD
+
+## 🎯 SITUACIÓN ACTUAL vs PROPUESTA
+
+### ❌ ACTUAL (Funciona pero no es óptimo)
+```
+Alta en stock: Pan Salvado cantidad 10 → id_movimiento_item: 123
+
+Escaneo 1: "2000405000001" (20=cantidad, 00405=código, 00001=cantidad)
+  └─ Busca producto 405 → Retorna TODOS los items disponibles
+  └─ Sistema encuentra id: 123 (cantidad 10 disponible)
+  └─ Agrega 1 al envío ✅
+
+Escaneo 2: Mismo código
+  └─ Busca producto 405 → Retorna TODOS los items disponibles
+  └─ Sistema encuentra MISMO id: 123 (ahora 9 disponible)
+  └─ Agrega 1 al envío ✅
+
+Resultado: Funciona, pero no usa la cantidad (1) que dice la etiqueta
+```
+
+### ✅ PROPUESTA (Más inteligente)
+```
+Alta en stock: Pan Salvado cantidad 10 → id_movimiento_item: 123
+
+Escaneo 1: "2000405000001" (cantidad 1)
+  ├─ Busca cantidad EXACTA 1
+  │  └─ NO existe (tiene 10)
+  ├─ Busca cantidad SUPERIOR a 1
+  │  └─ SÍ encuentra id: 123 (cantidad 10)
+  └─ Agrega 1 al envío ✅
+
+Escenario posterior: Ya se enviaron 5, quedan 5
+  └─ id: 123 ahora tiene cnt_disponible: 5
+
+Escaneo 11: "2000405000001" (cantidad 1)
+  ├─ Busca cantidad EXACTA 1
+  │  └─ NO existe
+  ├─ Busca cantidad SUPERIOR a 1
+  │  └─ SÍ encuentra id: 123 (cantidad 5 restante)
+  └─ Valida: ¿1 ≤ 5? SÍ ✅
+  └─ Agrega 1 al envío
+
+Resultado: Más inteligente, prioriza cantidad exacta
+```
+
+---
+
+## 🔧 CAMBIOS PROPUESTOS
+
+### 1. Frontend: Comunicar cantidad buscada
+**Archivo:** `js/envios_nuevo.js` línea 235
+
+**Agregar parámetro:**
+```javascript
+if (tipoProducto === '20') {
+    params.append('codigo', codigoProducto);
+    params.append('cantidad', valorCantidadPeso);        // Ya existe
+    params.append('cantidadExacta', valorCantidadPeso);  // NUEVO
+}
+```
+
+### 2. Backend: Buscar en 2 pasos
+**Archivo:** `api/src/Controller/EnvioController.php` o `Envio.php`
+
+**Nueva lógica en `obtenerProductosDisponibles()`:**
+
+```
+PASO 1: ¿Existe item CON cantidad EXACTA?
+  ├─ SÍ → Retornarlo (prioridad máxima)
+  └─ NO → Ir a PASO 2
+
+PASO 2: ¿Existe item CON cantidad SUPERIOR?
+  ├─ SÍ → Retornar el MÁS ANTIGUO (para usar primero lo viejo)
+  └─ NO → Retornar cualquier disponible
+```
+
+### 3. Documentación
+**Crear:** `docs/CODIGO_BARRAS_ENVIOS.md`
+
+```
+Tipo 20 (Cantidades):
+  Formato: 20 + código producto (5 dígitos) + cantidad (5 dígitos)
+  Ejemplo: 2000405000001 = Enviar 1 unidad producto 405
+  
+Tipo 21 (Pesos):
+  Formato: 21 + código producto (5 dígitos) + peso en gramos (5 dígitos)
+  Ejemplo: 2100123003500 = Enviar 1 bandeja producto 123 de 3.5 kg
+```
+
+---
+
+## 📋 DOCUMENTACIÓN NECESARIA
+
+He creado: `ANALISIS_CIRCUITO_BUSQUEDA_STOCK_CANTIDAD.md`
+
+Contiene:
+- ✅ Problema identificado
+- ✅ Lógica de 2 pasos propuesta
+- ✅ Casos de uso (parcial, fraccionado, etc)
+- ✅ Flujo completo
+- ✅ Cambios propuestos
+
+---
+
+## ❓ PREGUNTAS CLAVE
+
+Antes de implementar, necesito confirmar:
+
+1. **¿El backend ya usa el parámetro `cantidad` en la búsqueda?**
+   - ¿O lo ignora completamente?
+
+2. **¿El algoritmo de 2 pasos es correcto?**
+   - Paso 1: Cantidad EXACTA
+   - Paso 2: Cantidad SUPERIOR (más antigua)
+
+3. **¿Cómo se ordena cuando hay múltiples items del mismo producto?**
+   - ¿Por fecha_alta (más antiguo primero)?
+   - ¿Por cnt (menor cantidad disponible)?
+
+4. **¿Hay riesgo de que se repita el mismo id_movimiento_item múltiples veces?**
+   - ¿O es seguro referenciar N veces al mismo?
+
+---
+
+## 🎁 BENEFICIO
+
+✅ Búsqueda más inteligente (prioriza cantidad exacta)  
+✅ Mejor fraccionamiento de stock  
+✅ Documentado el formato de código de barras  
+✅ Código más eficiente en backend  
+
+---
+
+## 🚀 PRÓXIMA ACCIÓN
+
+¿Vamos con esta propuesta? ¿O necesitas que revise algo del análisis?
+

@@ -24,7 +24,7 @@ use App\Controller\ContenedorController;
 
 $app = AppFactory::create();
 // $app->setBasePath('/api');
-$app->setBasePath('/test/api');
+$app->setBasePath('/mikelo/api');
 $app->addBodyParsingMiddleware();
 
 // Agregar middleware para debug de rutas

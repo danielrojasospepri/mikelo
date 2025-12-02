@@ -310,6 +310,14 @@ $(document).ready(function() {
                 return;
             }
             
+            // NUEVO: Verificar si el producto ya está agregado al envío
+            const yaAgregado = productosEnEnvio.some(p => p.id_movimiento_item === producto.id_movimiento_item);
+            
+            // NUEVO: Si ya está agregado, NO mostrar en la lista de búsqueda
+            if (yaAgregado) {
+                return;
+            }
+            
             const row = `
                 <tr>
                     <td>${producto.codigo}</td>
@@ -335,14 +343,7 @@ $(document).ready(function() {
 
     // Función global para agregar producto (llamada desde botones)
     window.agregarProductoAlEnvio = function(producto) {
-        // Verificar si ya está en el envío
-        const existe = productosEnEnvio.find(p => p.id_movimiento_item === producto.id_movimiento_item);
-        if (existe) {
-            mostrarEstadoOperacion('Este producto ya está en el envío', 'warning');
-            return;
-        }
-
-        // Calcular cantidad disponible
+        // Calcular cantidad disponible en stock
         const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
         
         if (cantidadDisponible <= 0) {
@@ -350,8 +351,34 @@ $(document).ready(function() {
             return;
         }
 
-        // Agregar con cantidad inicial = 1 (o el mínimo disponible)
-        const cantidadInicial = Math.min(1, cantidadDisponible);
+        // Calcular cantidad ya agregada al envío (del mismo producto/item)
+        const cantidadYaEnEnvio = productosEnEnvio
+            .filter(p => p.id_movimiento_item === producto.id_movimiento_item)
+            .reduce((total, p) => total + (p.cantidad || 1), 0);
+
+        // Calcular cantidad total si agregamos 1 más
+        const cantidadTotalConNuevo = cantidadYaEnEnvio + 1;
+
+        // Validar que no exceda disponible en stock
+        if (cantidadTotalConNuevo > cantidadDisponible) {
+            // MEJORADO: Mensaje más claro indicando que es un duplicado
+            if (cantidadYaEnEnvio > 0) {
+                mostrarEstadoOperacion(
+                    `No puedes agregar más unidades. Ya hay ${cantidadYaEnEnvio} en el envío. ` +
+                    `Stock disponible: ${cantidadDisponible}. Edita la cantidad en la tabla si necesitas cambiarla.`,
+                    'warning'
+                );
+            } else {
+                mostrarEstadoOperacion(
+                    `Stock insuficiente. Disponible: ${cantidadDisponible}, solicitado: ${cantidadTotalConNuevo}`,
+                    'warning'
+                );
+            }
+            return;
+        }
+
+        // Si pasa validación de stock: agregar (sea primera vez o duplicado)
+        const cantidadInicial = 1;
         const pesoUnitario = producto.cnt_peso / producto.cnt; // Peso por unidad
         const pesoInicial = (pesoUnitario * cantidadInicial).toFixed(3);
 

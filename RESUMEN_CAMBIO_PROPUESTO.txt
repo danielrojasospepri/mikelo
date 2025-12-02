@@ -1,0 +1,164 @@
+# ✅ CAMBIO PROPUESTO: VALIDACIÓN EN STOCK (NO EN "YA EXISTE")
+
+## 🎯 EN UNA FRASE
+
+**Quitar la restricción "ya está en envío" + validar que cantidad total NO exceda stock disponible**
+
+---
+
+## 📊 VISUALIZACIÓN DEL CAMBIO
+
+### ANTES (Rechaza por restricción)
+```
+Stock disponible: 5 Pan Salvado
+
+Escaneo 1: Pan Salvado → ✅ Agregado (cant 1)
+           ↓
+           productosEnEnvio = [Pan: 1]
+
+Escaneo 2: Pan Salvado → ❌ RECHAZADO
+           "Este producto ya está en el envío"
+           ↑ Validación en código: if (existe) return
+```
+
+### DESPUÉS (Valida stock)
+```
+Stock disponible: 5 Pan Salvado
+
+Escaneo 1: Pan Salvado → ¿Ya agregado? 0 + 1 = 1 ≤ 5? ✅ SÍ
+           ↓
+           productosEnEnvio = [Pan: 1]
+
+Escaneo 2: Pan Salvado → ¿Ya agregado? 1 + 1 = 2 ≤ 5? ✅ SÍ
+           ↓
+           productosEnEnvio = [Pan: 1, Pan: 1]
+
+Escaneo 3: Pan Salvado → ¿Ya agregado? 2 + 1 = 3 ≤ 5? ✅ SÍ
+           ↓
+           productosEnEnvio = [Pan: 1, Pan: 1, Pan: 1]
+
+Escaneo 6: Pan Salvado → ¿Ya agregado? 5 + 1 = 6 ≤ 5? ❌ NO
+           "Stock insuficiente. Ya: 5, disponible: 5, solicitado: 6"
+```
+
+---
+
+## 🔧 CAMBIO CÓDIGO
+
+**Ubicación:** `js/envios_nuevo.js` línea 337-376
+
+### QUÉ SE ELIMINA
+```javascript
+// Verificar si ya está en el envío
+const existe = productosEnEnvio.find(p => p.id_movimiento_item === producto.id_movimiento_item);
+if (existe) {
+    mostrarEstadoOperacion('Este producto ya está en el envío', 'warning');
+    return;  // ← ESTA RESTRICCIÓN SE ELIMINA
+}
+```
+
+### QUÉ SE AGREGA
+```javascript
+// Calcular cantidad ya agregada al envío (del mismo producto)
+const cantidadYaEnEnvio = productosEnEnvio
+    .filter(p => p.id_movimiento_item === producto.id_movimiento_item)
+    .reduce((total, p) => total + (p.cantidad || 1), 0);
+
+// Calcular cantidad total si agregamos 1 más
+const cantidadTotalConNuevo = cantidadYaEnEnvio + 1;
+
+// Validar que no exceda disponible en stock
+if (cantidadTotalConNuevo > cantidadDisponible) {
+    mostrarEstadoOperacion(
+        `Stock insuficiente. Ya agregado: ${cantidadYaEnEnvio}, ` +
+        `disponible: ${cantidadDisponible}, solicitado: ${cantidadTotalConNuevo}`,
+        'warning'
+    );
+    return;
+}
+```
+
+---
+
+## 📋 CAMBIOS EN TABLA
+
+### ANTES
+```
+Código   Descripción     Cantidad  Peso
+405      Pan Salvado     1         0
+(No permite 2do escaneo)
+```
+
+### DESPUÉS
+```
+Código   Descripción     Cantidad  Peso
+405      Pan Salvado     1         0
+405      Pan Salvado     1         0
+405      Pan Salvado     1         0
+(3 líneas separadas, suma: 3)
+```
+
+---
+
+## 🎯 VALIDACIÓN EN STOCK
+
+**PASO 1: Frontend (Nuevo)**
+```
+¿Ya en envío (1) + nuevo (1) = 2 ≤ stock (5)?
+Sí → Permite agregar
+No → "Stock insuficiente"
+```
+
+**PASO 2: Backend (Ya existe, no cambia)**
+```
+Al guardar, backend valida NUEVAMENTE:
+¿Stock actual ≥ cantidad solicitada?
+(Por si otro usuario compró mientras se preparaba envío)
+```
+
+---
+
+## ✅ CASOS DE PRUEBA
+
+### Test 1: Pan Salvado (5 disponibles)
+- Escanear 5 veces → ✅ 5 líneas en tabla
+- Escanear 6ª vez → ❌ "Stock insuficiente"
+
+### Test 2: Dos productos
+- Pan (5 disp) → ✅ Agregado
+- Helado (3 disp) → ✅ Agregado (diferente producto)
+- Pan otra vez → ✅ Agregado (pero valida stock)
+
+### Test 3: Guardar envío
+- Pan x5 + Helado x3
+- Click "Guardar" → Backend valida NUEVAMENTE
+- Si stock cambió → Rechaza con error
+
+---
+
+## 💡 CLAVE DEL CAMBIO
+
+| Aspecto | Antes | Después |
+|---------|-------|---------|
+| **Validación** | "¿Existe en array?" | "¿Cantidad total ≤ stock?" |
+| **1er escaneo** | ✅ OK | ✅ OK |
+| **2do escaneo** | ❌ RECHAZADO | ✅ OK (si hay stock) |
+| **Líneas tabla** | 1 | Múltiples (1 por escaneo) |
+| **Seguridad** | ✅ | ✅ (doble validación) |
+
+---
+
+## ❓ PREGUNTAS A CONFIRMAR
+
+1. ¿Es correcto que aparezcan **múltiples líneas** en la tabla?
+   - Sí: Pan Salvado x3 = 3 líneas (cada una con cantidad 1)
+   - Preferencia de usuario para control de bandejas
+
+2. ¿Backend valida NUEVAMENTE al guardar?
+   - Sí, ya lo hace
+
+3. ¿Se puede editar cantidad después?
+   - Sí, la tabla permite editar manualmente
+
+¿Vamos con este cambio?
+

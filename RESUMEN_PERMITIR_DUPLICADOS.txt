@@ -1,0 +1,148 @@
+# 📋 RESUMEN: PERMITIR AGREGAR MÚLTIPLES VECES MISMO PRODUCTO EN ENVÍO
+
+## 🎯 EL PROBLEMA
+
+Cuando escaneas **Pan Salvado** dos veces (código: `2000405000015`):
+- 1er escaneo ✅: Se agrega a la tabla
+- 2do escaneo ❌: **RECHAZADO** con "Este producto ya está en el envío"
+
+**Resultado:** No puedes escanear múltiples unidades del mismo producto
+
+
+## 💡 LA SOLUCIÓN
+
+Cambiar de **"rechazar duplicados"** a **"agrupar cantidad"**
+
+```
+ANTES:
+1er escaneo Pan Salvado → ✅ Agregado (cantidad 1)
+2do escaneo Pan Salvado → ❌ RECHAZADO
+
+DESPUÉS:
+1er escaneo Pan Salvado → ✅ Agregado (cantidad 1)
+2do escaneo Pan Salvado → ✅ Agrupado (cantidad 2, en la misma línea)
+3er escaneo Pan Salvado → ✅ Agrupado (cantidad 3, en la misma línea)
+```
+
+---
+
+## 📝 QUÉ CAMBIA EN LA TABLA
+
+### ANTES (Hoy rechaza el 2do)
+```
+Código   Descripción     Cantidad  Peso   Contenedor
+405      Pan Salvado     1         0 kg   -
+(Si intentas 2do → RECHAZADO)
+```
+
+### DESPUÉS (Agrupa)
+```
+Código   Descripción     Cantidad  Peso   Contenedor
+405      Pan Salvado     3         0 kg   -
+```
+
+---
+
+## 🛠️ LO QUE NECESITA CAMBIAR
+
+**Archivo:** `js/envios_nuevo.js`  
+**Función:** `agregarProductoAlEnvio()` (línea 337-376)
+
+**Cambio específico:**  
+En línea 341-344, REEMPLAZAR esto:
+```javascript
+if (existe) {
+    mostrarEstadoOperacion('Este producto ya está en el envío', 'warning');
+    return;
+}
+```
+
+POR ESTO:
+```javascript
+if (existe) {
+    // Agregar 1 a la cantidad existente
+    const nuevaCantidad = existe.cantidad + 1;
+    
+    // Validar que no exceda stock
+    if (nuevaCantidad > existe.cnt_disponible) {
+        mostrarEstadoOperacion(
+            `No hay más stock. Disponible: ${existe.cnt_disponible}`,
+            'warning'
+        );
+        return;
+    }
+    
+    // Actualizar
+    existe.cantidad = nuevaCantidad;
+    existe.peso = (existe.peso_unitario * nuevaCantidad).toFixed(3);
+    
+    mostrarEstadoOperacion(`✓ ${producto.descripcion}: cantidad ${nuevaCantidad}`, 'success');
+    actualizarTablaProductosEnvio();
+    return;
+}
+```
+
+---
+
+## ✅ CASOS QUE FUNCIONARÁN
+
+### Caso 1: Agregar 3 Pan Salvado
+```
+Escaneo 1 → Tabla: [Pan Salvado: 1]
+Escaneo 2 → Tabla: [Pan Salvado: 2]
+Escaneo 3 → Tabla: [Pan Salvado: 3]
+✓ Una sola línea, cantidad agrupada
+```
+
+### Caso 2: Agregar productos diferentes
+```
+Escaneo Pan Salvado  → Tabla: [Pan Salvado: 1]
+Escaneo Helado Fresa → Tabla: [Pan Salvado: 1, Helado Fresa: 1]
+✓ Productos separados porque son diferentes
+```
+
+### Caso 3: No permite exceder stock
+```
+Stock: 5 unidades disponibles
+Escaneo 1-5 → OK (cantidades 1, 2, 3, 4, 5)
+Escaneo 6   → ⚠️ "No hay más stock. Disponible: 5"
+✓ Protege contra sobrevender
+```
+
+### Caso 4: Se sigue pudiendo editar
+```
+Tabla muestra: [Pan Salvado: 3]
+Usuario edita: 3 → 2
+✓ Permite ajuste manual
+```
+
+---
+
+## 🎁 BENEFICIOS
+
+✅ **Experiencia natural:** Escanear múltiples veces agrega cantidad  
+✅ **Sin errores confusos:** No dice "ya está", simplemente agrupa  
+✅ **Control de stock:** Valida disponible al agrupar  
+✅ **Edición manual:** Usuario puede seguir editando  
+✅ **Una sola línea:** Pan Salvado x3 = 1 línea, no 3  
+
+---
+
+## 📊 COMPARATIVA
+
+| Acción | Comportamiento Actual | Comportamiento Nuevo |
+|--------|----------------------|----------------------|
+| Escanear Pan Salvado 1ª vez | ✅ Se agrega | ✅ Se agrega |
+| Escanear Pan Salvado 2ª vez | ❌ RECHAZADO | ✅ Agrupa (cantidad 2) |
+| Editar cantidad manualmente | ✅ Sí | ✅ Sí |
+| Validar stock al agrupar | ❌ N/A | ✅ Valida y rechaza si no hay |
+| Botón guardar | ✅ Funciona | ✅ Funciona (envía cantidad agrupada) |
+
+---
+
+## 🚀 IMPLEMENTACIÓN
+
+Solo necesita cambiar **12-15 líneas de código** en la función `agregarProductoAlEnvio()`.
+
+¿Quieres que lo implemente directamente?
+

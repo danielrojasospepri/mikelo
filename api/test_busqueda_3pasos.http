@@ -1,0 +1,78 @@
+### Test Manual: Búsqueda 3-Pasos API
+# Para usar con REST Client (VSCode) o Postman
+
+@host = http://localhost
+@baseUrl = {{host}}/mikelo/api
+
+### Test 1: Búsqueda Cantidad Exacta (PASO 1)
+# Pan Salvado código 405, cantidad exacta = 1
+GET {{baseUrl}}/envios/productos-disponibles?codigo=405&cantidad=1
+Accept: application/json
+
+### Test 2: Búsqueda Cantidad Superior (PASO 2)
+# Si no hay exacta, busca superior
+GET {{baseUrl}}/envios/productos-disponibles?codigo=405&cantidad=3
+Accept: application/json
+
+### Test 3: Búsqueda Cantidad Mayor (PASO 2)
+# Buscar productos con cantidad > 5
+GET {{baseUrl}}/envios/productos-disponibles?codigo=405&cantidad=5
+Accept: application/json
+
+### Test 4: Búsqueda por Peso (TIPO 21)
+# Buscar producto por peso exacto
+GET {{baseUrl}}/envios/productos-disponibles?peso=6.355
+Accept: application/json
+
+### Test 5: Búsqueda Manual / Todos
+# Sin parámetros = PASO 3
+GET {{baseUrl}}/envios/productos-disponibles
+Accept: application/json
+
+### Test 6: Búsqueda por Filtro Texto
+# Buscar productos con "pan" en descripción
+GET {{baseUrl}}/envios/productos-disponibles?filtro=pan
+Accept: application/json
+
+### Test 7: Búsqueda Combinada (Código + Cantidad)
+# Código Y cantidad
+GET {{baseUrl}}/envios/productos-disponibles?codigo=405&cantidad=1&filtro=
+Accept: application/json
+
+### Test 8: Búsqueda por Familia (si aplica)
+# Filtro familia (si existe en datos)
+GET {{baseUrl}}/envios/productos-disponibles?familia=HELADOS
+Accept: application/json
+
+### Test 9: Cantidad que no existe (debería hacer PASO 2)
+# Buscar cantidad = 999 (probablemente no existe exacta)
+GET {{baseUrl}}/envios/productos-disponibles?cantidad=999
+Accept: application/json
+
+### Test 10: Peso que no existe (debería devolver vacío)
+# Buscar peso exacto que no existe
+GET {{baseUrl}}/envios/productos-disponibles?peso=99.999
+Accept: application/json
+
+### Test 11: Crear Envío con Producto Encontrado (POST)
+# Crear envío con productos
+POST {{baseUrl}}/envios/crear
+Content-Type: application/json
+
+{
+  "destino": 2,
+  "productos": [
+    {
+      "id_productos": 405,
+      "id_movimientos_items_origen": 2574,
+      "cantidad": 1,
+      "peso": 0
+    }
+  ]
+}
+
+### Test 12: Obtener Envíos Creados
+# Verificar que el envío se creó
+GET {{baseUrl}}/envios
+Accept: application/json
+
