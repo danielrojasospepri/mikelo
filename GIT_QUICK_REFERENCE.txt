@@ -1,0 +1,127 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    MIKELO - GIT WORKFLOW REFERENCE                        ║
+║                        Version Control Setup                              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📁 RAMAS DISPONIBLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  main
+  ├─ HEAD: fe7f873 (estrategia fase 2)
+  ├─ Status: En desarrollo Fase 2
+  └─ Push a: origin/main
+
+  release/v1-fase1
+  ├─ HEAD: fe7f873 (mismo que main)
+  ├─ Status: CONGELADO - No tocar
+  └─ Backup de: Fase 1 completa
+
+  Tags
+  ├─ v1.0-fase1 ✓ (Snapshot oficial Fase 1)
+  ├─ Creado: 6 Diciembre 2025
+  └─ Recuperable en: git checkout v1.0-fase1
+
+
+🚀 FLUJO RÁPIDO - DESARROLLO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Crear rama feature
+   $ git checkout -b feature/nombre-corto
+
+2. Editar archivos
+   $ code archivo.php
+   $ ... cambios ...
+
+3. Commit local
+   $ git add .
+   $ git commit -m "mensaje descriptivo"
+
+4. Subir rama
+   $ git push -u origin feature/nombre-corto
+
+5. Mergear a main (cuando esté listo)
+   $ git checkout main
+   $ git pull origin main
+   $ git merge feature/nombre-corto
+   $ git push origin main
+
+6. Crear tag de hito
+   $ git tag -a v1.X-hito -m "descripción"
+   $ git push origin v1.X-hito
+
+7. Limpiar rama local
+   $ git branch -d feature/nombre-corto
+   $ git push origin --delete feature/nombre-corto
+
+
+⚠️ EMERGENCIA - RECUPERACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Si necesitas volver a Fase 1 completa:
+  $ git reset --hard v1.0-fase1
+  $ git push origin main --force
+
+  Si cometiste push incorrecto:
+  $ git revert COMMIT_HASH
+  $ git push origin main
+
+  Si necesitas revertir último commit:
+  $ git reset --soft HEAD~1
+  (mantiene cambios para reeditar)
+
+
+📋 CHECKLIST PRE-MERGEAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Antes de hacer merge a main:
+
+  ☐ Tests locales pasados
+  ☐ Código PHP sin sintaxis errors: php -l archivo.php
+  ☐ Sin conflictos con main
+  ☐ Commits con mensajes descriptivos
+  ☐ Revisó cambios: git diff main
+  ☐ Backup BD si hace falta: mysqldump
+
+
+📅 TIMELINE FASE 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Semana 1 (Dic 2-6)
+  └─ feature/migracion-bd-fase2
+     └─ Merge → main → Tag v1.1-migracion
+
+  └─ feature/api-pedidos
+     └─ Merge → main
+
+  Semana 2 (Dic 9-13)
+  └─ feature/bajas-stock
+     └─ Merge → main → Tag v1.2-bajas
+
+  └─ feature/dashboard-planta
+     └─ Merge → main
+
+  Semana 3 (Dic 16-20)
+  └─ feature/stock-minimo
+     └─ Merge → main
+
+  └─ feature/reportes
+     └─ Merge → main → Tag v2.0-fase2-completa
+
+
+🔗 REFERENCIAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  GitHub: https://github.com/danielrojasospepri/mikelo
+
+  Documentación:
+  - GUIA_GIT_WORKFLOW.md (Completa, detallada)
+  - GIT_SETUP_RESUMEN.md (Rápida, visual)
+  - FASE2_INICIO_PASO_A_PASO.md (Comandos exactos)
+
+  Ver logs:
+  $ git log --oneline -10
+  $ git log --all --graph --oneline --decorate
+  $ git show v1.0-fase1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Created: 6 Diciembre 2025 | Status: ✅ Operativo | Next: Empezar feature/migracion-bd
