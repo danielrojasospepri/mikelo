@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baja de Stock - J.A.R.V.I.S</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <!-- Estilos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Select2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+
+    <style>
+        .tipo-baja-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .tipo-baja-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .tipo-baja-card.selected {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+        }
+        .tipo-baja-card.venta { border-left: 4px solid #28a745; }
+        .tipo-baja-card.merma { border-left: 4px solid #dc3545; }
+        .tipo-baja-card.ajuste { border-left: 4px solid #fd7e14; }
+        
+        .producto-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .stock-badge {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .historial-item {
+            border-left: 3px solid #007bff;
+            padding-left: 10px;
+            margin-bottom: 10px;
+        }
+        .historial-item.entrada { border-left-color: #28a745; }
+        .historial-item.salida { border-left-color: #dc3545; }
+        
+        .quick-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            .tipo-baja-card {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <span class="nav-link" id="sucursalActual">
+                        <i class="fas fa-store mr-1"></i>
+                        <span id="nombreSucursal">Cargando...</span>
+                    </span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="index.html" class="brand-link">
+                <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                        <li class="nav-header">MI SUCURSAL</li>
+                        <li class="nav-item">
+                            <a href="stock_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-boxes"></i>
+                                <p>Mi Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="baja_stock.html" class="nav-link active">
+                                <i class="nav-icon fas fa-minus-circle"></i>
+                                <p>Baja de Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pedidos_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Mis Pedidos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="recepciones.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck-loading"></i>
+                                <p>Recepciones</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-planta>PLANTA</li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_produccion.html" class="nav-link">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Panel Producción</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="index.html" class="nav-link">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">SESIÓN</li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                                <i class="nav-icon fas fa-sign-out-alt"></i>
+                                <p>Cerrar Sesión</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Content Header -->
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-minus-circle mr-2"></i>Baja de Stock</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="stock_sucursal.html">Stock</a></li>
+                                <li class="breadcrumb-item active">Baja</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    
+                    <!-- Paso 1: Seleccionar Tipo de Baja -->
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-1 mr-2"></i>Tipo de Baja</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card tipo-baja-card venta" data-tipo="BAJA_VENTA" onclick="seleccionarTipo(this)">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-shopping-cart fa-3x text-success mb-3"></i>
+                                            <h5>Venta</h5>
+                                            <p class="text-muted small mb-0">Producto vendido a cliente</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card tipo-baja-card merma" data-tipo="BAJA_MERMA" onclick="seleccionarTipo(this)">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+                                            <h5>Merma</h5>
+                                            <p class="text-muted small mb-0">Pérdida, vencimiento, rotura</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card tipo-baja-card ajuste" data-tipo="AJUSTE_NEGATIVO" onclick="seleccionarTipo(this)">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-balance-scale fa-3x text-warning mb-3"></i>
+                                            <h5>Ajuste</h5>
+                                            <p class="text-muted small mb-0">Corrección de inventario</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Seleccionar Producto -->
+                    <div class="card card-outline card-info" id="pasoProducto" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-2 mr-2"></i>Seleccionar Producto</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label>Buscar producto</label>
+                                        <select class="form-control" id="selectProducto" style="width: 100%;">
+                                            <option value="">Buscar por código o nombre...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-outline-secondary btn-block" onclick="abrirEscaner()">
+                                            <i class="fas fa-barcode mr-1"></i>Escanear
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Info del producto seleccionado -->
+                            <div id="productoInfo" class="producto-info mt-3" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h5 id="productoNombre">-</h5>
+                                        <p class="text-muted mb-0">
+                                            <span class="badge badge-secondary" id="productoCodigo">-</span>
+                                            <span id="productoFamilia"></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-right">
+                                        <small class="text-muted">Stock Actual</small>
+                                        <div class="stock-badge text-primary" id="stockActual">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 3: Cantidad y Confirmar -->
+                    <div class="card card-outline card-success" id="pasoCantidad" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-3 mr-2"></i>Cantidad y Observaciones</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Cantidad a dar de baja</label>
+                                        <input type="number" class="form-control form-control-lg" id="cantidad" 
+                                               min="0.001" step="0.001" placeholder="0">
+                                        <small class="text-muted">Máximo disponible: <span id="maxCantidad">0</span></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label>Observaciones (opcional)</label>
+                                        <textarea class="form-control" id="observaciones" rows="2" 
+                                                  placeholder="Motivo de la baja, detalles adicionales..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <button class="btn btn-danger btn-lg" onclick="confirmarBaja()" id="btnConfirmar">
+                                        <i class="fas fa-check mr-2"></i>Confirmar Baja
+                                    </button>
+                                    <button class="btn btn-secondary btn-lg ml-2" onclick="limpiarFormulario()">
+                                        <i class="fas fa-times mr-2"></i>Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Últimas bajas registradas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-history mr-2"></i>Últimas Bajas</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover" id="tablaHistorial">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Producto</th>
+                                        <th>Tipo</th>
+                                        <th class="text-right">Cantidad</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historialBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            Cargando historial...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <strong>J.A.R.V.I.S</strong> - Sistema de Gestión de Stock
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        let tipoBajaSeleccionado = null;
+        let productoSeleccionado = null;
+        let stockProducto = 0;
+        let idSucursal = null;
+
+        // Inicialización
+        $(document).ready(async function() {
+            const autenticado = await MikeloAuth.requireAuth();
+            if (!autenticado) return;
+
+            const usuario = MikeloAuth.getUser();
+            
+            // Solo franquicias pueden usar esta página
+            if (!MikeloAuth.isFranquicia()) {
+                Swal.fire('Acceso Denegado', 'Esta página es solo para sucursales', 'error')
+                    .then(() => window.location.href = 'index.html');
+                return;
+            }
+
+            // Obtener sucursal
+            const sucursal = MikeloAuth.getSucursalPrincipal();
+            if (sucursal) {
+                idSucursal = sucursal.id_sucursal || sucursal.id;
+                $('#nombreSucursal').text(sucursal.sucursal || sucursal.nombre || 'Mi Sucursal');
+            }
+
+            // Mostrar/ocultar elementos según rol
+            MikeloAuth.updateUI();
+
+            // Inicializar Select2
+            initSelect2();
+
+            // Cargar historial
+            cargarHistorial();
+        });
+
+        function initSelect2() {
+            $('#selectProducto').select2({
+                theme: 'bootstrap4',
+                placeholder: 'Buscar por código o nombre...',
+                allowClear: true,
+                ajax: {
+                    url: function() {
+                        return `/mikelo/api/stock-sucursal/buscar`;
+                    },
+                    dataType: 'json',
+                    delay: 300,
+                    headers: MikeloAuth.getAuthHeaders(),
+                    data: function(params) {
+                        return {
+                            q: params.term,
+                            id_sucursal: idSucursal
+                        };
+                    },
+                    processResults: function(data) {
+                        if (data.error) return { results: [] };
+                        return {
+                            results: data.productos.map(p => ({
+                                id: p.id_producto,
+                                text: `${p.codigo} - ${p.producto}`,
+                                producto: p
+                            }))
+                        };
+                    }
+                }
+            }).on('select2:select', function(e) {
+                seleccionarProducto(e.params.data.producto);
+            }).on('select2:clear', function() {
+                limpiarProducto();
+            });
+        }
+
+        function seleccionarTipo(elemento) {
+            // Quitar selección anterior
+            $('.tipo-baja-card').removeClass('selected');
+            
+            // Seleccionar nuevo
+            $(elemento).addClass('selected');
+            tipoBajaSeleccionado = $(elemento).data('tipo');
+            
+            // Mostrar paso 2
+            $('#pasoProducto').slideDown();
+            
+            // Enfocar en búsqueda
+            $('#selectProducto').select2('open');
+        }
+
+        function seleccionarProducto(producto) {
+            productoSeleccionado = producto;
+            stockProducto = parseFloat(producto.cantidad) || 0;
+
+            $('#productoNombre').text(producto.producto);
+            $('#productoCodigo').text(producto.codigo);
+            $('#productoFamilia').text(producto.familia ? ` - ${producto.familia}` : '');
+            $('#stockActual').text(stockProducto.toFixed(3));
+            $('#maxCantidad').text(stockProducto.toFixed(3));
+            $('#cantidad').attr('max', stockProducto);
+
+            $('#productoInfo').slideDown();
+            $('#pasoCantidad').slideDown();
+            
+            // Enfocar en cantidad
+            setTimeout(() => $('#cantidad').focus(), 300);
+        }
+
+        function limpiarProducto() {
+            productoSeleccionado = null;
+            stockProducto = 0;
+            $('#productoInfo').slideUp();
+            $('#pasoCantidad').slideUp();
+            $('#cantidad').val('');
+            $('#observaciones').val('');
+        }
+
+        function limpiarFormulario() {
+            tipoBajaSeleccionado = null;
+            productoSeleccionado = null;
+            stockProducto = 0;
+            
+            $('.tipo-baja-card').removeClass('selected');
+            $('#selectProducto').val(null).trigger('change');
+            $('#pasoProducto').slideUp();
+            $('#productoInfo').slideUp();
+            $('#pasoCantidad').slideUp();
+            $('#cantidad').val('');
+            $('#observaciones').val('');
+        }
+
+        async function confirmarBaja() {
+            if (!tipoBajaSeleccionado) {
+                Swal.fire('Error', 'Seleccione un tipo de baja', 'warning');
+                return;
+            }
+
+            if (!productoSeleccionado) {
+                Swal.fire('Error', 'Seleccione un producto', 'warning');
+                return;
+            }
+
+            const cantidad = parseFloat($('#cantidad').val());
+            if (!cantidad || cantidad <= 0) {
+                Swal.fire('Error', 'Ingrese una cantidad válida', 'warning');
+                return;
+            }
+
+            if (cantidad > stockProducto) {
+                Swal.fire('Error', `La cantidad no puede superar el stock disponible (${stockProducto})`, 'warning');
+                return;
+            }
+
+            // Confirmar
+            const tipoTexto = {
+                'BAJA_VENTA': 'Venta',
+                'BAJA_MERMA': 'Merma',
+                'AJUSTE_NEGATIVO': 'Ajuste'
+            };
+
+            const result = await Swal.fire({
+                title: '¿Confirmar baja?',
+                html: `
+                    <p><strong>Producto:</strong> ${productoSeleccionado.producto}</p>
+                    <p><strong>Tipo:</strong> ${tipoTexto[tipoBajaSeleccionado]}</p>
+                    <p><strong>Cantidad:</strong> ${cantidad}</p>
+                    <p><strong>Stock después:</strong> ${(stockProducto - cantidad).toFixed(3)}</p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545'
+            });
+
+            if (!result.isConfirmed) return;
+
+            // Enviar
+            try {
+                $('#btnConfirmar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...');
+
+                const response = await MikeloAuth.fetch('/stock-sucursal/baja', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        id_producto: productoSeleccionado.id_producto,
+                        cantidad: cantidad,
+                        tipo_baja: tipoBajaSeleccionado,
+                        observaciones: $('#observaciones').val() || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje);
+                }
+
+                Swal.fire({
+                    title: '¡Baja Registrada!',
+                    html: `
+                        <p>Stock anterior: <strong>${data.stock_anterior}</strong></p>
+                        <p>Stock actual: <strong>${data.stock_actual}</strong></p>
+                    `,
+                    icon: 'success'
+                });
+
+                limpiarFormulario();
+                cargarHistorial();
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            } finally {
+                $('#btnConfirmar').prop('disabled', false).html('<i class="fas fa-check mr-2"></i>Confirmar Baja');
+            }
+        }
+
+        async function cargarHistorial() {
+            try {
+                const response = await MikeloAuth.fetch(`/stock-sucursal/historial?limite=10`);
+                const data = await response.json();
+
+                if (data.error || !data.movimientos || data.movimientos.length === 0) {
+                    $('#historialBody').html(`
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">
+                                No hay movimientos recientes
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                let html = '';
+                data.movimientos.forEach(m => {
+                    const fecha = new Date(m.fecha_movimiento).toLocaleString('es-AR', {
+                        day: '2-digit', month: '2-digit', year: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    
+                    const tipoBadge = {
+                        'BAJA_VENTA': '<span class="badge badge-success">Venta</span>',
+                        'BAJA_MERMA': '<span class="badge badge-danger">Merma</span>',
+                        'AJUSTE_NEGATIVO': '<span class="badge badge-warning">Ajuste -</span>',
+                        'AJUSTE_POSITIVO': '<span class="badge badge-info">Ajuste +</span>',
+                        'RECEPCION': '<span class="badge badge-primary">Recepción</span>'
+                    };
+
+                    html += `
+                        <tr>
+                            <td>${fecha}</td>
+                            <td>${m.codigo} - ${m.producto}</td>
+                            <td>${tipoBadge[m.tipo_movimiento] || m.tipo_movimiento}</td>
+                            <td class="text-right ${parseFloat(m.cantidad) < 0 ? 'text-danger' : 'text-success'}">
+                                ${parseFloat(m.cantidad).toFixed(3)}
+                            </td>
+                            <td class="text-muted small">${m.observaciones || '-'}</td>
+                        </tr>
+                    `;
+                });
+
+                $('#historialBody').html(html);
+
+            } catch (error) {
+                console.error('Error cargando historial:', error);
+                $('#historialBody').html(`
+                    <tr>
+                        <td colspan="5" class="text-center text-danger py-3">
+                            Error al cargar historial
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+
+        function abrirEscaner() {
+            Swal.fire('Próximamente', 'El escaneo de código de barras estará disponible pronto', 'info');
+        }
+    </script>
+</body>
+</html>

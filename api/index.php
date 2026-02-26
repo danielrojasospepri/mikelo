@@ -23,8 +23,8 @@ use App\Controller\StockDepositoController;
 use App\Controller\ContenedorController;
 
 $app = AppFactory::create();
-// $app->setBasePath('/api');
 $app->setBasePath('/mikelo/api');
+// $app->setBasePath('/test/api'); // Para testing local
 $app->addBodyParsingMiddleware();
 
 // Agregar middleware para debug de rutas
@@ -305,5 +305,11 @@ $app->put('/envios/{id}/cancelar', function (Request $request, Response $respons
     $controller = new EnvioController($db);
     return $controller->cancelarEnvio($request, $response, $args);
 });
+
+// ============================================================================
+// FASE 2 - Cargar rutas nuevas (pedidos, recepciones, stock sucursales, auth)
+// Para deshabilitar Fase 2: comentar la siguiente línea
+// ============================================================================
+require __DIR__ . '/routes_fase2.php';
 
 $app->run();

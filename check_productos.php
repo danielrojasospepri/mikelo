@@ -11,6 +11,17 @@ try {
         echo $campo['Field'] . ' - ' . $campo['Type'] . "\n";
     }
     
+    echo "\nEstructura de tipo_producto:\n";
+    $stmt = $db->query('DESCRIBE tipo_producto');
+    $campos = $stmt->fetchAll();
+    foreach ($campos as $campo) {
+        echo $campo['Field'] . ' - ' . $campo['Type'] . "\n";
+    }
+    
+    echo "\nPrimeros 3 tipo_producto:\n";
+    $stmt = $db->query('SELECT * FROM tipo_producto LIMIT 3');
+    print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
+    
     echo "\nPrimeros 3 productos:\n";
     $stmt = $db->query('SELECT id, codigo, descripcion FROM productos LIMIT 3');
     $productos = $stmt->fetchAll();

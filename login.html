@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikelo - Iniciar Sesión</title>
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .login-box {
+            width: 400px;
+            margin-top: 10vh;
+        }
+        .login-logo {
+            margin-bottom: 20px;
+        }
+        .login-logo a {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .login-logo i {
+            color: #ffc107;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .card-body {
+            padding: 2rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+        }
+        .input-group-text {
+            background: #f8f9fa;
+            border-right: none;
+        }
+        .form-control {
+            border-left: none;
+        }
+        .form-control:focus {
+            box-shadow: none;
+            border-color: #ced4da;
+        }
+        .alert {
+            border-radius: 10px;
+        }
+        .version-info {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.8rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class="hold-transition login-page">
+    <div class="login-box">
+        <div class="login-logo">
+            <a href="#"><i class="fas fa-ice-cream"></i> Mikelo</a>
+        </div>
+        
+        <div class="card">
+            <div class="card-body login-card-body">
+                <p class="login-box-msg">Ingrese sus credenciales para continuar</p>
+
+                <div id="alertContainer"></div>
+
+                <form id="loginForm">
+                    <div class="input-group mb-3">
+                        <input type="text" 
+                               id="usuario" 
+                               class="form-control" 
+                               placeholder="Usuario"
+                               autocomplete="username"
+                               required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-user"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group mb-3">
+                        <input type="password" 
+                               id="password" 
+                               class="form-control" 
+                               placeholder="Contraseña"
+                               autocomplete="current-password"
+                               required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-block" id="btnLogin">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Iniciar Sesión
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="text-center version-info">
+                    <small>Sistema de Gestión de Inventario v2.0</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AdminLTE -->
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <!-- Auth Module -->
+    <script src="js/auth.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Si ya está autenticado, redirigir
+            if (MikeloAuth.isAuthenticated()) {
+                redirectByRole();
+            }
+
+            // Verificar si la sesión expiró
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('expired') === '1') {
+                showAlert('Su sesión ha expirado. Por favor, inicie sesión nuevamente.', 'warning');
+            }
+
+            // Manejar submit del formulario
+            $('#loginForm').on('submit', async function(e) {
+                e.preventDefault();
+                
+                const usuario = $('#usuario').val().trim();
+                const password = $('#password').val();
+
+                if (!usuario || !password) {
+                    showAlert('Por favor complete todos los campos', 'warning');
+                    return;
+                }
+
+                const $btn = $('#btnLogin');
+                const originalText = $btn.html();
+                
+                try {
+                    $btn.prop('disabled', true)
+                        .html('<i class="fas fa-spinner fa-spin mr-2"></i>Verificando...');
+
+                    const user = await MikeloAuth.login(usuario, password);
+                    
+                    showAlert(`¡Bienvenido, ${user.nombre}!`, 'success');
+                    
+                    // Esperar un momento y redirigir
+                    setTimeout(() => {
+                        redirectByRole();
+                    }, 1000);
+
+                } catch (error) {
+                    showAlert(error.message || 'Error al iniciar sesión', 'danger');
+                    $btn.prop('disabled', false).html(originalText);
+                }
+            });
+
+            // Focus en usuario
+            $('#usuario').focus();
+        });
+
+        function showAlert(message, type = 'info') {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            `;
+            $('#alertContainer').html(alertHtml);
+        }
+
+        function redirectByRole() {
+            const user = MikeloAuth.getUser();
+            
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Redirigir según rol
+            if (user.rol_nivel <= 25) {
+                // Planta/Admin -> página principal de movimientos
+                window.location.href = 'index.html';
+            } else {
+                // Franquicia -> stock de su sucursal
+                window.location.href = 'stock_sucursal.html';
+            }
+        }
+    </script>
+</body>
+</html>

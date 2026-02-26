@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Faltantes - J.A.R.V.I.S</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <!-- Estilos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+
+    <style>
+        .indicador-faltante {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .indicador-faltante.negativo { color: #dc3545; }
+        .indicador-faltante.positivo { color: #28a745; }
+        .indicador-faltante.warning { color: #ffc107; }
+        
+        .card-producto {
+            transition: all 0.3s ease;
+        }
+        .card-producto:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .card-producto.faltante {
+            border-left: 4px solid #dc3545;
+        }
+        .card-producto.disponible {
+            border-left: 4px solid #28a745;
+        }
+        .card-producto.parcial {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .resumen-box {
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .resumen-box h2 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .btn-alta {
+            position: relative;
+        }
+        .btn-alta .badge-cantidad {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.7rem;
+        }
+
+        .familia-header {
+            background: #343a40;
+            color: white;
+            padding: 10px 15px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .indicador-faltante { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <button class="btn btn-sm btn-outline-primary mr-2" onclick="cargarDatos()">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link text-muted small">
+                        <i class="far fa-clock mr-1"></i>
+                        <span id="ultimaActualizacion">-</span>
+                    </span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="index.html" class="brand-link">
+                <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                        <li class="nav-header">PLANTA</li>
+                        <li class="nav-item">
+                            <a href="panel_produccion.html" class="nav-link">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Pedidos Pendientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="panel_faltantes.html" class="nav-link active">
+                                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                                <p>Panel de Faltantes</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">OPERACIONES</li>
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="alta_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Alta de Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="envios.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Envíos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="stock_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">SESIÓN</li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                                <i class="nav-icon fas fa-sign-out-alt"></i>
+                                <p>Cerrar Sesión</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Content Header -->
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-exclamation-triangle mr-2"></i>Panel de Faltantes</h1>
+                            <small class="text-muted">Demanda agregada de todos los pedidos pendientes</small>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="index.html">Inicio</a></li>
+                                <li class="breadcrumb-item active">Faltantes</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    
+                    <!-- Resumen Superior -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-6">
+                            <div class="resumen-box bg-danger">
+                                <h2 class="text-white" id="totalFaltantes">0</h2>
+                                <p class="text-white-50 mb-0">Productos Faltantes</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="resumen-box bg-warning">
+                                <h2 class="text-dark" id="totalParcial">0</h2>
+                                <p class="text-dark mb-0">Stock Parcial</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="resumen-box bg-success">
+                                <h2 class="text-white" id="totalDisponible">0</h2>
+                                <p class="text-white-50 mb-0">Disponibles</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="resumen-box bg-info">
+                                <h2 class="text-white" id="totalPedidos">0</h2>
+                                <p class="text-white-50 mb-0">Pedidos Pendientes</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="btn-group">
+                                <a href="alta_deposito.html" class="btn btn-success btn-alta">
+                                    <i class="fas fa-plus-circle mr-1"></i>Ir a Alta de Stock
+                                </a>
+                            </div>
+                            <div class="btn-group ml-2">
+                                <button class="btn btn-outline-secondary active" onclick="cambiarVista('cards')" id="btnCards">
+                                    <i class="fas fa-th-large"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="cambiarVista('tabla')" id="btnTabla">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                            <div class="form-group d-inline-block ml-3" style="width: 200px; vertical-align: middle;">
+                                <select class="form-control form-control-sm" id="filtroFamilia" onchange="filtrarPorFamilia()">
+                                    <option value="">Todas las familias</option>
+                                </select>
+                            </div>
+                            <div class="form-check d-inline-block ml-3">
+                                <input type="checkbox" class="form-check-input" id="soloFaltantes" onchange="filtrarSoloFaltantes()">
+                                <label class="form-check-label" for="soloFaltantes">Solo mostrar faltantes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista Cards -->
+                    <div id="vistaCards">
+                        <div class="row" id="containerCards">
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-3x text-muted"></i>
+                                <p class="text-muted mt-3">Cargando demanda...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista Tabla -->
+                    <div id="vistaTabla" style="display: none;">
+                        <div class="card">
+                            <div class="card-body table-responsive p-0">
+                                <table class="table table-hover" id="tablaFaltantes">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Producto</th>
+                                            <th>Familia</th>
+                                            <th class="text-right">Demanda Total</th>
+                                            <th class="text-right">Stock Actual</th>
+                                            <th class="text-right">Faltante</th>
+                                            <th>Estado</th>
+                                            <th>Sucursales</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <strong>J.A.R.V.I.S</strong> - Panel de Faltantes para Producción
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        let demandaData = [];
+        let familias = new Set();
+
+        $(document).ready(async function() {
+            const autenticado = await MikeloAuth.requireAuth();
+            if (!autenticado) return;
+
+            // Solo planta puede ver este panel
+            if (!MikeloAuth.isPlanta() && !MikeloAuth.isAdmin()) {
+                Swal.fire('Acceso Denegado', 'Solo personal de planta puede acceder', 'error')
+                    .then(() => window.location.href = 'index.html');
+                return;
+            }
+
+            MikeloAuth.updateUI();
+            cargarDatos();
+            
+            // Auto-refresh cada 2 minutos
+            setInterval(cargarDatos, 120000);
+        });
+
+        async function cargarDatos() {
+            try {
+                const response = await MikeloAuth.fetch('/pedidos/demanda-agregada');
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje);
+                }
+
+                demandaData = data.demanda || [];
+                familias.clear();
+                
+                // Extraer familias únicas
+                demandaData.forEach(p => {
+                    if (p.familia) familias.add(p.familia);
+                });
+
+                actualizarResumen();
+                actualizarFiltroFamilias();
+                renderizarVista();
+                
+                $('#ultimaActualizacion').text(new Date().toLocaleTimeString('es-AR'));
+                $('#totalPedidos').text(data.total_pedidos || 0);
+
+            } catch (error) {
+                console.error('Error:', error);
+                $('#containerCards').html(`
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Error al cargar datos: ${error.message}
+                        </div>
+                    </div>
+                `);
+            }
+        }
+
+        function actualizarResumen() {
+            let faltantes = 0, parcial = 0, disponible = 0;
+            
+            demandaData.forEach(p => {
+                const stock = parseFloat(p.stock_disponible) || 0;
+                const demanda = parseFloat(p.cantidad_total) || 0;
+                
+                if (stock <= 0) {
+                    faltantes++;
+                } else if (stock < demanda) {
+                    parcial++;
+                } else {
+                    disponible++;
+                }
+            });
+            
+            $('#totalFaltantes').text(faltantes);
+            $('#totalParcial').text(parcial);
+            $('#totalDisponible').text(disponible);
+        }
+
+        function actualizarFiltroFamilias() {
+            let html = '<option value="">Todas las familias</option>';
+            Array.from(familias).sort().forEach(f => {
+                html += `<option value="${f}">${f}</option>`;
+            });
+            $('#filtroFamilia').html(html);
+        }
+
+        function obtenerDatosFiltrados() {
+            let datos = [...demandaData];
+            
+            const filtroFamilia = $('#filtroFamilia').val();
+            if (filtroFamilia) {
+                datos = datos.filter(p => p.familia === filtroFamilia);
+            }
+            
+            if ($('#soloFaltantes').is(':checked')) {
+                datos = datos.filter(p => {
+                    const stock = parseFloat(p.stock_disponible) || 0;
+                    const demanda = parseFloat(p.cantidad_total) || 0;
+                    return stock < demanda;
+                });
+            }
+            
+            return datos;
+        }
+
+        function renderizarVista() {
+            const datos = obtenerDatosFiltrados();
+            
+            if ($('#vistaCards').is(':visible')) {
+                renderizarCards(datos);
+            } else {
+                renderizarTabla(datos);
+            }
+        }
+
+        function renderizarCards(datos) {
+            if (datos.length === 0) {
+                $('#containerCards').html(`
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                        <h4>¡No hay faltantes!</h4>
+                        <p class="text-muted">Todos los productos tienen stock suficiente</p>
+                    </div>
+                `);
+                return;
+            }
+
+            // Agrupar por familia
+            const porFamilia = {};
+            datos.forEach(p => {
+                const familia = p.familia || 'Sin Familia';
+                if (!porFamilia[familia]) porFamilia[familia] = [];
+                porFamilia[familia].push(p);
+            });
+
+            let html = '';
+            Object.keys(porFamilia).sort().forEach(familia => {
+                html += `<div class="col-12"><div class="familia-header">${familia}</div></div>`;
+                
+                porFamilia[familia].forEach(p => {
+                    const stock = parseFloat(p.stock_disponible) || 0;
+                    const demanda = parseFloat(p.cantidad_total) || 0;
+                    const faltante = Math.max(0, demanda - stock);
+                    
+                    let clase = 'disponible';
+                    let badgeClass = 'success';
+                    let estadoTexto = 'OK';
+                    
+                    if (stock <= 0) {
+                        clase = 'faltante';
+                        badgeClass = 'danger';
+                        estadoTexto = 'SIN STOCK';
+                    } else if (stock < demanda) {
+                        clase = 'parcial';
+                        badgeClass = 'warning';
+                        estadoTexto = 'PARCIAL';
+                    }
+                    
+                    html += `
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                            <div class="card card-producto ${clase}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="badge badge-secondary">${p.codigo}</span>
+                                            <span class="badge badge-${badgeClass} ml-1">${estadoTexto}</span>
+                                        </div>
+                                    </div>
+                                    <h6 class="card-title mb-2">${p.producto}</h6>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-muted d-block">Demanda</small>
+                                            <strong class="text-info">${demanda.toFixed(1)}</strong>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted d-block">Stock</small>
+                                            <strong class="${stock > 0 ? 'text-success' : 'text-danger'}">${stock.toFixed(1)}</strong>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted d-block">Faltante</small>
+                                            <strong class="${faltante > 0 ? 'text-danger' : 'text-success'}">${faltante.toFixed(1)}</strong>
+                                        </div>
+                                    </div>
+                                    ${faltante > 0 ? `
+                                        <div class="mt-2">
+                                            <small class="text-muted">Sucursales que piden:</small>
+                                            <small class="d-block">${p.sucursales || '-'}</small>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            $('#containerCards').html(html);
+        }
+
+        function renderizarTabla(datos) {
+            if (datos.length === 0) {
+                $('#tablaBody').html(`
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            No hay productos faltantes
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            datos.forEach(p => {
+                const stock = parseFloat(p.stock_disponible) || 0;
+                const demanda = parseFloat(p.cantidad_total) || 0;
+                const faltante = Math.max(0, demanda - stock);
+                
+                let badgeClass = 'success';
+                let estadoTexto = 'OK';
+                
+                if (stock <= 0) {
+                    badgeClass = 'danger';
+                    estadoTexto = 'SIN STOCK';
+                } else if (stock < demanda) {
+                    badgeClass = 'warning';
+                    estadoTexto = 'PARCIAL';
+                }
+                
+                html += `
+                    <tr class="${faltante > 0 ? 'table-warning' : ''}">
+                        <td><span class="badge badge-secondary">${p.codigo}</span></td>
+                        <td>${p.producto}</td>
+                        <td>${p.familia || '-'}</td>
+                        <td class="text-right">${demanda.toFixed(2)}</td>
+                        <td class="text-right ${stock > 0 ? 'text-success' : 'text-danger'}">${stock.toFixed(2)}</td>
+                        <td class="text-right ${faltante > 0 ? 'text-danger font-weight-bold' : ''}">${faltante.toFixed(2)}</td>
+                        <td><span class="badge badge-${badgeClass}">${estadoTexto}</span></td>
+                        <td><small class="text-muted">${p.sucursales || '-'}</small></td>
+                    </tr>
+                `;
+            });
+
+            $('#tablaBody').html(html);
+        }
+
+        function cambiarVista(vista) {
+            if (vista === 'cards') {
+                $('#vistaCards').show();
+                $('#vistaTabla').hide();
+                $('#btnCards').addClass('active');
+                $('#btnTabla').removeClass('active');
+            } else {
+                $('#vistaCards').hide();
+                $('#vistaTabla').show();
+                $('#btnCards').removeClass('active');
+                $('#btnTabla').addClass('active');
+            }
+            renderizarVista();
+        }
+
+        function filtrarPorFamilia() {
+            renderizarVista();
+        }
+
+        function filtrarSoloFaltantes() {
+            renderizarVista();
+        }
+    </script>
+</body>
+</html>
+

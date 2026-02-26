@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikelo - Stock de Sucursal</title>
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .content-wrapper { min-height: calc(100vh - 57px); }
+        .stock-card { transition: all 0.3s; }
+        .stock-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .badge-stock { font-size: 1.1rem; padding: 8px 15px; }
+        .table-stock td { vertical-align: middle; }
+        .search-box { max-width: 400px; }
+        .info-box-icon { font-size: 2rem; }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="stock_sucursal.html" class="nav-link active">Stock</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="pedidos_sucursal.html" class="nav-link">Pedidos</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="recepciones.html" class="nav-link">Recepciones</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle mr-1"></i>
+                    <span id="userName">Usuario</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <span class="dropdown-item-text">
+                        <small class="text-muted" id="userRole">Rol</small><br>
+                        <small class="text-muted" id="userSucursal">Sucursal</small>
+                    </span>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index.html" class="brand-link">
+            <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column">
+                    <li class="nav-header">MI SUCURSAL</li>
+                    <li class="nav-item">
+                        <a href="stock_sucursal.html" class="nav-link active">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Mi Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="baja_stock.html" class="nav-link">
+                            <i class="nav-icon fas fa-minus-circle"></i>
+                            <p>Baja de Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="stock_minimo.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Stock Mínimo</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="pedidos_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>Mis Pedidos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="recepciones.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck-loading"></i>
+                            <p>Recepciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-planta>PLANTA</li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_produccion.html" class="nav-link">
+                            <i class="nav-icon fas fa-industry"></i>
+                            <p>Panel Producción</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="index.html" class="nav-link">
+                            <i class="nav-icon fas fa-home"></i>
+                            <p>Panel Principal</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="usuarios.html" class="nav-link">
+                            <i class="nav-icon fas fa-users-cog"></i>
+                            <p>Usuarios</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-boxes mr-2"></i>Stock de Sucursal</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Inicio</a></li>
+                            <li class="breadcrumb-item active">Stock</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Resumen -->
+                <div class="row">
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box bg-info">
+                            <span class="info-box-icon"><i class="fas fa-cubes"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Productos Diferentes</span>
+                                <span class="info-box-number" id="totalProductos">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box bg-success">
+                            <span class="info-box-icon"><i class="fas fa-layer-group"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Unidades</span>
+                                <span class="info-box-number" id="totalUnidades">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box bg-warning">
+                            <span class="info-box-icon"><i class="fas fa-weight"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Peso Total</span>
+                                <span class="info-box-number" id="pesoTotal">- kg</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-truck"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Envíos Pendientes</span>
+                                <span class="info-box-number" id="enviosPendientes">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Stock -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-list mr-2"></i>Detalle de Stock</h3>
+                        <div class="card-tools">
+                            <div class="input-group input-group-sm search-box">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Buscar producto...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-default" type="button" onclick="cargarStock()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="tablaStock" class="table table-bordered table-striped table-stock">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Producto</th>
+                                        <th>Tipo</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-right">Peso Total</th>
+                                        <th class="text-center">Última Actualización</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Cargando...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="float-right d-none d-sm-block">
+            <b>Versión</b> 2.0
+        </div>
+        <strong>Mikelo</strong> - Sistema de Gestión de Inventario
+    </footer>
+</div>
+
+<!-- Modal Historial -->
+<div class="modal fade" id="modalHistorial" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-history mr-2"></i>Historial de Movimientos</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h6 id="historialProducto" class="mb-3"></h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th class="text-right">Cantidad</th>
+                                <th class="text-right">Peso</th>
+                                <th>Referencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historialBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="js/auth.js"></script>
+
+<script>
+    let dataTable = null;
+
+    $(document).ready(async function() {
+        // Verificar autenticación
+        const authenticated = await MikeloAuth.requireAuth();
+        if (!authenticated) return;
+
+        // Actualizar UI con datos del usuario
+        MikeloAuth.updateUI();
+
+        // Cargar datos
+        await cargarResumen();
+        await cargarStock();
+
+        // Búsqueda en tiempo real
+        $('#searchInput').on('keyup', function(e) {
+            if (e.key === 'Enter') {
+                cargarStock();
+            }
+        });
+    });
+
+    async function cargarResumen() {
+        try {
+            const response = await authFetch('/stock-sucursal/resumen');
+            if (!response) return;
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            const r = data.resumen;
+            $('#totalProductos').text(r.total_productos);
+            $('#totalUnidades').text(r.total_unidades);
+            $('#pesoTotal').text(r.peso_total_kg + ' kg');
+            $('#enviosPendientes').text(r.envios_pendientes);
+
+        } catch (error) {
+            console.error('Error cargando resumen:', error);
+        }
+    }
+
+    async function cargarStock() {
+        const searchTerm = $('#searchInput').val().trim();
+        
+        try {
+            let url = '/stock-sucursal';
+            if (searchTerm) {
+                url = `/stock-sucursal/buscar?q=${encodeURIComponent(searchTerm)}`;
+            }
+
+            const response = await authFetch(url);
+            if (!response) return;
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            const items = data.stock || data.resultados || [];
+            renderizarStock(items);
+
+        } catch (error) {
+            console.error('Error cargando stock:', error);
+            Swal.fire('Error', error.message || 'No se pudo cargar el stock', 'error');
+        }
+    }
+
+    function renderizarStock(items) {
+        if (dataTable) {
+            dataTable.destroy();
+        }
+
+        const tbody = $('#stockBody');
+        tbody.empty();
+
+        if (items.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-box-open fa-2x mb-2"></i><br>
+                        No hay productos en stock
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        items.forEach(item => {
+            const fechaActualizacion = item.ultima_actualizacion 
+                ? new Date(item.ultima_actualizacion).toLocaleDateString('es-AR')
+                : '-';
+            
+            const peso = item.peso_total ? (item.peso_total / 1000).toFixed(2) + ' kg' : '-';
+            
+            tbody.append(`
+                <tr>
+                    <td><code>${item.codigo || '-'}</code></td>
+                    <td>${item.producto || item.nombre}</td>
+                    <td><span class="badge badge-secondary">${item.tipo_producto || '-'}</span></td>
+                    <td class="text-center">
+                        <span class="badge badge-stock ${item.cantidad_actual > 0 ? 'badge-success' : 'badge-danger'}">
+                            ${item.cantidad_actual || 0}
+                        </span>
+                    </td>
+                    <td class="text-right">${peso}</td>
+                    <td class="text-center">${fechaActualizacion}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-info" onclick="verHistorial(${item.id_producto})" title="Ver historial">
+                            <i class="fas fa-history"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+
+        // Inicializar DataTable
+        dataTable = $('#tablaStock').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+            },
+            pageLength: 25,
+            order: [[1, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: [6] }
+            ]
+        });
+    }
+
+    async function verHistorial(idProducto) {
+        try {
+            const response = await authFetch(`/stock-sucursal/producto/${idProducto}`);
+            if (!response) return;
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            $('#historialProducto').text(`${data.producto.codigo} - ${data.producto.producto}`);
+            
+            const tbody = $('#historialBody');
+            tbody.empty();
+
+            if (!data.historial || data.historial.length === 0) {
+                tbody.html('<tr><td colspan="5" class="text-center text-muted">Sin movimientos</td></tr>');
+            } else {
+                data.historial.forEach(h => {
+                    const fecha = new Date(h.fecha).toLocaleDateString('es-AR');
+                    const tipoClass = h.tipo_movimiento === 'entrada' ? 'success' : 'danger';
+                    const signo = h.tipo_movimiento === 'entrada' ? '+' : '-';
+                    
+                    tbody.append(`
+                        <tr>
+                            <td>${fecha}</td>
+                            <td><span class="badge badge-${tipoClass}">${h.tipo_movimiento}</span></td>
+                            <td class="text-right">${signo}${h.cantidad}</td>
+                            <td class="text-right">${h.peso ? (h.peso/1000).toFixed(2) + ' kg' : '-'}</td>
+                            <td>${h.referencia || '-'}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            $('#modalHistorial').modal('show');
+
+        } catch (error) {
+            console.error('Error cargando historial:', error);
+            Swal.fire('Error', error.message || 'No se pudo cargar el historial', 'error');
+        }
+    }
+</script>
+</body>
+</html>

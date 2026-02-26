@@ -67,6 +67,41 @@ class Envio {
         try {
             $this->db->beginTransaction();
 
+            // VALIDACIÓN PREVIA: Verificar stock disponible con bloqueo pesimista
+            foreach ($productos as $producto) {
+                if (isset($producto['id_movimientos_items_origen'])) {
+                    $stmt = $this->db->prepare("
+                        SELECT 
+                            mi.id,
+                            mi.cnt,
+                            mi.cnt - IFNULL((
+                                SELECT SUM(mi2.cnt)
+                                FROM movimientos_items mi2
+                                WHERE mi2.id_movimientos_items_origen = mi.id
+                            ), 0) AS disponible
+                        FROM movimientos_items mi
+                        WHERE mi.id = ?
+                        FOR UPDATE
+                    ");
+                    $stmt->execute([$producto['id_movimientos_items_origen']]);
+                    $item = $stmt->fetch(\PDO::FETCH_ASSOC);
+                    
+                    if (!$item) {
+                        throw new \Exception("Producto ID {$producto['id_movimientos_items_origen']} no encontrado");
+                    }
+                    
+                    $disponible = (float) $item['disponible'];
+                    $solicitado = (float) ($producto['cantidad'] ?? 0);
+                    
+                    if ($solicitado > $disponible) {
+                        throw new \Exception(
+                            "Stock insuficiente para producto ID {$producto['id_movimientos_items_origen']}. " .
+                            "Disponible: {$disponible}, solicitado: {$solicitado}"
+                        );
+                    }
+                }
+            }
+
             // 1. Crear el movimiento principal
             $stmt = $this->db->prepare("
                 INSERT INTO movimientos (fechaAlta, id_ubicacion_origen, id_ubicacion_destino, usuario_alta)

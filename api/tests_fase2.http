@@ -1,0 +1,251 @@
+### Tests Fase 2 - Mikelo
+### Usar con REST Client de VS Code o similar
+### Ajustar @baseUrl según tu entorno
+
+@baseUrl = http://localhost/mikelo/api
+
+### =====================================================
+### 1. TEST DE CONEXIÓN
+### =====================================================
+
+### Test básico
+GET {{baseUrl}}/test HTTP/1.1
+
+### =====================================================
+### 2. AUTENTICACIÓN - LOGIN
+### =====================================================
+
+### Login con admin
+# @name loginAdmin
+POST {{baseUrl}}/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+    "usuario": "admin",
+    "password": "admin123"
+}
+
+### Guardar token del login
+@token = {{loginAdmin.response.body.token}}
+
+### =====================================================
+### 3. AUTENTICACIÓN - VALIDACIÓN
+### =====================================================
+
+### Validar token
+GET {{baseUrl}}/auth/validar HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Obtener datos del usuario actual
+GET {{baseUrl}}/auth/me HTTP/1.1
+Authorization: Bearer {{token}}
+
+### =====================================================
+### 4. LOGIN FRANQUICIA
+### =====================================================
+
+### Login con franquicia
+# @name loginFranquicia
+POST {{baseUrl}}/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+    "usuario": "franquicia_test",
+    "password": "franquicia123"
+}
+
+### Guardar token franquicia
+@tokenFranquicia = {{loginFranquicia.response.body.token}}
+
+### =====================================================
+### 5. PEDIDOS
+### =====================================================
+
+### Listar todos los pedidos (admin)
+GET {{baseUrl}}/pedidos HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Listar pedidos de la franquicia
+GET {{baseUrl}}/pedidos HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### Crear nuevo pedido (como franquicia)
+# @name crearPedido
+POST {{baseUrl}}/pedidos HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+Content-Type: application/json
+
+{
+    "id_sucursal": 2,
+    "observaciones": "Pedido de prueba desde test HTTP",
+    "items": [
+        {
+            "id_producto": 1,
+            "cantidad": 10,
+            "observaciones": "Prueba producto 1"
+        }
+    ]
+}
+
+### Guardar ID del pedido creado
+@idPedido = {{crearPedido.response.body.pedido.id}}
+
+### Ver detalle del pedido
+GET {{baseUrl}}/pedidos/{{idPedido}} HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### Actualizar pedido (agregar items)
+PUT {{baseUrl}}/pedidos/{{idPedido}} HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+Content-Type: application/json
+
+{
+    "observaciones": "Pedido actualizado",
+    "items": [
+        {
+            "id_producto": 1,
+            "cantidad": 15,
+            "observaciones": "Cantidad aumentada"
+        },
+        {
+            "id_producto": 2,
+            "cantidad": 5,
+            "observaciones": "Producto agregado"
+        }
+    ]
+}
+
+### Cancelar pedido
+PUT {{baseUrl}}/pedidos/{{idPedido}}/cancelar HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### =====================================================
+### 6. STOCK SUCURSAL
+### =====================================================
+
+### Ver stock de sucursal 2 (Elordi)
+GET {{baseUrl}}/stock-sucursal?id_sucursal=2 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Buscar producto en stock
+GET {{baseUrl}}/stock-sucursal/buscar?id_sucursal=2&q=helado HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### Ver movimientos de un producto
+GET {{baseUrl}}/stock-sucursal/movimientos?id_sucursal=2&id_producto=1 HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### Resumen de stock para dashboard
+GET {{baseUrl}}/stock-sucursal/resumen?id_sucursal=2 HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### =====================================================
+### 7. RECEPCIONES
+### =====================================================
+
+### Listar recepciones
+GET {{baseUrl}}/recepciones HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### Ver envíos pendientes de recepción para sucursal 2
+GET {{baseUrl}}/recepciones/envios-pendientes?id_sucursal=2 HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### Crear recepción (cuando haya un envío pendiente)
+# POST {{baseUrl}}/recepciones HTTP/1.1
+# Authorization: Bearer {{tokenFranquicia}}
+# Content-Type: application/json
+# 
+# {
+#     "id_envio": 1,
+#     "id_sucursal": 2,
+#     "observaciones": "Recepción completa",
+#     "items": [
+#         {
+#             "id_movimiento_item": 1,
+#             "cantidad_recibida": 10,
+#             "observaciones": ""
+#         }
+#     ]
+# }
+
+### =====================================================
+### 8. USUARIOS (Admin only)
+### =====================================================
+
+### Listar usuarios
+GET {{baseUrl}}/usuarios HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Ver un usuario específico
+GET {{baseUrl}}/usuarios/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Crear nuevo usuario
+# @name crearUsuario
+POST {{baseUrl}}/usuarios HTTP/1.1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "nombre": "Test",
+    "apellido": "Usuario",
+    "us": "test_user",
+    "ps": "test123",
+    "email": "test@example.com",
+    "id_roles": 5,
+    "sucursales": [2]
+}
+
+### =====================================================
+### 9. CAMBIAR PASSWORD
+### =====================================================
+
+### Cambiar password propio
+POST {{baseUrl}}/auth/cambiar-password HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+Content-Type: application/json
+
+{
+    "password_actual": "franquicia123",
+    "password_nuevo": "franquicia456"
+}
+
+### =====================================================
+### 10. LOGOUT
+### =====================================================
+
+### Cerrar sesión
+POST {{baseUrl}}/auth/logout HTTP/1.1
+Authorization: Bearer {{token}}
+
+### =====================================================
+### 11. TESTS DE SEGURIDAD
+### =====================================================
+
+### Acceder sin token (debe dar 401)
+GET {{baseUrl}}/pedidos HTTP/1.1
+
+### Token inválido (debe dar 401)
+GET {{baseUrl}}/pedidos HTTP/1.1
+Authorization: Bearer token_invalido_12345
+
+### Franquicia intentando ver otra sucursal (debe dar 403)
+GET {{baseUrl}}/stock-sucursal?id_sucursal=99 HTTP/1.1
+Authorization: Bearer {{tokenFranquicia}}
+
+### =====================================================
+### ENDPOINTS FASE 1 (verificar compatibilidad)
+### =====================================================
+
+### Listar productos
+GET {{baseUrl}}/productos HTTP/1.1
+
+### Listar ubicaciones
+GET {{baseUrl}}/ubicaciones HTTP/1.1
+
+### Listar contenedores
+GET {{baseUrl}}/contenedores HTTP/1.1
+
+### Listar envíos
+GET {{baseUrl}}/envios HTTP/1.1

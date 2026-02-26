@@ -41,6 +41,9 @@ class AltaDepositoIndustrial {
             this.inicializarInterfaz();
             await this.cargarRegistrosDia();
             
+            // Verificar si viene de panel de faltantes
+            await this.verificarFaltantesPendientes();
+            
             // Focus inicial
             this.enfocarCampoPrincipal();
             this.mostrarEstado('✅ Sistema listo para escanear productos o contenedores', 'success');
@@ -95,6 +98,7 @@ class AltaDepositoIndustrial {
         $('#btnActualizarRegistros').on('click', () => this.cargarRegistrosDia());
         $('#btnGenerarCodigosBarras').on('click', () => this.generarCodigosBarras());
         $('#btnCambiarContenedor').on('click', () => this.mostrarSelectorContenedor());
+        $('#btnVerFaltantes').on('click', () => this.abrirModalFaltantes());
         
         // Eventos de formulario
         $('#cantidadProducto, #pesoProducto').on('input', () => this.actualizarPesoTotal());
@@ -898,6 +902,104 @@ class AltaDepositoIndustrial {
             timerProgressBar: true,
             showConfirmButton: false
         });
+    }
+
+    /**
+     * Verifica si hay faltantes pendientes y actualiza el badge
+     */
+    async verificarFaltantesPendientes() {
+        try {
+            const response = await MikeloAuth.fetch('/pedidos/demanda-agregada');
+            if (!response || !response.ok) return;
+
+            const data = await response.json();
+            if (data.error) return;
+
+            const demanda = data.demanda || [];
+            // Contar solo los que tienen faltante real (demanda > stock)
+            const faltantes = demanda.filter(p => {
+                const stock = parseFloat(p.stock_disponible) || 0;
+                const cantidad = parseFloat(p.cantidad_total) || 0;
+                return cantidad > stock;
+            });
+
+            $('#badgeFaltantes').text(faltantes.length);
+            
+            if (faltantes.length > 0) {
+                $('#btnVerFaltantes').removeClass('btn-warning').addClass('btn-danger');
+            }
+        } catch (error) {
+            console.error('Error verificando faltantes:', error);
+        }
+    }
+
+    /**
+     * Abre el modal con la lista de faltantes (informativo)
+     */
+    async abrirModalFaltantes() {
+        $('#modalFaltantes').modal('show');
+        
+        try {
+            const response = await MikeloAuth.fetch('/pedidos/demanda-agregada');
+            if (!response || !response.ok) {
+                $('#tablaFaltantesBody').html('<tr><td colspan="7" class="text-center text-danger">Error al cargar datos</td></tr>');
+                return;
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                $('#tablaFaltantesBody').html(`<tr><td colspan="7" class="text-center text-danger">${data.mensaje}</td></tr>`);
+                return;
+            }
+
+            const demanda = data.demanda || [];
+            const totalPedidos = data.total_pedidos || 0;
+
+            $('#totalPedidosFaltantes').text(totalPedidos);
+            $('#totalProductosFaltantes').text(demanda.length);
+
+            // Contar sucursales únicas
+            const sucursales = new Set();
+            demanda.forEach(p => {
+                if (p.sucursales) {
+                    p.sucursales.split(', ').forEach(s => sucursales.add(s));
+                }
+            });
+            $('#totalSucursalesFaltantes').text(sucursales.size || '-');
+
+            if (demanda.length === 0) {
+                $('#tablaFaltantesBody').html('<tr><td colspan="7" class="text-center text-success"><i class="fas fa-check-circle mr-2"></i>No hay faltantes pendientes</td></tr>');
+                return;
+            }
+
+            let html = '';
+            demanda.forEach(p => {
+                const stock = parseFloat(p.stock_disponible) || 0;
+                const cantidad = parseFloat(p.cantidad_total) || 0;
+                const faltante = Math.max(0, cantidad - stock);
+                
+                const rowClass = faltante > 0 ? 'table-warning' : '';
+                const faltanteClass = faltante > 0 ? 'text-danger font-weight-bold' : 'text-success';
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td><span class="badge badge-secondary">${p.codigo}</span></td>
+                        <td>${p.producto}</td>
+                        <td><small>${p.familia || '-'}</small></td>
+                        <td class="text-right">${cantidad.toFixed(2)}</td>
+                        <td class="text-right ${stock > 0 ? 'text-success' : 'text-danger'}">${stock.toFixed(2)}</td>
+                        <td class="text-right ${faltanteClass}">${faltante.toFixed(2)}</td>
+                        <td><small class="text-muted">${p.sucursales || '-'}</small></td>
+                    </tr>
+                `;
+            });
+
+            $('#tablaFaltantesBody').html(html);
+
+        } catch (error) {
+            console.error('Error cargando faltantes:', error);
+            $('#tablaFaltantesBody').html('<tr><td colspan="7" class="text-center text-danger">Error: ' + error.message + '</td></tr>');
+        }
     }
 }
 

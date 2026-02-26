@@ -39,6 +39,13 @@
             <div class="sidebar">
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                        <li class="nav-header">PLANTA / DEPÓSITO</li>
+                        <li class="nav-item">
+                            <a href="panel_produccion.html" class="nav-link">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Panel Producción</p>
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a href="index.html" class="nav-link">
                                 <i class="nav-icon fas fa-exchange-alt"></i>
@@ -61,6 +68,39 @@
                             <a href="stock_deposito.html" class="nav-link">
                                 <i class="nav-icon fas fa-warehouse"></i>
                                 <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">SUCURSALES</li>
+                        <li class="nav-item">
+                            <a href="pedidos_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-shopping-cart"></i>
+                                <p>Pedidos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="recepciones.html" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-check"></i>
+                                <p>Recepciones</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="stock_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-boxes"></i>
+                                <p>Stock Sucursal</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">ADMINISTRACIÓN</li>
+                        <li class="nav-item">
+                            <a href="usuarios.html" class="nav-link">
+                                <i class="nav-icon fas fa-users-cog"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">SESIÓN</li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" onclick="logout()">
+                                <i class="nav-icon fas fa-sign-out-alt"></i>
+                                <p>Cerrar Sesión</p>
                             </a>
                         </li>
                     </ul>
@@ -274,6 +314,10 @@
                             <!-- Botón de códigos de barras -->
                             <div class="card card-secondary">
                                 <div class="card-body text-center">
+                                    <button class="btn btn-warning btn-block mb-2" id="btnVerFaltantes">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>Ver Faltantes
+                                        <span class="badge badge-light ml-1" id="badgeFaltantes">0</span>
+                                    </button>
                                     <button class="btn btn-info btn-block" id="btnGenerarCodigosBarras">
                                         <i class="fas fa-barcode mr-1"></i>Generar Códigos de Barras
                                     </button>
@@ -365,12 +409,99 @@
         </div>
     </div>
 
+    <!-- Modal Faltantes Informativos -->
+    <div class="modal fade" id="modalFaltantes" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Productos Faltantes - Referencia de Producción
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Referencia:</strong> Esta lista muestra la demanda pendiente de los pedidos de sucursales. 
+                        El alta de productos se realiza mediante escaneo de código de barras.
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="info-box bg-danger">
+                                <span class="info-box-icon"><i class="fas fa-shopping-cart"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Pedidos Pendientes</span>
+                                    <span class="info-box-number" id="totalPedidosFaltantes">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box bg-warning">
+                                <span class="info-box-icon"><i class="fas fa-box"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Productos Distintos</span>
+                                    <span class="info-box-number" id="totalProductosFaltantes">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box bg-info">
+                                <span class="info-box-icon"><i class="fas fa-store"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Sucursales</span>
+                                    <span class="info-box-number" id="totalSucursalesFaltantes">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-striped table-hover">
+                            <thead class="thead-dark sticky-top">
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Producto</th>
+                                    <th>Familia</th>
+                                    <th class="text-right">Demanda Total</th>
+                                    <th class="text-right">Stock Disponible</th>
+                                    <th class="text-right text-danger">Faltante</th>
+                                    <th>Sucursales</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaFaltantesBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>Cargando...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" onclick="window.open('panel_faltantes.html', '_blank')">
+                        <i class="fas fa-external-link-alt mr-1"></i>Abrir Panel Completo
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
 
     <script src="js/alta_deposito_v2.js"></script>
+    <script>
+        function logout() {
+            MikeloAuth.logout();
+            window.location.href = 'login.html';
+        }
+    </script>
 </body>
 </html>

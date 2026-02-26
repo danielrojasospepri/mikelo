@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Mínimo - J.A.R.V.I.S</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <!-- Estilos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Select2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+
+    <style>
+        .stock-bajo {
+            background-color: #f8d7da !important;
+        }
+        .stock-ok {
+            background-color: #d4edda !important;
+        }
+        .config-row {
+            transition: background-color 0.3s;
+        }
+        .config-row:hover {
+            background-color: #f8f9fa;
+        }
+        .input-minimo {
+            width: 80px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <span class="nav-link" id="sucursalActual">
+                        <i class="fas fa-store mr-1"></i>
+                        <span id="nombreSucursal">Cargando...</span>
+                    </span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="index.html" class="brand-link">
+                <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                        <li class="nav-header">MI SUCURSAL</li>
+                        <li class="nav-item">
+                            <a href="stock_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-boxes"></i>
+                                <p>Mi Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="baja_stock.html" class="nav-link">
+                                <i class="nav-icon fas fa-minus-circle"></i>
+                                <p>Baja de Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="stock_minimo.html" class="nav-link active">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Stock Mínimo</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pedidos_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Mis Pedidos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="recepciones.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck-loading"></i>
+                                <p>Recepciones</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-planta>PLANTA</li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_produccion.html" class="nav-link">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Panel Producción</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="index.html" class="nav-link">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">SESIÓN</li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                                <i class="nav-icon fas fa-sign-out-alt"></i>
+                                <p>Cerrar Sesión</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Content Header -->
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-tachometer-alt mr-2"></i>Configuración de Stock Mínimo</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="stock_sucursal.html">Stock</a></li>
+                                <li class="breadcrumb-item active">Mínimos</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    
+                    <!-- Info Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3 id="totalFaltantes">0</h3>
+                                    <p>Productos Bajo Mínimo</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3 id="totalOk">0</h3>
+                                    <p>Stock Adecuado</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="totalConfigurados">0</h3>
+                                    <p>Productos Configurados</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agregar Nuevo -->
+                    <div class="card card-primary card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-plus mr-2"></i>Agregar Producto</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label>Producto</label>
+                                        <select class="form-control" id="selectProducto" style="width: 100%;">
+                                            <option value="">Buscar producto...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Stock Mínimo</label>
+                                        <input type="number" class="form-control" id="nuevoMinimo" 
+                                               min="0" step="0.001" placeholder="0.000">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Stock Óptimo</label>
+                                        <input type="number" class="form-control" id="nuevoOptimo" 
+                                               min="0" step="0.001" placeholder="Opcional">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" onclick="agregarConfiguracion()">
+                                            <i class="fas fa-plus mr-1"></i>Agregar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Configuraciones -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-list mr-2"></i>Configuraciones Actuales</h3>
+                            <div class="card-tools">
+                                <button class="btn btn-sm btn-success mr-2" onclick="guardarCambios()" id="btnGuardar" disabled>
+                                    <i class="fas fa-save mr-1"></i>Guardar Cambios
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="cargarDatos()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table table-bordered table-hover" id="tablaConfig">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Producto</th>
+                                        <th>Familia</th>
+                                        <th class="text-right">Stock Actual</th>
+                                        <th class="text-center">Stock Mínimo</th>
+                                        <th class="text-center">Stock Óptimo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                            <p class="mt-2">Cargando configuraciones...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <strong>J.A.R.V.I.S</strong> - Configuración de Stock Mínimo
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        let configuraciones = [];
+        let cambiosPendientes = new Map();
+        let idSucursal = null;
+
+        $(document).ready(async function() {
+            const autenticado = await MikeloAuth.requireAuth();
+            if (!autenticado) return;
+
+            // Solo franquicia admin puede configurar
+            if (!MikeloAuth.isFranquiciaAdmin() && !MikeloAuth.isAdmin()) {
+                Swal.fire('Acceso Denegado', 'Solo el administrador de sucursal puede configurar mínimos', 'error')
+                    .then(() => window.location.href = 'stock_sucursal.html');
+                return;
+            }
+
+            // Obtener sucursal
+            const sucursal = MikeloAuth.getSucursalPrincipal();
+            if (sucursal) {
+                idSucursal = sucursal.id_sucursal || sucursal.id;
+                $('#nombreSucursal').text(sucursal.sucursal || sucursal.nombre || 'Mi Sucursal');
+            }
+
+            MikeloAuth.updateUI();
+            initSelect2();
+            cargarDatos();
+        });
+
+        function initSelect2() {
+            $('#selectProducto').select2({
+                theme: 'bootstrap4',
+                placeholder: 'Buscar producto...',
+                allowClear: true,
+                ajax: {
+                    url: '/mikelo/api/productos',
+                    dataType: 'json',
+                    delay: 300,
+                    headers: MikeloAuth.getAuthHeaders(),
+                    data: function(params) {
+                        return { q: params.term };
+                    },
+                    processResults: function(data) {
+                        if (data.error) return { results: [] };
+                        const productos = data.productos || data;
+                        return {
+                            results: productos.map(p => ({
+                                id: p.id_producto || p.id,
+                                text: `${p.codigo} - ${p.producto || p.descripcion}`
+                            }))
+                        };
+                    }
+                }
+            });
+        }
+
+        async function cargarDatos() {
+            try {
+                const response = await MikeloAuth.fetch('/stock-minimo');
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje);
+                }
+
+                configuraciones = data.configuraciones || [];
+                renderizarTabla();
+                actualizarContadores();
+                cambiosPendientes.clear();
+                $('#btnGuardar').prop('disabled', true);
+
+            } catch (error) {
+                console.error('Error:', error);
+                $('#tablaBody').html(`
+                    <tr>
+                        <td colspan="8" class="text-center text-danger py-4">
+                            Error al cargar: ${error.message}
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+
+        function renderizarTabla() {
+            if (configuraciones.length === 0) {
+                $('#tablaBody').html(`
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <p>No hay productos configurados.</p>
+                            <p class="small">Use el formulario de arriba para agregar productos.</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            configuraciones.forEach(c => {
+                const stockActual = parseFloat(c.stock_actual) || 0;
+                const stockMinimo = parseFloat(c.stock_minimo) || 0;
+                const stockOptimo = parseFloat(c.stock_optimo) || 0;
+                
+                const esAlerta = stockActual < stockMinimo;
+                const clase = esAlerta ? 'stock-bajo' : '';
+                const estado = esAlerta 
+                    ? '<span class="badge badge-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Bajo</span>'
+                    : '<span class="badge badge-success"><i class="fas fa-check mr-1"></i>OK</span>';
+
+                html += `
+                    <tr class="config-row ${clase}" data-id="${c.id_stock_minimo}">
+                        <td><span class="badge badge-secondary">${c.codigo}</span></td>
+                        <td>${c.producto}</td>
+                        <td>${c.familia || '-'}</td>
+                        <td class="text-right ${esAlerta ? 'text-danger font-weight-bold' : ''}">${stockActual.toFixed(3)}</td>
+                        <td class="text-center">
+                            <input type="number" class="form-control form-control-sm input-minimo" 
+                                   value="${stockMinimo.toFixed(3)}" min="0" step="0.001"
+                                   data-id="${c.id_producto}" data-campo="stock_minimo"
+                                   onchange="marcarCambio(${c.id_producto}, 'stock_minimo', this.value)">
+                        </td>
+                        <td class="text-center">
+                            <input type="number" class="form-control form-control-sm input-minimo" 
+                                   value="${stockOptimo > 0 ? stockOptimo.toFixed(3) : ''}" min="0" step="0.001"
+                                   data-id="${c.id_producto}" data-campo="stock_optimo"
+                                   onchange="marcarCambio(${c.id_producto}, 'stock_optimo', this.value)"
+                                   placeholder="-">
+                        </td>
+                        <td>${estado}</td>
+                        <td>
+                            <button class="btn btn-xs btn-danger" onclick="eliminarConfig(${c.id_stock_minimo})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tablaBody').html(html);
+        }
+
+        function actualizarContadores() {
+            let faltantes = 0, ok = 0;
+            
+            configuraciones.forEach(c => {
+                const stockActual = parseFloat(c.stock_actual) || 0;
+                const stockMinimo = parseFloat(c.stock_minimo) || 0;
+                
+                if (stockActual < stockMinimo) {
+                    faltantes++;
+                } else {
+                    ok++;
+                }
+            });
+
+            $('#totalFaltantes').text(faltantes);
+            $('#totalOk').text(ok);
+            $('#totalConfigurados').text(configuraciones.length);
+        }
+
+        function marcarCambio(idProducto, campo, valor) {
+            if (!cambiosPendientes.has(idProducto)) {
+                cambiosPendientes.set(idProducto, {});
+            }
+            cambiosPendientes.get(idProducto)[campo] = parseFloat(valor) || 0;
+            $('#btnGuardar').prop('disabled', false);
+        }
+
+        async function agregarConfiguracion() {
+            const idProducto = $('#selectProducto').val();
+            const stockMinimo = parseFloat($('#nuevoMinimo').val());
+            const stockOptimo = parseFloat($('#nuevoOptimo').val()) || null;
+
+            if (!idProducto) {
+                Swal.fire('Error', 'Seleccione un producto', 'warning');
+                return;
+            }
+
+            if (!stockMinimo || stockMinimo < 0) {
+                Swal.fire('Error', 'Ingrese un stock mínimo válido', 'warning');
+                return;
+            }
+
+            try {
+                const response = await MikeloAuth.fetch('/stock-minimo', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        id_producto: parseInt(idProducto),
+                        stock_minimo: stockMinimo,
+                        stock_optimo: stockOptimo
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Configuración agregada',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // Limpiar y recargar
+                $('#selectProducto').val(null).trigger('change');
+                $('#nuevoMinimo').val('');
+                $('#nuevoOptimo').val('');
+                cargarDatos();
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        async function guardarCambios() {
+            if (cambiosPendientes.size === 0) return;
+
+            const productos = [];
+            cambiosPendientes.forEach((cambios, idProducto) => {
+                productos.push({
+                    id_producto: idProducto,
+                    stock_minimo: cambios.stock_minimo || 0,
+                    stock_optimo: cambios.stock_optimo || null
+                });
+            });
+
+            try {
+                const response = await MikeloAuth.fetch('/stock-minimo/multiple', {
+                    method: 'POST',
+                    body: JSON.stringify({ productos })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cambios guardados',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                cargarDatos();
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        async function eliminarConfig(idStockMinimo) {
+            const confirm = await Swal.fire({
+                title: '¿Eliminar configuración?',
+                text: 'El producto ya no tendrá stock mínimo definido',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            try {
+                const response = await MikeloAuth.fetch(`/stock-minimo/${idStockMinimo}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Configuración eliminada',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                cargarDatos();
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

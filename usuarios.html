@@ -1,0 +1,680 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikelo - Gestión de Usuarios</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <style>
+        .badge-activo { background-color: #28a745; }
+        .badge-inactivo { background-color: #dc3545; }
+        .select2-container { width: 100% !important; }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle mr-1"></i>
+                    <span id="userName">Usuario</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <span class="dropdown-item-text">
+                        <small class="text-muted" id="userRole">Rol</small>
+                    </span>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="logout()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index.html" class="brand-link">
+            <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-header">PLANTA / DEPÓSITO</li>
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link">
+                            <i class="nav-icon fas fa-exchange-alt"></i>
+                            <p>Movimientos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="alta_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>Alta en Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="envios.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Envíos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="stock_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Stock Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SUCURSALES</li>
+                    <li class="nav-item">
+                        <a href="pedidos_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-shopping-cart"></i>
+                            <p>Pedidos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="recepciones.html" class="nav-link">
+                            <i class="nav-icon fas fa-clipboard-check"></i>
+                            <p>Recepciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="stock_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Stock Sucursal</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">ADMINISTRACIÓN</li>
+                    <li class="nav-item">
+                        <a href="usuarios.html" class="nav-link active">
+                            <i class="nav-icon fas fa-users-cog"></i>
+                            <p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="logout()">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>Cerrar Sesión</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-users-cog mr-2"></i>Gestión de Usuarios</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <button class="btn btn-primary float-sm-right" onclick="abrirModalNuevo()">
+                            <i class="fas fa-plus mr-2"></i>Nuevo Usuario
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Filtros -->
+                <div class="card card-outline card-primary collapsed-card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-filter mr-2"></i>Filtros</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Estado</label>
+                                    <select class="form-control" id="filtroEstado">
+                                        <option value="">Todos</option>
+                                        <option value="1" selected>Activos</option>
+                                        <option value="0">Inactivos</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Rol</label>
+                                    <select class="form-control" id="filtroRol">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Buscar</label>
+                                    <input type="text" class="form-control" id="filtroBusqueda" placeholder="Nombre, usuario o email...">
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary btn-block" onclick="cargarUsuarios()">
+                                    <i class="fas fa-search mr-1"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de usuarios -->
+                <div class="card">
+                    <div class="card-body">
+                        <table id="tablaUsuarios" class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuario</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Ultimo Login</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyUsuarios">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Modal Usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalUsuarioTitulo">Nuevo Usuario</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formUsuario">
+                    <input type="hidden" id="usuarioId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="usuarioNombre" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Apellido</label>
+                                <input type="text" class="form-control" id="usuarioApellido">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Usuario (login) <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="usuarioLogin" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" class="form-control" id="usuarioEmail">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Password <span class="text-danger" id="passwordRequired">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="usuarioPassword">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted" id="passwordHelp">Minimo 6 caracteres</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Rol <span class="text-danger">*</span></label>
+                                <select class="form-control" id="usuarioRol" required>
+                                    <option value="">Seleccione un rol</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Sucursales Asignadas</label>
+                                <select class="form-control select2" id="usuarioSucursales" multiple>
+                                </select>
+                                <small class="form-text text-muted">Requerido para roles de sucursal</small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarUsuario()">
+                    <i class="fas fa-save mr-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cambiar Password -->
+<div class="modal fade" id="modalPassword" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cambiar Password</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="passwordUsuarioId">
+                <p>Usuario: <strong id="passwordUsuarioNombre"></strong></p>
+                <div class="form-group">
+                    <label>Nuevo Password</label>
+                    <input type="password" class="form-control" id="nuevoPassword" required>
+                    <small class="form-text text-muted">Minimo 6 caracteres</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="cambiarPassword()">
+                    <i class="fas fa-key mr-1"></i> Cambiar Password
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+// MikeloAuth.fetch() ya agrega /mikelo/api como prefijo
+// No duplicar la ruta base
+let rolesCache = [];
+let sucursalesCache = [];
+
+$(document).ready(function() {
+    // Verificar autenticación
+    if (!MikeloAuth.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // Verificar rol admin
+    const user = MikeloAuth.getUser();
+    if (user.rol_nivel > 10) { // Solo ADMIN
+        Swal.fire('Acceso Denegado', 'No tiene permisos para acceder a esta seccion', 'error')
+            .then(() => window.location.href = 'index.html');
+        return;
+    }
+    
+    // Mostrar nombre de usuario
+    $('#userName').text(user.nombre);
+    $('#userRole').text(user.rol);
+    
+    // Inicializar Select2
+    $('#usuarioSucursales').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Seleccione sucursales',
+        allowClear: true
+    });
+    
+    // Cargar datos iniciales
+    cargarRoles();
+    cargarSucursales();
+    cargarUsuarios();
+});
+
+function logout() {
+    MikeloAuth.logout();
+    window.location.href = 'login.html';
+}
+
+async function cargarRoles() {
+    try {
+        const response = await MikeloAuth.fetch('/roles');
+        const data = await response.json();
+        
+        if (!data.error) {
+            rolesCache = data.roles;
+            
+            // Llenar select de filtro
+            const filtroRol = $('#filtroRol');
+            filtroRol.find('option:not(:first)').remove();
+            data.roles.forEach(r => {
+                filtroRol.append(`<option value="${r.id}">${r.nombre}</option>`);
+            });
+            
+            // Llenar select del modal
+            const usuarioRol = $('#usuarioRol');
+            usuarioRol.find('option:not(:first)').remove();
+            data.roles.forEach(r => {
+                usuarioRol.append(`<option value="${r.id}">${r.nombre} (nivel ${r.nivel})</option>`);
+            });
+        }
+    } catch (error) {
+        console.error('Error cargando roles:', error);
+    }
+}
+
+async function cargarSucursales() {
+    try {
+        const response = await MikeloAuth.fetch('/sucursales');
+        const data = await response.json();
+        
+        if (!data.error) {
+            sucursalesCache = data.sucursales;
+            
+            const select = $('#usuarioSucursales');
+            select.empty();
+            data.sucursales.forEach(s => {
+                select.append(`<option value="${s.id}">${s.nombre}</option>`);
+            });
+        }
+    } catch (error) {
+        console.error('Error cargando sucursales:', error);
+    }
+}
+
+async function cargarUsuarios() {
+    try {
+        let url = '/usuarios?';
+        const params = [];
+        
+        const estado = $('#filtroEstado').val();
+        if (estado !== '') params.push(`activo=${estado}`);
+        
+        const rol = $('#filtroRol').val();
+        if (rol) params.push(`id_rol=${rol}`);
+        
+        const busqueda = $('#filtroBusqueda').val();
+        if (busqueda) params.push(`busqueda=${encodeURIComponent(busqueda)}`);
+        
+        url += params.join('&');
+        
+        const response = await MikeloAuth.fetch(url);
+        if (!response) {
+            console.error('No se recibio respuesta del servidor');
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            Swal.fire('Error', data.mensaje, 'error');
+            return;
+        }
+        
+        renderizarTabla(data.usuarios || []);
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        Swal.fire('Error', 'No se pudieron cargar los usuarios', 'error');
+    }
+}
+
+function renderizarTabla(usuarios) {
+    const tbody = $('#tbodyUsuarios');
+    tbody.empty();
+    
+    usuarios.forEach(u => {
+        const estadoBadge = u.activo == 1 
+            ? '<span class="badge badge-activo">Activo</span>'
+            : '<span class="badge badge-inactivo">Inactivo</span>';
+        
+        const ultimoLogin = u.ultimo_login 
+            ? new Date(u.ultimo_login).toLocaleString('es-AR')
+            : 'Nunca';
+        
+        tbody.append(`
+            <tr>
+                <td>${u.id}</td>
+                <td><code>${u.usuario}</code></td>
+                <td>${u.nombre} ${u.apellido || ''}</td>
+                <td>${u.email || '-'}</td>
+                <td><span class="badge badge-info">${u.rol || '-'}</span></td>
+                <td>${estadoBadge}</td>
+                <td>${ultimoLogin}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-info" onclick="editarUsuario(${u.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-warning" onclick="abrirModalPassword(${u.id}, '${u.nombre}')" title="Cambiar Password">
+                            <i class="fas fa-key"></i>
+                        </button>
+                        ${u.activo == 1 
+                            ? `<button class="btn btn-danger" onclick="toggleEstado(${u.id}, false)" title="Desactivar"><i class="fas fa-user-slash"></i></button>`
+                            : `<button class="btn btn-success" onclick="toggleEstado(${u.id}, true)" title="Activar"><i class="fas fa-user-check"></i></button>`
+                        }
+                    </div>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+function abrirModalNuevo() {
+    $('#modalUsuarioTitulo').text('Nuevo Usuario');
+    $('#usuarioId').val('');
+    $('#formUsuario')[0].reset();
+    $('#usuarioSucursales').val([]).trigger('change');
+    $('#passwordRequired').show();
+    $('#usuarioPassword').prop('required', true);
+    $('#usuarioLogin').prop('disabled', false);
+    $('#modalUsuario').modal('show');
+}
+
+async function editarUsuario(id) {
+    try {
+        const response = await MikeloAuth.fetch(`/usuarios/${id}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            Swal.fire('Error', data.mensaje, 'error');
+            return;
+        }
+        
+        const u = data.usuario;
+        $('#modalUsuarioTitulo').text('Editar Usuario');
+        $('#usuarioId').val(u.id);
+        $('#usuarioNombre').val(u.nombre);
+        $('#usuarioApellido').val(u.apellido || '');
+        $('#usuarioLogin').val(u.usuario).prop('disabled', true);
+        $('#usuarioEmail').val(u.email || '');
+        $('#usuarioRol').val(u.id_roles);
+        
+        // Sucursales asignadas
+        const sucursalesIds = (u.sucursales || []).map(s => s.id_sucursal);
+        $('#usuarioSucursales').val(sucursalesIds).trigger('change');
+        
+        // Password no requerido en edición
+        $('#passwordRequired').hide();
+        $('#usuarioPassword').val('').prop('required', false);
+        $('#passwordHelp').text('Dejar vacio para mantener el actual');
+        
+        $('#modalUsuario').modal('show');
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire('Error', 'No se pudo cargar el usuario', 'error');
+    }
+}
+
+async function guardarUsuario() {
+    const id = $('#usuarioId').val();
+    const datos = {
+        nombre: $('#usuarioNombre').val().trim(),
+        apellido: $('#usuarioApellido').val().trim(),
+        usuario: $('#usuarioLogin').val().trim(),
+        email: $('#usuarioEmail').val().trim(),
+        id_rol: parseInt($('#usuarioRol').val()),
+        sucursales: $('#usuarioSucursales').val().map(Number)
+    };
+    
+    const password = $('#usuarioPassword').val();
+    if (password) {
+        if (password.length < 6) {
+            Swal.fire('Error', 'El password debe tener al menos 6 caracteres', 'warning');
+            return;
+        }
+        datos.password = password;
+    } else if (!id) {
+        // Nuevo usuario requiere password
+        Swal.fire('Error', 'El password es requerido para nuevos usuarios', 'warning');
+        return;
+    }
+    
+    if (!datos.nombre || !datos.usuario || !datos.id_rol) {
+        Swal.fire('Error', 'Nombre, usuario y rol son requeridos', 'warning');
+        return;
+    }
+    
+    try {
+        const url = id ? `/usuarios/${id}` : '/usuarios';
+        const method = id ? 'PUT' : 'POST';
+        
+        const response = await MikeloAuth.fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            Swal.fire('Error', data.mensaje, 'error');
+            return;
+        }
+        
+        Swal.fire('Éxito', data.mensaje, 'success');
+        $('#modalUsuario').modal('hide');
+        cargarUsuarios();
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire('Error', 'No se pudo guardar el usuario', 'error');
+    }
+}
+
+function abrirModalPassword(id, nombre) {
+    $('#passwordUsuarioId').val(id);
+    $('#passwordUsuarioNombre').text(nombre);
+    $('#nuevoPassword').val('');
+    $('#modalPassword').modal('show');
+}
+
+async function cambiarPassword() {
+    const id = $('#passwordUsuarioId').val();
+    const password = $('#nuevoPassword').val();
+    
+    if (!password || password.length < 6) {
+        Swal.fire('Error', 'El password debe tener al menos 6 caracteres', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await MikeloAuth.fetch(`/usuarios/${id}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            Swal.fire('Error', data.mensaje, 'error');
+            return;
+        }
+        
+        Swal.fire('Éxito', 'Contraseña actualizada correctamente', 'success');
+        $('#modalPassword').modal('hide');
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire('Error', 'No se pudo cambiar el password', 'error');
+    }
+}
+
+async function toggleEstado(id, activar) {
+    const accion = activar ? 'activar' : 'desactivar';
+    const result = await Swal.fire({
+        title: 'Esta seguro?',
+        text: `Desea ${accion} este usuario?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `Sí, ${accion}`,
+        cancelButtonText: 'Cancelar'
+    });
+    
+    if (!result.isConfirmed) return;
+    
+    try {
+        const url = activar 
+            ? `/usuarios/${id}/activar` 
+            : `/usuarios/${id}`;
+        const method = activar ? 'PUT' : 'DELETE';
+        
+        const response = await MikeloAuth.fetch(url, { method });
+        const data = await response.json();
+        
+        if (data.error) {
+            Swal.fire('Error', data.mensaje, 'error');
+            return;
+        }
+        
+        Swal.fire('Éxito', data.mensaje, 'success');
+        cargarUsuarios();
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire('Error', `No se pudo ${accion} el usuario`, 'error');
+    }
+}
+
+function togglePassword() {
+    const input = $('#usuarioPassword');
+    const type = input.attr('type') === 'password' ? 'text' : 'password';
+    input.attr('type', type);
+}
+</script>
+</body>
+</html>

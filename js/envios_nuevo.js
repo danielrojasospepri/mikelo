@@ -227,10 +227,10 @@ $(document).ready(function() {
             });
             
             if (tipoProducto === '20') {
-                // Tipo 20: Unidades
+                // Tipo 20: Unidades - NO filtrar por cantidad, el frontend maneja el incremento
                 params.append('codigo', codigoProducto);
-                params.append('cantidad', valorCantidadPeso);
-                console.log('Parámetros tipo 20:', { codigo: codigoProducto, cantidad: valorCantidadPeso });
+                // Nota: NO enviamos 'cantidad' para que backend devuelva todos los items disponibles
+                console.log('Parámetros tipo 20:', { codigo: codigoProducto });
             } else if (tipoProducto === '21') {
                 // Tipo 21: Peso (dividir por 1000)
                 const peso = (valorCantidadPeso / 1000).toFixed(3);
@@ -258,9 +258,9 @@ $(document).ready(function() {
                 return response.json();
             })
             .then(data => {
-                console.log('Productos disponibles received:', data); // Debug
                 if (data.success) {
                     const productos = data.data || data.productos || []; // Compatibilidad con ambas estructuras
+                    
                     if (productos.length === 0) {
                         // Mensaje específico según el tipo de búsqueda
                         if (esCodigoBarras) {
@@ -275,13 +275,13 @@ $(document).ready(function() {
                             mostrarEstadoOperacion('No se encontraron productos disponibles', 'warning');
                         }
                         $('#productosEncontrados').hide();
-                    } else if (productos.length === 1 && esCodigoBarras) {
-                        // Un solo producto con código de barras: agregar automáticamente
+                    } else if (esCodigoBarras) {
+                        // Código de barras: agregar automáticamente el primero (puede ser 1 o múltiples)
                         agregarProductoAlEnvio(productos[0]);
                         limpiarBusquedaEnvio();
                         mostrarEstadoOperacion('Producto agregado correctamente', 'success');
                     } else {
-                        // Múltiples productos o búsqueda manual: mostrar tabla
+                        // Búsqueda manual: mostrar tabla
                         mostrarProductosEncontrados(productos);
                         mostrarEstadoOperacion(`${productos.length} producto(s) encontrado(s)`, 'success');
                     }
@@ -342,42 +342,57 @@ $(document).ready(function() {
     }
 
     // Función global para agregar producto (llamada desde botones)
-    window.agregarProductoAlEnvio = function(producto) {
-        // Calcular cantidad disponible en stock
-        const cantidadDisponible = producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt;
+    window.agregarProductoAlEnvio = async function(producto) {
+        if (!producto || !producto.id_movimiento_item) {
+            mostrarEstadoOperacion('Producto inválido', 'error');
+            return;
+        }
+
+        // Calcular cantidad disponible en stock (convertir a número)
+        const cantidadDisponible = parseFloat(producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt);
         
         if (cantidadDisponible <= 0) {
             mostrarEstadoOperacion('No hay stock disponible de este producto', 'warning');
             return;
         }
 
-        // Calcular cantidad ya agregada al envío (del mismo producto/item)
-        const cantidadYaEnEnvio = productosEnEnvio
-            .filter(p => p.id_movimiento_item === producto.id_movimiento_item)
-            .reduce((total, p) => total + (p.cantidad || 1), 0);
-
-        // Calcular cantidad total si agregamos 1 más
-        const cantidadTotalConNuevo = cantidadYaEnEnvio + 1;
-
-        // Validar que no exceda disponible en stock
-        if (cantidadTotalConNuevo > cantidadDisponible) {
-            // MEJORADO: Mensaje más claro indicando que es un duplicado
-            if (cantidadYaEnEnvio > 0) {
-                mostrarEstadoOperacion(
-                    `No puedes agregar más unidades. Ya hay ${cantidadYaEnEnvio} en el envío. ` +
-                    `Stock disponible: ${cantidadDisponible}. Edita la cantidad en la tabla si necesitas cambiarla.`,
-                    'warning'
-                );
+        // Buscar si ya existe este item en el envío
+        const itemExistente = productosEnEnvio.find(p => p.id_movimiento_item === producto.id_movimiento_item);
+        
+        if (itemExistente) {
+            // PASO 1: Intentar incrementar cantidad del item existente
+            const cantidadActual = parseFloat(itemExistente.cantidad || 1);
+            
+            if (cantidadActual < cantidadDisponible) {
+                // ✅ Puede incrementar
+                itemExistente.cantidad = cantidadActual + 1;
+                itemExistente.peso = (itemExistente.peso_unitario * itemExistente.cantidad).toFixed(3);
+                
+                actualizarTablaProductosEnvio();
+                mostrarEstadoOperacion(`Cantidad incrementada a ${itemExistente.cantidad}`, 'success');
+                return;
             } else {
-                mostrarEstadoOperacion(
-                    `Stock insuficiente. Disponible: ${cantidadDisponible}, solicitado: ${cantidadTotalConNuevo}`,
-                    'warning'
-                );
+                // ❌ Item agotado, buscar siguiente disponible
+                // Obtener IDs ya en uso del mismo producto
+                const idsEnUso = productosEnEnvio
+                    .filter(p => p.codigo === producto.codigo)
+                    .map(p => p.id_movimiento_item);
+                
+                // Buscar siguiente item disponible
+                // const siguienteItem = await buscarSiguienteItemDisponible(producto.codigo, idsEnUso);
+                const siguienteItem = await buscarSiguienteItemDisponible(producto.codigo, idsEnUso, producto.cnt_peso);
+                if (!siguienteItem) {
+                    //mostrarEstadoOperacion('No hay más stock disponible de este producto', 'warning');
+                    mostrarEstadoOperacion('Producto ya incluido en el envío', 'warning');
+                    return;
+                }
+                
+                // Usar el siguiente item disponible
+                producto = siguienteItem;
             }
-            return;
         }
 
-        // Si pasa validación de stock: agregar (sea primera vez o duplicado)
+        // PASO 2: Agregar nuevo item (primera vez o siguiente disponible)
         const cantidadInicial = 1;
         const pesoUnitario = producto.cnt_peso / producto.cnt; // Peso por unidad
         const pesoInicial = (pesoUnitario * cantidadInicial).toFixed(3);
@@ -386,7 +401,7 @@ $(document).ready(function() {
             ...producto,
             cantidad: cantidadInicial,
             peso: parseFloat(pesoInicial),
-            cnt_disponible: cantidadDisponible,
+            cnt_disponible: producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt,
             peso_unitario: pesoUnitario
         };
 
@@ -1234,6 +1249,37 @@ $(document).ready(function() {
                 });
             }
         });
+    }
+
+    // NUEVA FUNCIÓN: Buscar siguiente item disponible excluyendo IDs en uso
+    async function buscarSiguienteItemDisponible(codigo, idsExcluir, peso = null) {
+        try {
+            const params = new URLSearchParams({
+                codigo: codigo
+            });
+            if (peso !== null && peso !== undefined) {
+                params.append('peso', parseFloat(peso).toFixed(3));
+            }
+            
+            const response = await fetch(`api/envios/productos-disponibles?${params}`);
+            const data = await response.json();
+            
+            if (data.success && data.data.length > 0) {
+                // Filtrar items ya en uso en el frontend
+                const itemsDisponibles = data.data.filter(item => 
+                    !idsExcluir.includes(item.id_movimiento_item)
+                );
+                
+                if (itemsDisponibles.length > 0) {
+                    return itemsDisponibles[0]; // Retorna el siguiente disponible
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error buscando siguiente item:', error);
+            return null;
+        }
     }
 
     // Funciones globales
