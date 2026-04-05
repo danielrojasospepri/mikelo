@@ -25,9 +25,9 @@ class StockSucursal {
                 ss.id_producto,
                 p.codigo,
                 p.descripcion as producto,
-                f.nombre as familia,
-                ss.cantidad_actual as cantidad,
-                ss.peso_total as peso,
+                f.nombre as tipo_producto,
+                ss.cantidad_actual,
+                ss.peso_total,
                 ss.ultima_actualizacion
             FROM stock_sucursal ss
             INNER JOIN productos p ON ss.id_producto = p.id
@@ -225,24 +225,27 @@ class StockSucursal {
 
     /**
      * Registrar baja de stock (venta, merma)
-     * @param int $idSucursal
-     * @param int $idProducto
-     * @param float $cantidad - Cantidad a dar de baja (positivo)
-     * @param string $tipoBaja - BAJA_VENTA, BAJA_MERMA, AJUSTE_NEGATIVO
-     * @param int $idUsuario
+     * @param int    $idSucursal
+     * @param int    $idProducto
+     * @param float  $cantidad   - Unidades a dar de baja (0 para productos de peso)
+     * @param float  $peso       - Kilos a dar de baja (0 para productos de unidades)
+     * @param string $tipoBaja   - BAJA_VENTA, BAJA_MERMA, AJUSTE_NEGATIVO
+     * @param int    $idUsuario
      * @param string $observaciones
      * @return array
      */
-    public function registrarBaja($idSucursal, $idProducto, $cantidad, $tipoBaja, $idUsuario, $observaciones = null) {
+    public function registrarBaja($idSucursal, $idProducto, $cantidad, $peso, $tipoBaja, $idUsuario, $observaciones = null) {
         try {
             $this->db->beginTransaction();
 
-            $cantidad = abs((float)$cantidad); // Asegurar positivo
+            $cantidad = abs((float)$cantidad);
+            $peso     = abs((float)$peso);
+            $esPeso   = $peso > 0;
 
             // Obtener stock actual
             $stmt = $this->db->prepare("
-                SELECT id, cantidad_actual, peso_total 
-                FROM stock_sucursal 
+                SELECT id, cantidad_actual, peso_total
+                FROM stock_sucursal
                 WHERE id_sucursal = ? AND id_producto = ?
                 FOR UPDATE
             ");
@@ -254,47 +257,294 @@ class StockSucursal {
             }
 
             $cantidadAnterior = (float)$stockActual['cantidad_actual'];
-            
-            if ($cantidad > $cantidadAnterior) {
-                throw new \Exception("No hay suficiente stock. Disponible: {$cantidadAnterior}");
+            $pesoAnterior     = (float)$stockActual['peso_total'];
+
+            if ($esPeso) {
+                // Producto por peso: validar y descontar peso_total Y cantidad_actual (bandejas)
+                if ($peso > $pesoAnterior + 0.0001) {
+                    throw new \Exception("No hay suficiente stock de peso. Disponible: {$pesoAnterior} kg");
+                }
+                if ($cantidad > 0 && $cantidad > $cantidadAnterior) {
+                    throw new \Exception("No hay suficiente stock de bandejas. Disponible: " . (int)$cantidadAnterior);
+                }
+                $cantidadPosterior = max(0, $cantidadAnterior - $cantidad); // decrementar bandejas
+                $pesoPosterior     = round($pesoAnterior - $peso, 4);
+                $stockAnteriorDisplay = $pesoAnterior;
+                $stockActualDisplay   = $pesoPosterior;
+            } else {
+                // Producto por unidades: validar y descontar de cantidad_actual
+                if ($cantidad > $cantidadAnterior) {
+                    throw new \Exception("No hay suficiente stock. Disponible: {$cantidadAnterior}");
+                }
+                $cantidadPosterior = $cantidadAnterior - $cantidad;
+                $pesoPosterior     = $pesoAnterior; // peso_total sin cambio
+                $stockAnteriorDisplay = $cantidadAnterior;
+                $stockActualDisplay   = $cantidadPosterior;
             }
 
-            $cantidadPosterior = $cantidadAnterior - $cantidad;
-
-            // Actualizar stock
+            // Actualizar stock (ambas columnas)
             $stmt = $this->db->prepare("
-                UPDATE stock_sucursal 
+                UPDATE stock_sucursal
                 SET cantidad_actual = ?,
-                    fecha_ultima_salida = NOW(),
+                    peso_total = ?,
                     ultima_actualizacion = NOW()
                 WHERE id = ?
             ");
-            $stmt->execute([$cantidadPosterior, $stockActual['id']]);
+            $stmt->execute([$cantidadPosterior, $pesoPosterior, $stockActual['id']]);
 
-            // Registrar movimiento
+            // Registrar movimiento incluyendo peso
             $stmt = $this->db->prepare("
-                INSERT INTO stock_sucursal_movimientos 
-                (id_sucursal, id_producto, tipo_movimiento, cantidad, cantidad_anterior, cantidad_posterior, id_usuario, observaciones)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO stock_sucursal_movimientos
+                (id_stock_sucursal, tipo_movimiento, cantidad, peso, referencia, usuario)
+                VALUES (?, 'salida', ?, ?, ?, ?)
             ");
             $stmt->execute([
-                $idSucursal,
-                $idProducto,
-                $tipoBaja,
-                -$cantidad, // Negativo para baja
-                $cantidadAnterior,
-                $cantidadPosterior,
-                $idUsuario,
-                $observaciones
+                $stockActual['id'],
+                -$cantidad,                    // siempre registra el nro de bandejas/unidades
+                $esPeso ? -$peso    : 0,      // peso solo para productos por peso
+                $observaciones ?? $tipoBaja,
+                $idUsuario
             ]);
             $movimientoId = $this->db->lastInsertId();
 
             $this->db->commit();
 
             return [
-                'movimiento_id' => $movimientoId,
-                'stock_anterior' => $cantidadAnterior,
-                'stock_actual' => $cantidadPosterior
+                'movimiento_id'  => $movimientoId,
+                'stock_anterior' => $stockAnteriorDisplay,
+                'stock_actual'   => $stockActualDisplay,
+                'es_peso'        => $esPeso
+            ];
+
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Obtener lista de bandejas disponibles para un producto por peso
+     * Reconstruye las bandejas individuales usando FIFO desde stock_sucursal_movimientos
+     * @param int $idSucursal
+     * @param int $idProducto
+     * @return array ['bandejas' => array[['id'=>int,'peso'=>float]], 'peso_total' => float]
+     */
+    public function obtenerBandejas($idSucursal, $idProducto) {
+        // Obtiene directamente de recepcion_items las bandejas recibidas
+        // que aún no fueron dadas de baja (dado_de_baja = 0), en orden FIFO.
+        $stmt = $this->db->prepare("
+            SELECT ri.id AS id_recepcion_item, ri.peso_recibido AS peso
+            FROM recepcion_items ri
+            INNER JOIN recepciones r ON ri.id_recepcion = r.id
+            INNER JOIN movimientos m ON r.id_envio = m.id
+            WHERE ri.id_producto         = ?
+              AND m.id_ubicacion_destino  = ?
+              AND ri.dado_de_baja         = 0
+              AND ri.peso_recibido        > 0
+            ORDER BY r.fecha_recepcion ASC, ri.id ASC
+        ");
+        $stmt->execute([$idProducto, $idSucursal]);
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $bandejas  = array_map(fn($r) => [
+            'id'   => (int)$r['id_recepcion_item'],
+            'peso' => round((float)$r['peso'], 3)
+        ], $rows);
+
+        return [
+            'bandejas'   => $bandejas,
+            'peso_total' => round(array_sum(array_column($rows, 'peso')), 3)
+        ];
+    }
+
+    /**
+     * Registrar baja de una bandeja por peso escaneada con código de barras.
+     * Busca en recepcion_items (FIFO) una bandeja no consumida con ese peso
+     * y la marca como dada de baja. Previene doble-baja.
+     */
+    public function registrarBajaBarcodePeso($idSucursal, $idProducto, $peso, $tipoBaja, $idUsuario, $observaciones = null) {
+        try {
+            $this->db->beginTransaction();
+            $peso = round((float)$peso, 3);
+
+            // 1. Buscar bandeja recibida con ese peso que no haya sido dada de baja (FIFO)
+            $stmt = $this->db->prepare("
+                SELECT ri.id, ri.peso_recibido
+                FROM recepcion_items ri
+                INNER JOIN recepciones r ON ri.id_recepcion = r.id
+                INNER JOIN movimientos m ON r.id_envio = m.id
+                WHERE ri.id_producto         = ?
+                  AND m.id_ubicacion_destino  = ?
+                  AND ABS(ri.peso_recibido - ?) < 0.002
+                  AND ri.dado_de_baja          = 0
+                ORDER BY r.fecha_recepcion ASC, ri.id ASC
+                LIMIT 1
+                FOR UPDATE
+            ");
+            $stmt->execute([$idProducto, $idSucursal, $peso]);
+            $bandeja = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$bandeja) {
+                throw new \Exception("Esta bandeja no fue recibida en la sucursal o ya fue dada de baja");
+            }
+
+            $pesoReal = round((float)$bandeja['peso_recibido'], 3);
+
+            // 2. Obtener y bloquear stock
+            $stmt = $this->db->prepare("
+                SELECT id, cantidad_actual, peso_total
+                FROM stock_sucursal
+                WHERE id_sucursal = ? AND id_producto = ?
+                FOR UPDATE
+            ");
+            $stmt->execute([$idSucursal, $idProducto]);
+            $stock = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$stock) {
+                throw new \Exception("No existe stock de este producto en la sucursal");
+            }
+
+            $pesoAnterior  = (float)$stock['peso_total'];
+            $cantAnterior  = (float)$stock['cantidad_actual'];
+            $pesoPosterior = max(0.0, round($pesoAnterior - $pesoReal, 4));
+            $cantPosterior = max(0, $cantAnterior - 1);
+
+            // 3. Actualizar stock
+            $stmt = $this->db->prepare("
+                UPDATE stock_sucursal
+                SET cantidad_actual = ?, peso_total = ?, ultima_actualizacion = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([$cantPosterior, $pesoPosterior, $stock['id']]);
+
+            // 4. Registrar movimiento
+            $stmt = $this->db->prepare("
+                INSERT INTO stock_sucursal_movimientos
+                    (id_stock_sucursal, tipo_movimiento, cantidad, peso, referencia, usuario)
+                VALUES (?, 'salida', -1, ?, ?, ?)
+            ");
+            $stmt->execute([$stock['id'], -$pesoReal, $observaciones ?? $tipoBaja, $idUsuario]);
+            $idMovimiento = (int)$this->db->lastInsertId();
+
+            // 5. Marcar bandeja como dada de baja
+            $stmt = $this->db->prepare("
+                UPDATE recepcion_items
+                SET dado_de_baja = 1, id_movimiento_baja = ?
+                WHERE id = ?
+            ");
+            $stmt->execute([$idMovimiento, $bandeja['id']]);
+
+            $this->db->commit();
+
+            return [
+                'stock_anterior' => $pesoAnterior,
+                'stock_actual'   => $pesoPosterior,
+                'peso_bajado'    => $pesoReal,
+                'es_peso'        => true
+            ];
+
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Registrar baja de un conjunto de bandejas seleccionadas manualmente.
+     * Valida que los recepcion_item_ids pertenezcan al producto/sucursal
+     * y que ninguno haya sido dado de baja anteriormente.
+     * @param array $recepcionItemIds  IDs de recepcion_items a consumir
+     */
+    public function registrarBajaBandejas($idSucursal, $idProducto, array $recepcionItemIds, $tipoBaja, $idUsuario, $observaciones = null) {
+        if (empty($recepcionItemIds)) {
+            throw new \Exception("Debe seleccionar al menos una bandeja");
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $placeholders = implode(',', array_fill(0, count($recepcionItemIds), '?'));
+
+            // 1. Bloquear y validar items
+            $stmt = $this->db->prepare("
+                SELECT ri.id, ri.peso_recibido, ri.dado_de_baja
+                FROM recepcion_items ri
+                INNER JOIN recepciones r ON ri.id_recepcion = r.id
+                INNER JOIN movimientos m ON r.id_envio = m.id
+                WHERE ri.id IN ($placeholders)
+                  AND ri.id_producto         = ?
+                  AND m.id_ubicacion_destino  = ?
+                FOR UPDATE
+            ");
+            $params = array_merge($recepcionItemIds, [$idProducto, $idSucursal]);
+            $stmt->execute($params);
+            $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            if (count($items) !== count($recepcionItemIds)) {
+                throw new \Exception("Algunas bandejas no corresponden a este producto o sucursal");
+            }
+
+            foreach ($items as $item) {
+                if ((int)$item['dado_de_baja'] === 1) {
+                    throw new \Exception("La bandeja #" . $item['id'] . " ya fue dada de baja anteriormente");
+                }
+            }
+
+            $pesoBajar = round(array_sum(array_column($items, 'peso_recibido')), 4);
+            $cantBajar = count($items);
+
+            // 2. Obtener y bloquear stock
+            $stmt = $this->db->prepare("
+                SELECT id, cantidad_actual, peso_total
+                FROM stock_sucursal
+                WHERE id_sucursal = ? AND id_producto = ?
+                FOR UPDATE
+            ");
+            $stmt->execute([$idSucursal, $idProducto]);
+            $stock = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$stock) {
+                throw new \Exception("No existe stock de este producto en la sucursal");
+            }
+
+            $pesoAnterior  = (float)$stock['peso_total'];
+            $cantAnterior  = (float)$stock['cantidad_actual'];
+            $pesoPosterior = max(0.0, round($pesoAnterior - $pesoBajar, 4));
+            $cantPosterior = max(0, $cantAnterior - $cantBajar);
+
+            // 3. Actualizar stock
+            $stmt = $this->db->prepare("
+                UPDATE stock_sucursal
+                SET cantidad_actual = ?, peso_total = ?, ultima_actualizacion = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([$cantPosterior, $pesoPosterior, $stock['id']]);
+
+            // 4. Registrar movimiento
+            $stmt = $this->db->prepare("
+                INSERT INTO stock_sucursal_movimientos
+                    (id_stock_sucursal, tipo_movimiento, cantidad, peso, referencia, usuario)
+                VALUES (?, 'salida', ?, ?, ?, ?)
+            ");
+            $stmt->execute([$stock['id'], -$cantBajar, -$pesoBajar, $observaciones ?? $tipoBaja, $idUsuario]);
+            $idMovimiento = (int)$this->db->lastInsertId();
+
+            // 5. Marcar todas las bandejas como dadas de baja
+            $stmt = $this->db->prepare("
+                UPDATE recepcion_items
+                SET dado_de_baja = 1, id_movimiento_baja = ?
+                WHERE id IN ($placeholders)
+            ");
+            $stmt->execute(array_merge([$idMovimiento], $recepcionItemIds));
+
+            $this->db->commit();
+
+            return [
+                'stock_anterior' => $pesoAnterior,
+                'stock_actual'   => $pesoPosterior,
+                'peso_bajado'    => $pesoBajar,
+                'bandejas'       => $cantBajar,
+                'es_peso'        => true
             ];
 
         } catch (\Exception $e) {
@@ -306,23 +556,26 @@ class StockSucursal {
     /**
      * Registrar ajuste de stock (inventario físico)
      * Ajusta el stock al valor real contado
-     * @param int $idSucursal
-     * @param int $idProducto
-     * @param float $cantidadReal - Cantidad real contada en inventario
-     * @param int $idUsuario
+     * @param int    $idSucursal
+     * @param int    $idProducto
+     * @param float  $cantidadReal - Cantidad real contada (0 para productos de peso)
+     * @param int    $idUsuario
      * @param string $observaciones
+     * @param float|null $pesoReal - Peso real en kg (null = producto de unidades)
      * @return array
      */
-    public function registrarAjuste($idSucursal, $idProducto, $cantidadReal, $idUsuario, $observaciones = null) {
+    public function registrarAjuste($idSucursal, $idProducto, $cantidadReal, $idUsuario, $observaciones = null, $pesoReal = null) {
         try {
             $this->db->beginTransaction();
 
             $cantidadReal = (float)$cantidadReal;
+            $esPeso = $pesoReal !== null;
+            $pesoReal = $esPeso ? (float)$pesoReal : null;
 
             // Obtener stock actual
             $stmt = $this->db->prepare("
-                SELECT id, cantidad_actual 
-                FROM stock_sucursal 
+                SELECT id, cantidad_actual, peso_total
+                FROM stock_sucursal
                 WHERE id_sucursal = ? AND id_producto = ?
                 FOR UPDATE
             ");
@@ -330,62 +583,80 @@ class StockSucursal {
             $stockActual = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             $cantidadAnterior = $stockActual ? (float)$stockActual['cantidad_actual'] : 0;
-            $diferencia = $cantidadReal - $cantidadAnterior;
+            $pesoAnterior     = $stockActual ? (float)$stockActual['peso_total']      : 0;
 
-            if ($diferencia == 0) {
+            if ($esPeso) {
+                // Producto por peso: ajustar peso_total
+                $diferencia = round($pesoReal - $pesoAnterior, 4);
+                $stockAnteriorDisplay = $pesoAnterior;
+                $stockNuevoDisplay    = $pesoReal;
+                $nuevaCantidad        = $cantidadAnterior;
+                $nuevoPeso            = $pesoReal;
+                $movCantidad          = 0;
+                $movPeso              = $diferencia;
+            } else {
+                // Producto por unidades: ajustar cantidad_actual
+                $diferencia = $cantidadReal - $cantidadAnterior;
+                $stockAnteriorDisplay = $cantidadAnterior;
+                $stockNuevoDisplay    = $cantidadReal;
+                $nuevaCantidad        = $cantidadReal;
+                $nuevoPeso            = $pesoAnterior;
+                $movCantidad          = $diferencia;
+                $movPeso              = 0;
+            }
+
+            if (abs($diferencia) < 0.0001) {
                 $this->db->commit();
                 return [
-                    'tipo_ajuste' => 'SIN_CAMBIO',
-                    'diferencia' => 0,
-                    'stock_anterior' => $cantidadAnterior,
-                    'stock_actual' => $cantidadReal
+                    'tipo_ajuste'    => 'SIN_CAMBIO',
+                    'diferencia'     => 0,
+                    'stock_anterior' => $stockAnteriorDisplay,
+                    'stock_actual'   => $stockNuevoDisplay
                 ];
             }
 
             $tipoAjuste = $diferencia > 0 ? 'AJUSTE_POSITIVO' : 'AJUSTE_NEGATIVO';
 
             if ($stockActual) {
-                // Actualizar existente
                 $stmt = $this->db->prepare("
-                    UPDATE stock_sucursal 
+                    UPDATE stock_sucursal
                     SET cantidad_actual = ?,
+                        peso_total = ?,
                         ultima_actualizacion = NOW()
                     WHERE id = ?
                 ");
-                $stmt->execute([$cantidadReal, $stockActual['id']]);
+                $stmt->execute([$nuevaCantidad, $nuevoPeso, $stockActual['id']]);
+                $idStockSucursal = $stockActual['id'];
             } else {
-                // Crear registro si no existe
                 $stmt = $this->db->prepare("
-                    INSERT INTO stock_sucursal (id_sucursal, id_producto, cantidad_actual, ultima_actualizacion)
-                    VALUES (?, ?, ?, NOW())
+                    INSERT INTO stock_sucursal (id_sucursal, id_producto, cantidad_actual, peso_total, ultima_actualizacion)
+                    VALUES (?, ?, ?, ?, NOW())
                 ");
-                $stmt->execute([$idSucursal, $idProducto, $cantidadReal]);
+                $stmt->execute([$idSucursal, $idProducto, $nuevaCantidad, $nuevoPeso]);
+                $idStockSucursal = $this->db->lastInsertId();
             }
 
-            // Registrar movimiento
+            // Registrar movimiento incluyendo peso
             $stmt = $this->db->prepare("
-                INSERT INTO stock_sucursal_movimientos 
-                (id_sucursal, id_producto, tipo_movimiento, cantidad, cantidad_anterior, cantidad_posterior, id_usuario, observaciones)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO stock_sucursal_movimientos
+                (id_stock_sucursal, tipo_movimiento, cantidad, peso, referencia, usuario)
+                VALUES (?, 'ajuste', ?, ?, ?, ?)
             ");
             $stmt->execute([
-                $idSucursal,
-                $idProducto,
-                $tipoAjuste,
-                $diferencia,
-                $cantidadAnterior,
-                $cantidadReal,
-                $idUsuario,
-                $observaciones
+                $idStockSucursal,
+                $movCantidad,
+                $movPeso,
+                $observaciones ?? $tipoAjuste,
+                $idUsuario
             ]);
 
             $this->db->commit();
 
             return [
-                'tipo_ajuste' => $tipoAjuste,
-                'diferencia' => $diferencia,
-                'stock_anterior' => $cantidadAnterior,
-                'stock_actual' => $cantidadReal
+                'tipo_ajuste'    => $tipoAjuste,
+                'diferencia'     => $diferencia,
+                'stock_anterior' => $stockAnteriorDisplay,
+                'stock_actual'   => $stockNuevoDisplay
             ];
 
         } catch (\Exception $e) {

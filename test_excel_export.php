@@ -9,11 +9,11 @@ try {
     echo "🧪 Test: Exportación Excel - Stock Depósito\n";
     echo "============================================================\n\n";
     
-    echo "📊 Probando endpoint: http://localhost/mikelo/api/stock-deposito/excel\n";
+    echo "📊 Probando endpoint: http://localhost/test/api/stock-deposito/excel\n";
     echo "------------------------------------------------------------\n\n";
     
     // Usar curl para probar
-    $ch = curl_init('http://localhost/mikelo/api/stock-deposito/excel');
+    $ch = curl_init('http://localhost/test/api/stock-deposito/excel');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, true);
     curl_setopt($ch, CURLOPT_NOBODY, false);

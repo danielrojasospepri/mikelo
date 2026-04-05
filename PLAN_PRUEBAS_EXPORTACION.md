@@ -75,19 +75,19 @@ php crear_datos_prueba.php
 #### 2.1 Endpoints Básicos
 | Endpoint | Método | Descripción | Test Command |
 |----------|--------|-------------|--------------|
-| `/api/envios` | GET | Lista de envíos | `curl "http://localhost/mikelo/api/envios"` |
-| `/api/envios/pdf` | GET | PDF lista | `curl "http://localhost/mikelo/api/envios/pdf"` |
-| `/api/envios/excel` | GET | Excel lista | `curl "http://localhost/mikelo/api/envios/excel"` |
-| `/api/envios/{id}/pdf` | GET | PDF remito | `curl "http://localhost/mikelo/api/envios/11/pdf"` |
-| `/api/envios/{id}/excel` | GET | Excel remito | `curl "http://localhost/mikelo/api/envios/11/excel"` |
+| `/api/envios` | GET | Lista de envíos | `curl "http://localhost/test/api/envios"` |
+| `/api/envios/pdf` | GET | PDF lista | `curl "http://localhost/test/api/envios/pdf"` |
+| `/api/envios/excel` | GET | Excel lista | `curl "http://localhost/test/api/envios/excel"` |
+| `/api/envios/{id}/pdf` | GET | PDF remito | `curl "http://localhost/test/api/envios/11/pdf"` |
+| `/api/envios/{id}/excel` | GET | Excel remito | `curl "http://localhost/test/api/envios/11/excel"` |
 
 **Resultado Esperado**: Todos deben retornar JSON con `{"success": true, "url": "..."}`
 
 #### 2.2 Filtros en Lista
 ```bash
 # Test con filtros
-curl "http://localhost/mikelo/api/envios/pdf?fechaDesde=2025-10-01&fechaHasta=2025-10-03"
-curl "http://localhost/mikelo/api/envios/excel?destino=2&estado=1"
+curl "http://localhost/test/api/envios/pdf?fechaDesde=2025-10-01&fechaHasta=2025-10-03"
+curl "http://localhost/test/api/envios/excel?destino=2&estado=1"
 ```
 
 **Resultado Esperado**: PDFs/Excel con datos filtrados
@@ -212,11 +212,11 @@ cd c:\xampp7.4.30\htdocs\mikelo\api
 php crear_datos_prueba.php
 
 # 2. Test APIs
-curl "http://localhost/mikelo/api/envios" | head
-curl "http://localhost/mikelo/api/envios/pdf" -I
-curl "http://localhost/mikelo/api/envios/excel" -I
-curl "http://localhost/mikelo/api/envios/11/pdf" -I
-curl "http://localhost/mikelo/api/envios/11/excel" -I
+curl "http://localhost/test/api/envios" | head
+curl "http://localhost/test/api/envios/pdf" -I
+curl "http://localhost/test/api/envios/excel" -I
+curl "http://localhost/test/api/envios/11/pdf" -I
+curl "http://localhost/test/api/envios/11/excel" -I
 
 # 3. Verificar archivos generados
 dir ..\temp\*.pdf

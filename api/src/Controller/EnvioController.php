@@ -4,6 +4,7 @@ namespace App\Controller;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Model\Envio;
+use App\Model\Pedido;
 
 class EnvioController {
     private $envio;
@@ -23,10 +24,26 @@ class EnvioController {
 
         try {
             $envioId = $this->envio->crear($data['destino'], $data['productos']);
+
+            // Si viene id_pedido, vincular el envío al pedido y marcarlo como ENVIADO
+            if (!empty($data['id_pedido'])) {
+                try {
+                    $idPedido = (int)$data['id_pedido'];
+                    // usuario_id es INT (FK a usuarios), no pasar string como fallback
+                    $usuarioId = $request->getAttribute('usuario_id') ?? null;
+                    $pedidoModel = new Pedido($this->db);
+                    $pedidoModel->enviar($idPedido, $envioId, $usuarioId);
+                } catch (\Exception $ePedido) {
+                    // No falla la creación del envío si hay error al actualizar el pedido
+                    error_log("Advertencia: no se pudo actualizar estado del pedido #{$data['id_pedido']}: " . $ePedido->getMessage());
+                }
+            }
+
             return responseJson($response, [
                 'success' => true,
                 'id' => $envioId,
-                'mensaje' => 'EnvÃ­o creado exitosamente'
+                'id_envio' => $envioId,
+                'mensaje' => 'Envío creado exitosamente'
             ], 201);
         } catch (\Exception $e) {
             return responseJson($response, ['error' => $e->getMessage()], 500);

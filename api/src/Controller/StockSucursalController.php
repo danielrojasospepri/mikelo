@@ -120,7 +120,7 @@ class StockSucursalController {
                     ss.peso_total,
                     ss.ultima_actualizacion,
                     p.codigo,
-                    p.nombre as producto
+                    p.descripcion as producto
                 FROM stock_sucursal ss
                 INNER JOIN productos p ON ss.id_producto = p.id
                 WHERE ss.id_sucursal = ? AND ss.id_producto = ?
@@ -130,13 +130,13 @@ class StockSucursalController {
 
             if (!$stockActual) {
                 // Producto sin movimientos en la sucursal
-                $stmt = $this->db->prepare("SELECT codigo, nombre FROM productos WHERE id = ?");
+                $stmt = $this->db->prepare("SELECT codigo, descripcion FROM productos WHERE id = ?");
                 $stmt->execute([$idProducto]);
                 $producto = $stmt->fetch(\PDO::FETCH_ASSOC);
                 
                 $stockActual = [
                     'codigo' => $producto['codigo'] ?? '',
-                    'producto' => $producto['nombre'] ?? 'Producto no encontrado',
+                    'producto' => $producto['descripcion'] ?? 'Producto no encontrado',
                     'cantidad_actual' => 0,
                     'peso_total' => 0,
                     'ultima_actualizacion' => null
@@ -144,7 +144,7 @@ class StockSucursalController {
             }
 
             // Obtener historial
-            $historial = $stockModel->obtenerHistorial($idSucursal, $idProducto);
+            $historial = $stockModel->obtenerHistorial($idSucursal, 100, $idProducto);
 
             return $this->jsonResponse($response, [
                 'error' => false,
@@ -249,26 +249,20 @@ class StockSucursalController {
                 SELECT COUNT(*) as total_recepciones
                 FROM recepciones r
                 INNER JOIN movimientos m ON r.id_envio = m.id
-                WHERE m.id_ubicaciones = ?
+                WHERE m.id_ubicacion_destino = ?
                   AND r.fecha_recepcion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
             ");
             $stmt->execute([$idSucursal]);
             $recepciones = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-            // Envíos pendientes de recibir
+            // Envíos pendientes de recibir (FROM depósito central = 1, sin recepción aún)
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) as pendientes
                 FROM movimientos m
-                INNER JOIN estados_items_movimientos eim ON eim.id_movimientos_items IN (
-                    SELECT id FROM movimientos_items WHERE id_movimientos = m.id
-                )
-                INNER JOIN estados e ON eim.id_estados = e.id
-                WHERE m.id_ubicaciones = ?
-                  AND m.tipo = 'envio'
-                  AND e.estado = 'ENVIADO'
-                  AND NOT EXISTS (
-                      SELECT 1 FROM recepciones WHERE id_envio = m.id
-                  )
+                LEFT JOIN recepciones r ON m.id = r.id_envio
+                WHERE m.id_ubicacion_origen = 1
+                  AND m.id_ubicacion_destino = ?
+                  AND r.id IS NULL
             ");
             $stmt->execute([$idSucursal]);
             $pendientes = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -278,7 +272,7 @@ class StockSucursalController {
                 'resumen' => [
                     'total_productos' => (int)($resumen['total_productos'] ?? 0),
                     'total_unidades' => (int)($resumen['total_unidades'] ?? 0),
-                    'peso_total_kg' => round(($resumen['peso_total'] ?? 0) / 1000, 2),
+                    'peso_total_kg' => round((float)($resumen['peso_total'] ?? 0), 3),
                     'recepciones_mes' => (int)($recepciones['total_recepciones'] ?? 0),
                     'envios_pendientes' => (int)($pendientes['pendientes'] ?? 0)
                 ]
@@ -326,7 +320,7 @@ class StockSucursalController {
 
             // Formatear pesos
             foreach ($stocks as &$s) {
-                $s['peso_total_kg'] = round(($s['peso_total'] ?? 0) / 1000, 2);
+                $s['peso_total_kg'] = round((float)($s['peso_total'] ?? 0), 3);
                 unset($s['peso_total']);
             }
 
@@ -427,18 +421,20 @@ class StockSucursalController {
             $resultado = $stockModel->registrarBaja(
                 $idSucursal,
                 $datos['id_producto'],
-                $datos['cantidad'],
+                $datos['cantidad'] ?? 0,
+                $datos['peso']    ?? 0,
                 $datos['tipo_baja'],
                 $usuarioId,
                 $datos['observaciones'] ?? null
             );
 
             return $this->jsonResponse($response, [
-                'error' => false,
-                'mensaje' => 'Baja registrada exitosamente',
-                'movimiento_id' => $resultado['movimiento_id'],
+                'error'          => false,
+                'mensaje'        => 'Baja registrada exitosamente',
+                'movimiento_id'  => $resultado['movimiento_id'],
                 'stock_anterior' => $resultado['stock_anterior'],
-                'stock_actual' => $resultado['stock_actual']
+                'stock_actual'   => $resultado['stock_actual'],
+                'es_peso'        => $resultado['es_peso']
             ]);
 
         } catch (\Exception $e) {
@@ -493,9 +489,10 @@ class StockSucursalController {
             $resultado = $stockModel->registrarAjuste(
                 $idSucursal,
                 $datos['id_producto'],
-                $datos['cantidad_real'],
+                $datos['cantidad_real'] ?? 0,
                 $usuarioId,
-                $datos['observaciones'] ?? 'Ajuste por inventario físico'
+                $datos['observaciones'] ?? 'Ajuste por inventario físico',
+                isset($datos['peso_real']) ? (float)$datos['peso_real'] : null
             );
 
             return $this->jsonResponse($response, [
@@ -522,16 +519,18 @@ class StockSucursalController {
      */
     public function historial(Request $request, Response $response): Response {
         try {
-            $usuario = $request->getAttribute('usuario');
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
             $params = $request->getQueryParams();
             $limite = isset($params['limite']) ? intval($params['limite']) : 50;
-            
-            // Obtener sucursal del usuario
-            $idSucursal = null;
-            if (!empty($usuario['sucursales'])) {
-                $idSucursal = $usuario['sucursales'][0]['id_sucursal'];
+            $idProductoFiltro = isset($params['id_producto']) ? intval($params['id_producto']) : null;
+
+            // Obtener sucursal del querystring o del usuario
+            $idSucursal = $params['id_sucursal'] ?? null;
+            if (!$idSucursal) {
+                $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
             }
-            
+
             if (!$idSucursal) {
                 return $this->jsonResponse($response, [
                     'error' => true,
@@ -539,27 +538,34 @@ class StockSucursalController {
                 ], 400);
             }
             
+            // Construir filtro opcional por producto
+            $filtroProducto = $idProductoFiltro ? "AND ss.id_producto = :id_producto" : "";
+
             // Consultar movimientos
             $sql = "SELECT 
-                        m.id_movimiento,
+                        m.id AS id_movimiento,
                         m.tipo_movimiento,
                         m.cantidad,
-                        m.stock_anterior,
-                        m.stock_posterior,
-                        m.observaciones,
-                        m.fecha_movimiento,
+                        m.peso,
+                        m.referencia AS observaciones,
+                        m.fecha AS fecha_movimiento,
                         m.usuario,
-                        p.id_producto,
+                        p.id AS id_producto,
                         p.codigo,
-                        p.producto
+                        p.descripcion AS producto
                     FROM stock_sucursal_movimientos m
-                    INNER JOIN productos p ON m.id_producto = p.id_producto
-                    WHERE m.id_sucursal = :id_sucursal
-                    ORDER BY m.fecha_movimiento DESC
+                    INNER JOIN stock_sucursal ss ON m.id_stock_sucursal = ss.id
+                    INNER JOIN productos p ON ss.id_producto = p.id
+                    WHERE ss.id_sucursal = :id_sucursal
+                    $filtroProducto
+                    ORDER BY m.fecha DESC
                     LIMIT :limite";
             
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':id_sucursal', $idSucursal, \PDO::PARAM_INT);
+            if ($idProductoFiltro) {
+                $stmt->bindValue(':id_producto', $idProductoFiltro, \PDO::PARAM_INT);
+            }
             $stmt->bindValue(':limite', $limite, \PDO::PARAM_INT);
             $stmt->execute();
             $movimientos = $stmt->fetchAll();
@@ -575,6 +581,332 @@ class StockSucursalController {
                 'error' => true,
                 'mensaje' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * GET /stock-sucursal/carga-inicial
+     * Obtener todos los productos con su stock actual para carga inicial
+     */
+    public function obtenerProductosCargaInicial(Request $request, Response $response): Response {
+        try {
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+            $queryParams = $request->getQueryParams();
+
+            $idSucursal = $queryParams['id_sucursal'] ?? $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+
+            if (!$idSucursal) {
+                return $this->jsonResponse($response, [
+                    'error' => true,
+                    'mensaje' => 'No se pudo determinar la sucursal'
+                ], 400);
+            }
+
+            if ($usuarioRolNivel >= 30) {
+                if (!$this->verificarAccesoSucursal($usuarioId, $idSucursal)) {
+                    return $this->jsonResponse($response, [
+                        'error' => true,
+                        'mensaje' => 'No tiene acceso a esta sucursal'
+                    ], 403);
+                }
+            }
+
+            $stmt = $this->db->prepare("
+                SELECT
+                    p.id as id_producto,
+                    p.codigo,
+                    p.descripcion,
+                    tp.nombre as familia,
+                    tp.id as id_familia,
+                    COALESCE(ss.cantidad_actual, 0) as cantidad_actual,
+                    ss.ultima_actualizacion
+                FROM productos p
+                LEFT JOIN tipo_producto tp ON p.id_tipo_producto = tp.id
+                LEFT JOIN stock_sucursal ss ON ss.id_producto = p.id AND ss.id_sucursal = ?
+                WHERE p.activo = 1 AND p.disponible_franquicias = 1
+                ORDER BY tp.nombre, p.descripcion
+            ");
+            $stmt->execute([$idSucursal]);
+            $productos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return $this->jsonResponse($response, [
+                'error' => false,
+                'productos' => $productos,
+                'total' => count($productos),
+                'id_sucursal' => (int)$idSucursal
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error en carga inicial GET: " . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error' => true,
+                'mensaje' => 'Error al obtener productos'
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /stock-sucursal/carga-inicial
+     * Carga masiva de stock inicial para una sucursal
+     */
+    public function cargaInicial(Request $request, Response $response): Response {
+        try {
+            $datos = json_decode($request->getBody()->getContents(), true);
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+
+            if (empty($datos['productos']) || !is_array($datos['productos'])) {
+                return $this->jsonResponse($response, [
+                    'error' => true,
+                    'mensaje' => 'Se requiere lista de productos'
+                ], 400);
+            }
+
+            $idSucursal = $datos['id_sucursal'] ?? $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+
+            if (!$idSucursal) {
+                return $this->jsonResponse($response, [
+                    'error' => true,
+                    'mensaje' => 'No se pudo determinar la sucursal'
+                ], 400);
+            }
+
+            if ($usuarioRolNivel >= 30) {
+                if (!$this->verificarAccesoSucursal($usuarioId, $idSucursal)) {
+                    return $this->jsonResponse($response, [
+                        'error' => true,
+                        'mensaje' => 'No tiene acceso a esta sucursal'
+                    ], 403);
+                }
+            }
+
+            $stockModel = new StockSucursal($this->db);
+            $actualizados = 0;
+            $sinCambio = 0;
+            $errores = [];
+            $observaciones = $datos['observaciones'] ?? 'Carga de stock inicial';
+
+            foreach ($datos['productos'] as $item) {
+                if (!isset($item['id_producto']) || !isset($item['cantidad'])) continue;
+                $cantidad = (float)$item['cantidad'];
+                if ($cantidad < 0) continue;
+
+                try {
+                    $resultado = $stockModel->registrarAjuste(
+                        (int)$idSucursal,
+                        (int)$item['id_producto'],
+                        $cantidad,
+                        $usuarioId,
+                        $observaciones
+                    );
+                    if ($resultado['tipo_ajuste'] === 'SIN_CAMBIO') {
+                        $sinCambio++;
+                    } else {
+                        $actualizados++;
+                    }
+                } catch (\Exception $e) {
+                    $errores[] = "Producto #{$item['id_producto']}: " . $e->getMessage();
+                }
+            }
+
+            return $this->jsonResponse($response, [
+                'error' => false,
+                'mensaje' => "Stock inicial guardado: {$actualizados} producto(s) actualizado(s)",
+                'actualizados' => $actualizados,
+                'sin_cambio' => $sinCambio,
+                'errores' => $errores
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error en carga inicial POST: " . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error' => true,
+                'mensaje' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /stock-sucursal/bandejas/{idProducto}
+     * Lista de bandejas individuales disponibles para un producto por peso
+     */
+    public function obtenerBandejas(Request $request, Response $response, array $args): Response {
+        try {
+            $idProducto = (int)$args['idProducto'];
+            $queryParams = $request->getQueryParams();
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+
+            $idSucursal = $queryParams['id_sucursal'] ?? $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+
+            if (!$idSucursal) {
+                return $this->jsonResponse($response, [
+                    'error' => true,
+                    'mensaje' => 'No se pudo determinar la sucursal'
+                ], 400);
+            }
+
+            if ($usuarioRolNivel >= 30 && !$this->verificarAccesoSucursal($usuarioId, $idSucursal)) {
+                return $this->jsonResponse($response, [
+                    'error' => true,
+                    'mensaje' => 'No tiene acceso a esta sucursal'
+                ], 403);
+            }
+
+            $stockModel = new StockSucursal($this->db);
+            $resultado  = $stockModel->obtenerBandejas($idSucursal, $idProducto);
+
+            return $this->jsonResponse($response, [
+                'error'      => false,
+                'id_producto' => $idProducto,
+                'bandejas'   => $resultado['bandejas'],
+                'cantidad'   => count($resultado['bandejas']),
+                'peso_total' => $resultado['peso_total']
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error al obtener bandejas: " . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error'  => true,
+                'mensaje' => 'Error al obtener bandejas'
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /stock-sucursal/baja-barcode
+     * Baja de una sola bandeja escaneada por código de barras (tipo 21, peso).
+     * Valida contra recepcion_items para prevenir doble-baja.
+     * Body: { id_producto, peso, tipo_baja, observaciones? }
+     */
+    public function registrarBajaBarcode(Request $request, Response $response): Response {
+        try {
+            $datos = $request->getParsedBody() ?? [];
+            $usuarioId       = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+
+            if (empty($datos['id_producto']) || !isset($datos['peso']) || empty($datos['tipo_baja'])) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'Faltan datos requeridos (id_producto, peso, tipo_baja)'
+                ], 400);
+            }
+
+            $queryParams = $request->getQueryParams();
+            $idSucursal  = $datos['id_sucursal'] ?? $queryParams['id_sucursal'] ?? $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+            if (!$idSucursal) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'No se pudo determinar la sucursal'
+                ], 400);
+            }
+
+            if ($usuarioRolNivel >= 30 && !$this->verificarAccesoSucursal($usuarioId, $idSucursal)) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'No tiene acceso a esta sucursal'
+                ], 403);
+            }
+
+            $stockModel = new StockSucursal($this->db);
+            $resultado  = $stockModel->registrarBajaBarcodePeso(
+                (int)$idSucursal,
+                (int)$datos['id_producto'],
+                (float)$datos['peso'],
+                $datos['tipo_baja'],
+                $usuarioId,
+                $datos['observaciones'] ?? null
+            );
+
+            return $this->jsonResponse($response, [
+                'error'          => false,
+                'mensaje'        => 'Baja registrada exitosamente',
+                'stock_anterior' => $resultado['stock_anterior'],
+                'stock_actual'   => $resultado['stock_actual'],
+                'peso_bajado'    => $resultado['peso_bajado'],
+                'es_peso'        => true
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error en baja barcode: " . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error'  => true,
+                'mensaje' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * POST /stock-sucursal/baja-bandejas
+     * Baja de múltiples bandejas seleccionadas manualmente desde la UI.
+     * Valida que no hayan sido dadas de baja anteriormente.
+     * Body: { id_producto, recepcion_item_ids: [1,2,...], tipo_baja, observaciones? }
+     */
+    public function registrarBajaBandejas(Request $request, Response $response): Response {
+        try {
+            $datos = $request->getParsedBody() ?? [];
+            $usuarioId       = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+
+            if (empty($datos['id_producto']) || empty($datos['recepcion_item_ids']) || empty($datos['tipo_baja'])) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'Faltan datos requeridos (id_producto, recepcion_item_ids, tipo_baja)'
+                ], 400);
+            }
+
+            if (!is_array($datos['recepcion_item_ids'])) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'recepcion_item_ids debe ser un arreglo'
+                ], 400);
+            }
+
+            $queryParams = $request->getQueryParams();
+            $idSucursal  = $datos['id_sucursal'] ?? $queryParams['id_sucursal'] ?? $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+            if (!$idSucursal) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'No se pudo determinar la sucursal'
+                ], 400);
+            }
+
+            if ($usuarioRolNivel >= 30 && !$this->verificarAccesoSucursal($usuarioId, $idSucursal)) {
+                return $this->jsonResponse($response, [
+                    'error'  => true,
+                    'mensaje' => 'No tiene acceso a esta sucursal'
+                ], 403);
+            }
+
+            $ids = array_map('intval', $datos['recepcion_item_ids']);
+
+            $stockModel = new StockSucursal($this->db);
+            $resultado  = $stockModel->registrarBajaBandejas(
+                (int)$idSucursal,
+                (int)$datos['id_producto'],
+                $ids,
+                $datos['tipo_baja'],
+                $usuarioId,
+                $datos['observaciones'] ?? null
+            );
+
+            return $this->jsonResponse($response, [
+                'error'          => false,
+                'mensaje'        => 'Baja registrada exitosamente',
+                'stock_anterior' => $resultado['stock_anterior'],
+                'stock_actual'   => $resultado['stock_actual'],
+                'peso_bajado'    => $resultado['peso_bajado'],
+                'bandejas'       => $resultado['bandejas'],
+                'es_peso'        => true
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error en baja bandejas: " . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error'  => true,
+                'mensaje' => $e->getMessage()
+            ], 400);
         }
     }
 

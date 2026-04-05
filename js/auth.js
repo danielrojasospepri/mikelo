@@ -4,10 +4,23 @@
  */
 
 const MikeloAuth = {
-    // Configuración
-    API_BASE: '/mikelo/api', // Ruta local XAMPP
-    TOKEN_KEY: 'mikelo_token',
-    USER_KEY: 'mikelo_user',
+    // Auto-detecta la carpeta base desde la URL actual (/mikelo, /test, etc.)
+    get API_BASE() {
+        const seg = window.location.pathname.split('/');
+        const baseFolder = seg[1] && !seg[1].includes('.') ? '/' + seg[1] : '';
+        return baseFolder + '/api';
+    },
+    // Claves de localStorage únicas por entorno: evita colisión entre /mikelo, /test y raíz
+    get TOKEN_KEY() {
+        const seg = window.location.pathname.split('/');
+        const env = seg[1] && !seg[1].includes('.') ? seg[1] : 'root';
+        return 'mikelo_token_' + env;
+    },
+    get USER_KEY() {
+        const seg = window.location.pathname.split('/');
+        const env = seg[1] && !seg[1].includes('.') ? seg[1] : 'root';
+        return 'mikelo_user_' + env;
+    },
 
     /**
      * Realizar login
@@ -153,6 +166,13 @@ const MikeloAuth = {
     },
 
     /**
+     * Verificar si es Planta Jefe o Admin (nivel <= 20)
+     */
+    isPlantaJefe() {
+        return this.hasPermission(20);
+    },
+
+    /**
      * Verificar si es franquicia
      */
     isFranquicia() {
@@ -167,7 +187,7 @@ const MikeloAuth = {
     isFranquiciaAdmin() {
         const user = this.getUser();
         if (!user) return false;
-        return user.rol_nivel === 30 || user.rol_nivel <= 10; // Admin de franquicia o admin general
+        return parseInt(user.rol_nivel) === 30 || user.rol_nivel <= 10; // Admin de franquicia o admin general
     },
 
     /**
@@ -181,6 +201,9 @@ const MikeloAuth = {
         const principal = user.sucursales.find(s => s.es_sucursal_principal);
         return principal || user.sucursales[0];
     },
+
+    // Flag para evitar múltiples llamadas a logout() cuando hay 401s concurrentes
+    _loggingOut: false,
 
     /**
      * Realizar petición autenticada
@@ -196,13 +219,64 @@ const MikeloAuth = {
             headers
         });
 
-        // Si es 401, redirigir a login
-        if (response.status === 401) {
+        // Si es 401, cerrar sesión (sólo la primera vez, evita loop con 401s concurrentes)
+        if (response.status === 401 && !this._loggingOut) {
+            this._loggingOut = true;
             this.logout();
             return null;
         }
 
         return response;
+    },
+
+    /**
+     * Requerir autenticación + nivel de rol mínimo
+     * nivelMax: nivel máximo permitido (ej: 25 = planta, 40 = franquicia)
+     * si el usuario tiene nivel > nivelMax, no tiene permisos para esa página
+     */
+    async requireAuthWithRole(nivelMax, redirectTo) {
+        const authenticated = await this.requireAuth();
+        if (!authenticated) return false;
+
+        const user = this.getUser();
+        if (!user) return false;
+
+        if (user.rol_nivel > nivelMax) {
+            // Sin permiso → redirigir
+            const dest = redirectTo || (this.isFranquicia() ? 'pedidos_sucursal.html' : 'login.html');
+            window.location.href = dest;
+            return false;
+        }
+        return true;
+    },
+
+    /**
+     * Requerir página solo para planta/depósito (niveles 10-25)
+     * Redirige a pedidos_sucursal si es franquicia
+     */
+    async requirePlanta() {
+        return this.requireAuthWithRole(25, 'pedidos_sucursal.html');
+    },
+
+    /**
+     * Requerir página solo para franquicias (niveles 30-40)
+     * Redirige a index si es planta
+     */
+    async requireFranquicia() {
+        const authenticated = await this.requireAuth();
+        if (!authenticated) return false;
+
+        const user = this.getUser();
+        if (!user) return false;
+
+        // Admin puede ver todo
+        if (user.rol_nivel <= 10) return true;
+
+        if (user.rol_nivel < 30) {
+            window.location.href = 'index.html';
+            return false;
+        }
+        return true;
     },
 
     /**
@@ -212,19 +286,31 @@ const MikeloAuth = {
         const user = this.getUser();
         if (!user) return;
 
-        // Nombre de usuario en navbar
+        // Nombre completo del usuario en navbar
         const userNameEl = document.querySelector('.user-name, #userName');
         if (userNameEl) {
             userNameEl.textContent = user.nombre || user.usuario;
         }
 
-        // Rol
+        // Info unificada: sucursal o número de sucursales (nuevo estándar)
+        const sucursalInfoEl = document.querySelector('#userSucursalInfo');
+        if (sucursalInfoEl) {
+            const sucursales = user.sucursales || [];
+            if (sucursales.length === 0) {
+                sucursalInfoEl.textContent = user.rol || '';
+            } else if (sucursales.length === 1) {
+                sucursalInfoEl.textContent = sucursales[0].sucursal || sucursales[0].nombre || 'Sucursal';
+            } else {
+                sucursalInfoEl.textContent = sucursales.length + ' sucursales autorizadas';
+            }
+        }
+
+        // Retrocompatibilidad
         const userRoleEl = document.querySelector('.user-role, #userRole');
         if (userRoleEl) {
             userRoleEl.textContent = user.rol;
         }
 
-        // Sucursal
         const sucursal = this.getSucursalPrincipal();
         const sucursalEl = document.querySelector('.user-sucursal, #userSucursal');
         if (sucursalEl && sucursal) {
@@ -234,6 +320,10 @@ const MikeloAuth = {
         // Mostrar/ocultar elementos según rol
         document.querySelectorAll('[data-require-planta]').forEach(el => {
             el.style.display = this.isPlanta() ? '' : 'none';
+        });
+
+        document.querySelectorAll('[data-require-planta-jefe]').forEach(el => {
+            el.style.display = this.isPlantaJefe() ? '' : 'none';
         });
 
         document.querySelectorAll('[data-require-franquicia]').forEach(el => {
@@ -246,6 +336,11 @@ const MikeloAuth = {
 
         document.querySelectorAll('[data-require-admin]').forEach(el => {
             el.style.display = this.hasPermission(10) ? '' : 'none';
+        });
+
+        // Revelar sidebar ahora que los permisos ya están aplicados
+        document.querySelectorAll('.nav-sidebar').forEach(el => {
+            el.classList.add('sidebar-ready');
         });
     }
 };

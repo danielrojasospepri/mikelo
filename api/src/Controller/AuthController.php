@@ -61,7 +61,7 @@ class AuthController {
                     'usuario' => $usuario['us'] ?? $datos['usuario'],
                     'email' => $usuario['email'] ?? null,
                     'rol' => $usuario['rol_nombre'],
-                    'rol_nivel' => $usuario['rol_nivel'],
+                    'rol_nivel' => (int) $usuario['rol_nivel'],
                     'sucursales' => $usuario['sucursales'] ?? []
                 ]
             ]);
@@ -145,7 +145,7 @@ class AuthController {
                     'usuario' => $usuario['usuario'],
                     'email' => $usuario['email'] ?? null,
                     'rol' => $usuario['rol_nombre'],
-                    'rol_nivel' => $usuario['rol_nivel'],
+                    'rol_nivel' => (int) $usuario['rol_nivel'],
                     'sucursales' => $usuario['sucursales'] ?? []
                 ],
                 'sesion' => [
@@ -268,7 +268,7 @@ class AuthController {
         return $this->jsonResponse($response, [
             'valido' => true,
             'usuario_id' => $sesion['id_usuario'],
-            'rol_nivel' => $sesion['rol_nivel'],
+            'rol_nivel' => (int) $sesion['rol_nivel'],
             'expira_en' => $sesion['expira_en']
         ]);
     }

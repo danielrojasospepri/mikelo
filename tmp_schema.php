@@ -1,0 +1,1 @@
+<?php require "api/comun.php"; $db = getDB(); foreach(["movimientos","tipos_movimiento","recepciones"] as $t){ try{ $s=$db->query("DESCRIBE $t"); echo "\n=== $t ===\n"; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $r){ echo $r["Field"].":".$r["Type"]."\n"; } }catch(Exception $e){ echo "No existe: $t\n"; } }

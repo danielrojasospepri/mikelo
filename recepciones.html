@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         .content-wrapper { min-height: calc(100vh - 57px); }
         .envio-card { transition: all 0.3s; cursor: pointer; }
@@ -20,7 +21,17 @@
         .item-check { width: 20px; height: 20px; }
         .diferencia-badge { font-size: 0.75rem; }
         .diferencia-ok { color: #28a745; }
-        .diferencia-error { color: #dc3545; }
+        .diferencia-error { color: #dc3545; font-weight:600; }
+        /* Scan flash animation */
+        @keyframes scanFlash {
+            0%   { background-color: #d4edda; }
+            50%  { background-color: #a8d5b5; }
+            100% { background-color: #d4edda; }
+        }
+        tr.table-success { animation: scanFlash 0.5s ease; }
+        /* Tighter table in modal */
+        #tablaItemsRecepcion td, #tablaItemsRecepcion th { font-size: 0.85rem; padding: 0.35rem 0.5rem; }
+        #barcodeInput:focus { border-color: #28a745; box-shadow: 0 0 0 0.2rem rgba(40,167,69,.25); }
     </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -49,8 +60,7 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right">
                     <span class="dropdown-item-text">
-                        <small class="text-muted" id="userRole">Rol</small><br>
-                        <small class="text-muted" id="userSucursal">Sucursal</small>
+                        <small class="text-muted" id="userSucursalInfo">-</small>
                     </span>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
@@ -70,36 +80,54 @@
         <div class="sidebar">
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column">
-                    <li class="nav-header">MI SUCURSAL</li>
-                    <li class="nav-item">
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
                         <a href="stock_sucursal.html" class="nav-link">
                             <i class="nav-icon fas fa-boxes"></i>
                             <p>Mi Stock</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
                         <a href="baja_stock.html" class="nav-link">
                             <i class="nav-icon fas fa-minus-circle"></i>
                             <p>Baja de Stock</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="stock_minimo.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Stock Mínimo</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="carga_inicial_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Carga de Stock Inicial</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
                         <a href="pedidos_sucursal.html" class="nav-link">
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>Mis Pedidos</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
                         <a href="recepciones.html" class="nav-link active">
                             <i class="nav-icon fas fa-truck-loading"></i>
                             <p>Recepciones</p>
                         </a>
                     </li>
-                    <li class="nav-header" data-require-planta>PLANTA</li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
                     <li class="nav-item" data-require-planta>
                         <a href="panel_produccion.html" class="nav-link">
                             <i class="nav-icon fas fa-industry"></i>
-                            <p>Panel Producción</p>
+                            <p>Pedidos Pendientes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link">
+                            <i class="nav-icon fas fa-exclamation-triangle"></i>
+                            <p>Panel Faltantes</p>
                         </a>
                     </li>
                     <li class="nav-item" data-require-planta>
@@ -108,11 +136,55 @@
                             <p>Panel Principal</p>
                         </a>
                     </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="alta_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>Alta en Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="envios.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Envíos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="stock_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Stock Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link">
+                            <i class="nav-icon fas fa-box-open"></i>
+                            <p>Productos / Familias</p>
+                        </a>
+                    </li>
                     <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
                     <li class="nav-item" data-require-admin>
                         <a href="usuarios.html" class="nav-link">
                             <i class="nav-icon fas fa-users-cog"></i>
                             <p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link">
+                            <i class="nav-icon fas fa-store-alt"></i>
+                            <p>Sucursales</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link">
+                            <i class="nav-icon fas fa-book"></i>
+                            <p>Manual de Usuario</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>Cerrar Sesión</p>
                         </a>
                     </li>
                 </ul>
@@ -153,11 +225,41 @@
                             <i class="fas fa-history mr-1"></i>Historial
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#archivados" onclick="cargarArchivados()">
+                            <i class="fas fa-archive mr-1"></i>Archivados
+                            <span class="badge badge-secondary ml-1" id="contadorArchivados"></span>
+                        </a>
+                    </li>
                 </ul>
 
                 <div class="tab-content mt-3">
                     <!-- Tab Pendientes -->
                     <div class="tab-pane fade show active" id="pendientes">
+                        <!-- Filtro de fecha -->
+                        <div class="card card-outline card-secondary mb-3">
+                            <div class="card-body py-2">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <label class="mb-0"><i class="fas fa-filter mr-1"></i><strong>Mostrar desde:</strong></label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <input type="date" id="filtroFechaDesde" class="form-control form-control-sm" style="width:160px;">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-primary" onclick="aplicarFiltroFecha()">
+                                            <i class="fas fa-search mr-1"></i>Aplicar
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ml-1" onclick="limpiarFiltroFecha()">
+                                            Ver todos
+                                        </button>
+                                    </div>
+                                    <div class="col-auto text-muted">
+                                        <small id="textoFiltroActivo"></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="row" id="enviosPendientesContainer">
                             <div class="col-12 text-center py-5">
                                 <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -192,6 +294,23 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tab Archivados -->
+                    <div class="tab-pane fade" id="archivados">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-archive mr-2"></i>Envíos Archivados</h3>
+                                <div class="card-tools">
+                                    <small class="text-muted">Envíos ocultados de la lista de pendientes. Puede restaurarlos para recibirlos.</small>
+                                </div>
+                            </div>
+                            <div class="card-body p-0" id="archivadosContainer">
+                                <div class="text-center p-4 text-muted">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>Cargando...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -212,55 +331,91 @@
         <div class="modal-content">
             <div class="modal-header bg-success">
                 <h5 class="modal-title text-white">
-                    <i class="fas fa-check-circle mr-2"></i>Confirmar Recepción
+                    <i class="fas fa-check-circle mr-2"></i>Confirmar Recepción —
+                    Envío <strong>#<span id="recepcionNumEnvio">-</span></strong>
+                    <small class="ml-3 font-weight-normal">Fecha envío: <span id="recepcionFechaEnvio">-</span></small>
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <form id="formConfirmarRecepcion">
-                <div class="modal-body">
+                <div class="modal-body pb-0">
                     <input type="hidden" id="recepcionIdEnvio">
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <strong>Envío #:</strong> <span id="recepcionNumEnvio">-</span>
+
+                    <!-- Progreso -->
+                    <div class="row align-items-center mb-2">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <span class="mr-2 text-muted">Confirmados:</span>
+                                <div class="progress flex-grow-1 mr-2" style="height:14px;">
+                                    <div id="barraProgreso" class="progress-bar bg-success" style="width:0%"></div>
+                                </div>
+                                <strong><span id="progresoTexto">0/0</span></strong>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <strong>Fecha Envío:</strong> <span id="recepcionFechaEnvio">-</span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Origen:</strong> Depósito Central
+                        <div class="col-md-6 text-right">
+                            <div class="alert alert-secondary py-1 px-2 mb-0 d-inline-block" id="ultimaScanInfo" style="display:none!important;font-size:0.85em;">
+                                <i class="fas fa-barcode mr-1"></i><span id="ultimaScanTexto"></span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Verifique las cantidades recibidas y marque cada item. Si hay diferencias, ingrese la cantidad real.
+                    <!-- Scan de código de barras -->
+                    <div class="card card-outline card-secondary mb-2">
+                        <div class="card-body py-2 px-3">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <i class="fas fa-barcode fa-lg text-secondary mr-1"></i>
+                                    <strong>Escanear ítem:</strong>
+                                </div>
+                                <div class="col">
+                                    <input type="text" id="barcodeInput"
+                                           class="form-control form-control-sm"
+                                           placeholder="Escanee el código de barras del ítem o escríbalo y presione Enter"
+                                           autocomplete="off" style="font-family:monospace; letter-spacing:2px;">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="$('#barcodeInput').val('').focus()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="col-auto text-muted">
+                                    <small>Formato: <code>21XXXXXYYYYY</code> (peso) / <code>20XXXXXYYYYY</code> (unidades)</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="tablaItemsRecepcion">
-                            <thead class="thead-light">
+                        <table class="table table-bordered table-sm" id="tablaItemsRecepcion">
+                            <thead class="thead-dark">
                                 <tr>
-                                    <th style="width: 50px;" class="text-center">
+                                    <th style="width:40px;" class="text-center">
                                         <input type="checkbox" id="checkTodos" title="Marcar todos">
                                     </th>
-                                    <th>Código</th>
-                                    <th>Producto</th>
-                                    <th class="text-center">Enviado</th>
-                                    <th class="text-center" style="width: 120px;">Recibido</th>
-                                    <th class="text-center">Diferencia</th>
+                                    <th style="width:30px;" class="text-center">#</th>
+                                    <th>Código / Producto</th>
+                                    <th style="width:130px;">Contenedor</th>
+                                    <th class="text-center" style="width:110px;">Enviado</th>
+                                    <th class="text-center" style="width:140px;">Recibido</th>
+                                    <th class="text-center" style="width:90px;">Diferencia</th>
+                                    <th class="text-center" style="width:50px;"><i class="fas fa-qrcode" title="Escaneado"></i></th>
                                 </tr>
                             </thead>
-                            <tbody id="itemsRecepcionBody">
-                            </tbody>
+                            <tbody id="itemsRecepcionBody"></tbody>
+                            <tfoot>
+                                <tr class="table-secondary font-weight-bold" id="filaTotales" style="display:none;">
+                                    <td colspan="4" class="text-right pr-3">TOTALES:</td>
+                                    <td class="text-center" id="totalEnviado">—</td>
+                                    <td class="text-center" id="totalRecibido">—</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group mt-2">
                         <label>Observaciones</label>
-                        <textarea id="recepcionObservaciones" class="form-control" rows="2" 
+                        <textarea id="recepcionObservaciones" class="form-control form-control-sm" rows="2"
                                   placeholder="Notas sobre la recepción (diferencias, problemas, etc.)"></textarea>
                     </div>
                 </div>
@@ -300,17 +455,27 @@
         await cargarEnviosPendientes();
         await cargarHistorial();
 
+        // Inicializar filtro fecha desde localStorage
+        const fechaGuardada = localStorage.getItem('mikelo_recep_fecha_corte');
+        if (fechaGuardada) {
+            $('#filtroFechaDesde').val(fechaGuardada);
+            actualizarTextoFiltro(fechaGuardada);
+        }
+
         // Check todos
         $('#checkTodos').on('change', function() {
             const checked = $(this).is(':checked');
             $('.item-check').prop('checked', checked);
+            actualizarProgreso();
             actualizarDiferencias();
         });
     });
 
     async function cargarEnviosPendientes() {
         try {
-            const response = await authFetch('/recepciones/envios-pendientes');
+            const fechaDesde = localStorage.getItem('mikelo_recep_fecha_corte') || '';
+            const qs = fechaDesde ? '?fecha_desde=' + fechaDesde : '';
+            const response = await authFetch('/recepciones/envios-pendientes' + qs);
             if (!response) return;
 
             const data = await response.json();
@@ -333,6 +498,60 @@
         }
     }
 
+    function aplicarFiltroFecha() {
+        const fecha = $('#filtroFechaDesde').val();
+        if (!fecha) {
+            Swal.fire('Atención', 'Seleccione una fecha de corte', 'warning');
+            return;
+        }
+        localStorage.setItem('mikelo_recep_fecha_corte', fecha);
+        actualizarTextoFiltro(fecha);
+        cargarEnviosPendientes();
+    }
+
+    function limpiarFiltroFecha() {
+        localStorage.removeItem('mikelo_recep_fecha_corte');
+        $('#filtroFechaDesde').val('');
+        $('#textoFiltroActivo').text('');
+        cargarEnviosPendientes();
+    }
+
+    function actualizarTextoFiltro(fecha) {
+        const d = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR');
+        $('#textoFiltroActivo').text('Filtrando desde ' + d);
+    }
+
+    async function archivarEnvio(idEnvio) {
+        const result = await Swal.fire({
+            title: 'Archivar envío #' + idEnvio,
+            text: 'El envío se ocultará de la lista de pendientes. Podrá volver a verlo si limpia el filtro.',
+            input: 'text',
+            inputLabel: 'Motivo (opcional)',
+            inputPlaceholder: 'Ej: envío anterior al módulo, ya recibido manualmente...',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Archivar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#6c757d'
+        });
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await authFetch('/recepciones/archivar/' + idEnvio, {
+                method: 'POST',
+                body: JSON.stringify({ motivo: result.value || null })
+            });
+            if (!response) return;
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            Swal.fire({ icon: 'success', title: 'Envío archivado', timer: 1500, showConfirmButton: false });
+            cargarEnviosPendientes();
+        } catch (error) {
+            Swal.fire('Error', error.message || 'No se pudo archivar el envío', 'error');
+        }
+    }
+
     function renderizarEnviosPendientes(envios) {
         const container = $('#enviosPendientesContainer');
         container.empty();
@@ -351,29 +570,33 @@
         }
 
         envios.forEach(envio => {
-            const fecha = new Date(envio.fecha).toLocaleDateString('es-AR');
-            const diasPendiente = Math.floor((new Date() - new Date(envio.fecha)) / (1000 * 60 * 60 * 24));
+            const fechaStr = envio.fecha_envio || envio.fecha;
+            const fecha = new Date(fechaStr).toLocaleDateString('es-AR');
+            const diasPendiente = Math.floor((new Date() - new Date(fechaStr)) / (1000 * 60 * 60 * 24));
             const urgente = diasPendiente > 2;
 
             container.append(`
                 <div class="col-md-6 col-lg-4">
-                    <div class="card envio-card ${urgente ? 'border-danger' : ''}" onclick="abrirRecepcion(${envio.id})">
+                    <div class="card envio-card ${urgente ? 'border-danger' : ''}">
                         <div class="card-header ${urgente ? 'bg-danger text-white' : 'bg-light'}">
                             <h5 class="card-title mb-0">
                                 <i class="fas fa-truck mr-2"></i>Envío #${envio.id}
                             </h5>
                             ${urgente ? '<span class="badge badge-light float-right">URGENTE</span>' : ''}
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" onclick="abrirRecepcion(${envio.id})" style="cursor:pointer;">
                             <p class="mb-1"><strong>Fecha:</strong> ${fecha}</p>
                             <p class="mb-1"><strong>Items:</strong> ${envio.total_items || '-'}</p>
                             <p class="mb-0 text-muted">
                                 <small>Hace ${diasPendiente} día${diasPendiente !== 1 ? 's' : ''}</small>
                             </p>
                         </div>
-                        <div class="card-footer text-center">
-                            <button class="btn btn-success btn-sm">
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <button class="btn btn-success btn-sm" onclick="abrirRecepcion(${envio.id})">
                                 <i class="fas fa-clipboard-check mr-1"></i>Confirmar Recepción
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="archivarEnvio(${envio.id})" title="Archivar (ocultar de pendientes)">
+                                <i class="fas fa-archive"></i>
                             </button>
                         </div>
                     </div>
@@ -395,7 +618,8 @@
 
             $('#recepcionIdEnvio').val(envio.id);
             $('#recepcionNumEnvio').text(envio.id);
-            $('#recepcionFechaEnvio').text(new Date(envio.fecha).toLocaleDateString('es-AR'));
+            const fechaEnvio = envio.fecha_envio || envio.fecha;
+            $('#recepcionFechaEnvio').text(new Date(fechaEnvio).toLocaleDateString('es-AR'));
             $('#recepcionObservaciones').val('');
             $('#checkTodos').prop('checked', false);
 
@@ -408,139 +632,341 @@
         }
     }
 
+    // ── Modal Recepción ────────────────────────────────────────────────────
+    $('#modalConfirmarRecepcion').on('shown.bs.modal', function() {
+        $('#barcodeInput').focus();
+    });
+
+    // Barcode input: submit on Enter (scanners send Enter after code)
+    $('#barcodeInput').on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            procesarBarcode($(this).val().trim());
+            $(this).val('');
+        }
+    });
+
+    function procesarBarcode(code) {
+        if (!code) return;
+
+        // Normalize: keep only digits
+        const digits = code.replace(/\D/g, '');
+        if (!digits) {
+            mostrarFeedbackScan('⚠ Código inválido: ' + code, 'warning');
+            return;
+        }
+
+        // Container barcode: 5-7 digits starting with zeros → ignore in reception
+        if (digits.length <= 7) {
+            const contId = parseInt(digits);
+            const nombre = contId === 0 ? 'Sin contenedor' : 'Contenedor #' + contId;
+            mostrarFeedbackScan('📦 ' + nombre + ' (solo informativo)', 'secondary');
+            // Highlight all rows with that container
+            $('#itemsRecepcionBody tr').each(function() {
+                const idx = parseInt($(this).data('index'));
+                if (!isNaN(idx) && itemsRecepcion[idx] && parseInt(itemsRecepcion[idx].contenedor_id) === contId) {
+                    $(this).addClass('table-warning').delay(1500).queue(function(next) {
+                        $(this).removeClass('table-warning'); next();
+                    });
+                }
+            });
+            return;
+        }
+
+        // Product barcode: ≥12 digits
+        if (digits.length >= 12) {
+            const tipo         = digits.substring(0, 2);   // "20"=unidades "21"=peso
+            const codigoBarra  = digits.substring(2, 7);   // product code (zero-padded 5)
+            const valorBarra   = parseInt(digits.substring(7, 12)); // last 5
+
+            const esPeso = (tipo === '21');
+
+            // Find matching unscanned items by product code
+            const matches = itemsRecepcion.reduce((acc, item, idx) => {
+                const codNorm = String(item.codigo_producto || '').padStart(5, '0');
+                if (codNorm === codigoBarra && !item.escaneado) acc.push(idx);
+                return acc;
+            }, []);
+
+            if (matches.length === 0) {
+                // Check if there are scanned ones (already scanned all)
+                const totalMatch = itemsRecepcion.filter(item => {
+                    return String(item.codigo_producto || '').padStart(5, '0') === codigoBarra;
+                }).length;
+                if (totalMatch > 0) {
+                    mostrarFeedbackScan('✅ Todos los ítems de ese producto ya están confirmados', 'success');
+                } else {
+                    mostrarFeedbackScan('❌ Código ' + codigoBarra + ' no encontrado en este envío', 'danger');
+                }
+                return;
+            }
+
+            // IF multiple matches, try to match by weight proximity
+            let idx = matches[0];
+            if (esPeso && matches.length > 1) {
+                const pesoBarcode = valorBarra / 1000; // assume grams → kg
+                let mejorDiff = Infinity;
+                matches.forEach(i => {
+                    const diff = Math.abs((parseFloat(itemsRecepcion[i].peso) || 0) - pesoBarcode);
+                    if (diff < mejorDiff) { mejorDiff = diff; idx = i; }
+                });
+            }
+
+            // Mark as scanned, check, pre-fill value
+            marcarEscaneado(idx, esPeso ? valorBarra / 1000 : valorBarra);
+            const p = itemsRecepcion[idx];
+            mostrarFeedbackScan(
+                '✔ ' + (p.codigo_producto || '') + ' – ' + (p.producto || '') +
+                (esPeso ? ' (' + (valorBarra/1000).toFixed(3) + ' kg)' : ' (' + valorBarra + ' unid.)'),
+                'success'
+            );
+            return;
+        }
+
+        mostrarFeedbackScan('⚠ Código de longitud inesperada: ' + digits.length + ' dígitos', 'warning');
+    }
+
+    function marcarEscaneado(index, valorRecibido) {
+        const item = itemsRecepcion[index];
+        item.escaneado = true;
+
+        // Check the checkbox
+        $(`.item-check[data-index="${index}"]`).prop('checked', true);
+
+        // Fill received value
+        const input = $(`.recibido-input[data-index="${index}"]`);
+        if (valorRecibido !== undefined && valorRecibido !== null) {
+            const esPeso = parseFloat(item.peso) > 0;
+            if (esPeso) {
+                input.val(valorRecibido.toFixed(3));
+            } else {
+                input.val(Math.round(valorRecibido));
+            }
+        }
+
+        // Update scan indicator
+        $(`.scan-icon[data-index="${index}"]`).html('<i class="fas fa-check-circle text-success"></i>');
+
+        // Flash row
+        const row = $(`#itemsRecepcionBody tr[data-index="${index}"]`);
+        row.addClass('table-success');
+
+        actualizarDiferencia(index);
+        actualizarProgreso();
+    }
+
+    function mostrarFeedbackScan(texto, tipo) {
+        const el = $('#ultimaScanInfo');
+        el.removeClass('alert-secondary alert-success alert-danger alert-warning')
+          .addClass('alert-' + tipo)
+          .css('display', 'inline-block');
+        $('#ultimaScanTexto').text(texto);
+        // Auto-hide after 3s
+        clearTimeout(window._scanTimer);
+        window._scanTimer = setTimeout(() => el.hide(), 4000);
+    }
+
+    function actualizarProgreso() {
+        const total    = itemsRecepcion.length;
+        const marcados = itemsRecepcion.filter((_, i) => $(`.item-check[data-index="${i}"]`).is(':checked')).length;
+        const pct      = total > 0 ? Math.round(marcados / total * 100) : 0;
+        $('#progresoTexto').text(marcados + '/' + total);
+        $('#barraProgreso').css('width', pct + '%').text(pct > 10 ? pct + '%' : '');
+        $('#barraProgreso').toggleClass('bg-warning', pct < 50).toggleClass('bg-success', pct >= 50);
+    }
+
     function renderizarItemsRecepcion() {
         const tbody = $('#itemsRecepcionBody');
         tbody.empty();
 
+        let hayPeso = false, hayUnidades = false;
+        let totalEnvPeso = 0, totalEnvUnid = 0;
+
         itemsRecepcion.forEach((item, index) => {
+            item.escaneado = false;
+            const esPeso   = parseFloat(item.peso) > 0;
+            const esUnidad = !esPeso && parseFloat(item.cantidad) > 0;
+            if (esPeso) hayPeso = true; else hayUnidades = true;
+
+            const enviadoLabel = esPeso
+                ? `<span class="font-weight-bold">${parseFloat(item.peso).toFixed(3)}</span> kg`
+                : `<span class="font-weight-bold">${item.cantidad}</span> unid.`;
+
+            if (esPeso) totalEnvPeso += parseFloat(item.peso) || 0;
+            else        totalEnvUnid += parseFloat(item.cantidad) || 0;
+
+            const contNombre = item.contenedor
+                ? `<span class="badge badge-secondary">${item.contenedor}</span>
+                   ${parseFloat(item.contenedor_peso) > 0 ? '<small class="text-muted ml-1">(' + parseFloat(item.contenedor_peso).toFixed(2) + 'kg)</small>' : ''}`
+                : '<span class="text-muted">—</span>';
+
+            const inputRecibido = esPeso
+                ? `<div class="input-group input-group-sm">
+                       <input type="number" class="form-control recibido-input" data-index="${index}" data-tipo="peso"
+                              value="${parseFloat(item.peso).toFixed(3)}" min="0" step="0.001"
+                              onchange="actualizarDiferencia(${index})">
+                       <div class="input-group-append"><span class="input-group-text">kg</span></div>
+                   </div>`
+                : `<div class="input-group input-group-sm">
+                       <input type="number" class="form-control recibido-input" data-index="${index}" data-tipo="unidades"
+                              value="${item.cantidad}" min="0" step="1"
+                              onchange="actualizarDiferencia(${index})">
+                       <div class="input-group-append"><span class="input-group-text">u</span></div>
+                   </div>`;
+
             tbody.append(`
                 <tr data-index="${index}">
-                    <td class="text-center">
-                        <input type="checkbox" class="item-check" data-index="${index}" checked>
+                    <td class="text-center align-middle">
+                        <input type="checkbox" class="item-check" data-index="${index}" checked
+                               onchange="actualizarProgreso(); actualizarDiferencia(${index})">
                     </td>
-                    <td><code>${item.codigo || '-'}</code></td>
-                    <td>${item.producto}</td>
-                    <td class="text-center"><strong>${item.cantidad}</strong></td>
-                    <td class="text-center">
-                        <input type="number" class="form-control form-control-sm text-center cantidad-recibida" 
-                               data-index="${index}" value="${item.cantidad}" min="0" 
-                               onchange="actualizarDiferencia(${index})">
+                    <td class="text-center align-middle text-muted">${index + 1}</td>
+                    <td class="align-middle">
+                        <code class="font-weight-bold">${item.codigo_producto || '-'}</code><br>
+                        <small>${item.producto || '-'}</small>
                     </td>
-                    <td class="text-center diferencia-cell" data-index="${index}">
-                        <span class="diferencia-ok"><i class="fas fa-check"></i> OK</span>
+                    <td class="align-middle">${contNombre}</td>
+                    <td class="text-center align-middle">${enviadoLabel}</td>
+                    <td class="align-middle">${inputRecibido}</td>
+                    <td class="text-center align-middle diferencia-cell" data-index="${index}">
+                        <span class="diferencia-ok"><i class="fas fa-check"></i></span>
+                    </td>
+                    <td class="text-center align-middle scan-icon" data-index="${index}">
+                        <i class="fas fa-barcode text-muted"></i>
                     </td>
                 </tr>
             `);
         });
 
-        // Event para checkbox individual
-        $('.item-check').on('change', function() {
-            actualizarDiferencias();
-        });
+        // Totals footer
+        if (itemsRecepcion.length > 0) {
+            let totalLabel = '';
+            if (hayPeso && !hayUnidades)   totalLabel = totalEnvPeso.toFixed(3) + ' kg';
+            else if (!hayPeso && hayUnidades) totalLabel = totalEnvUnid + ' unid.';
+            else totalLabel = totalEnvPeso.toFixed(3) + ' kg + ' + totalEnvUnid + ' unid.';
+            $('#totalEnviado').text(totalLabel);
+            $('#totalRecibido').text('—');
+            $('#filaTotales').show();
+        }
+
+        actualizarProgreso();
+        actualizarDiferencias();
     }
 
     function actualizarDiferencia(index) {
-        const item = itemsRecepcion[index];
-        const recibido = parseInt($(`.cantidad-recibida[data-index="${index}"]`).val()) || 0;
-        const enviado = item.cantidad;
-        const diferencia = recibido - enviado;
-        
-        const cell = $(`.diferencia-cell[data-index="${index}"]`);
-        
-        if (diferencia === 0) {
-            cell.html('<span class="diferencia-ok"><i class="fas fa-check"></i> OK</span>');
-        } else if (diferencia > 0) {
-            cell.html(`<span class="diferencia-error">+${diferencia} <i class="fas fa-exclamation-triangle"></i></span>`);
-        } else {
-            cell.html(`<span class="diferencia-error">${diferencia} <i class="fas fa-exclamation-triangle"></i></span>`);
+        const item    = itemsRecepcion[index];
+        const esPeso  = parseFloat(item.peso) > 0;
+        const input   = $(`.recibido-input[data-index="${index}"]`);
+        const checked = $(`.item-check[data-index="${index}"]`).is(':checked');
+        const cell    = $(`.diferencia-cell[data-index="${index}"]`);
+
+        if (!checked) {
+            cell.html('<span class="text-muted">—</span>');
+            return;
         }
+
+        const recibido = parseFloat(input.val()) || 0;
+        const enviado  = esPeso ? (parseFloat(item.peso) || 0) : (parseFloat(item.cantidad) || 0);
+        const dif      = parseFloat((recibido - enviado).toFixed(3));
+        const unidad   = esPeso ? ' kg' : '';
+
+        if (dif === 0) {
+            cell.html('<span class="diferencia-ok"><i class="fas fa-check"></i></span>');
+        } else if (dif > 0) {
+            cell.html(`<span class="diferencia-error">+${dif}${unidad} <i class="fas fa-exclamation-triangle"></i></span>`);
+        } else {
+            cell.html(`<span class="diferencia-error">${dif}${unidad} <i class="fas fa-exclamation-triangle"></i></span>`);
+        }
+
+        // Update total received
+        actualizarTotalRecibido();
     }
 
     function actualizarDiferencias() {
-        itemsRecepcion.forEach((item, index) => {
-            actualizarDiferencia(index);
+        itemsRecepcion.forEach((_, index) => actualizarDiferencia(index));
+    }
+
+    function actualizarTotalRecibido() {
+        let totalPeso = 0, totalUnid = 0;
+        let hayPeso = false, hayUnidades = false;
+        itemsRecepcion.forEach((item, idx) => {
+            if (!$(`.item-check[data-index="${idx}"]`).is(':checked')) return;
+            const esPeso = parseFloat(item.peso) > 0;
+            const val = parseFloat($(`.recibido-input[data-index="${idx}"]`).val()) || 0;
+            if (esPeso) { totalPeso += val; hayPeso = true; }
+            else { totalUnid += val; hayUnidades = true; }
         });
+        let label = '';
+        if (hayPeso && !hayUnidades)      label = totalPeso.toFixed(3) + ' kg';
+        else if (!hayPeso && hayUnidades) label = totalUnid + ' unid.';
+        else if (hayPeso || hayUnidades)  label = (hayPeso ? totalPeso.toFixed(3) + ' kg ' : '') + (hayUnidades ? totalUnid + ' unid.' : '');
+        else label = '—';
+        $('#totalRecibido').text(label);
     }
 
     $('#formConfirmarRecepcion').on('submit', async function(e) {
         e.preventDefault();
 
-        // Preparar items
         const items = [];
         let hayNoMarcados = false;
 
         itemsRecepcion.forEach((item, index) => {
-            const checked = $(`.item-check[data-index="${index}"]`).is(':checked');
-            const cantidadRecibida = parseInt($(`.cantidad-recibida[data-index="${index}"]`).val()) || 0;
-            
-            if (!checked) {
-                hayNoMarcados = true;
-            }
+            const checked  = $(`.item-check[data-index="${index}"]`).is(':checked');
+            const esPeso   = parseFloat(item.peso) > 0;
+            const inputVal = parseFloat($(`.recibido-input[data-index="${index}"]`).val()) || 0;
+
+            if (!checked) hayNoMarcados = true;
 
             items.push({
                 id_movimiento_item: item.id_movimiento_item,
-                id_producto: item.id_productos,
-                cantidad_enviada: item.cantidad,
-                cantidad_recibida: checked ? cantidadRecibida : 0,
-                peso: item.peso || 0
+                id_producto:        item.id_productos,
+                cantidad_enviada:   parseFloat(item.cantidad) || 0,
+                cantidad_recibida:  checked ? (esPeso ? 0 : Math.round(inputVal)) : 0,
+                peso_recibido:      checked ? (esPeso ? inputVal : parseFloat(item.peso) || 0) : 0
             });
         });
 
         if (hayNoMarcados) {
-            const confirm = await Swal.fire({
+            const result = await Swal.fire({
                 title: 'Atención',
-                text: 'Hay items no marcados. ¿Confirmar recepción parcial?',
+                text: 'Hay ítems sin marcar. ¿Confirmar recepción parcial?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, confirmar',
                 cancelButtonText: 'Revisar'
             });
-            if (!confirm.isConfirmed) return;
+            if (!result.isConfirmed) return;
         }
 
         const $btn = $('#btnConfirmarRecepcion');
-        const originalText = $btn.html();
-
+        const originalHtml = $btn.html();
         try {
             $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...');
 
-            const datos = {
-                id_envio: parseInt($('#recepcionIdEnvio').val()),
-                items: items,
-                observaciones: $('#recepcionObservaciones').val()
-            };
-
-            const response = await authFetch('/recepciones', {
+            const resp = await authFetch('/recepciones', {
                 method: 'POST',
-                body: JSON.stringify(datos)
+                body: JSON.stringify({
+                    id_envio:      parseInt($('#recepcionIdEnvio').val()),
+                    items,
+                    observaciones: $('#recepcionObservaciones').val()
+                })
             });
-
-            if (!response) return;
-
-            const data = await response.json();
+            if (!resp) return;
+            const data = await resp.json();
             if (data.error) throw new Error(data.mensaje);
 
             $('#modalConfirmarRecepcion').modal('hide');
-            
             Swal.fire({
-                icon: 'success',
-                title: '¡Recepción Confirmada!',
-                text: 'El stock de su sucursal ha sido actualizado',
-                confirmButtonText: 'Ver Stock'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'stock_sucursal.html';
-                }
-            });
+                icon: 'success', title: '¡Recepción Confirmada!',
+                text: 'El stock fue actualizado', confirmButtonText: 'Ver Stock'
+            }).then(r => { if (r.isConfirmed) window.location.href = 'stock_sucursal.html'; });
 
             cargarEnviosPendientes();
             cargarHistorial();
-
-        } catch (error) {
-            console.error('Error confirmando recepción:', error);
-            Swal.fire('Error', error.message || 'No se pudo confirmar la recepción', 'error');
+        } catch (err) {
+            Swal.fire('Error', err.message || 'No se pudo confirmar', 'error');
         } finally {
-            $btn.prop('disabled', false).html(originalText);
+            $btn.prop('disabled', false).html(originalHtml);
         }
     });
 
@@ -587,12 +1013,93 @@
         });
 
         dataTable = $('#tablaHistorial').DataTable({
+            destroy: true,
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'No se encontraron registros',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros totales)',
+                search: 'Buscar:',
+                paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' }
             },
             pageLength: 25,
             order: [[0, 'desc']]
         });
+    }
+
+    // ── Envíos Archivados ─────────────────────────────────────────────────
+    let archivadosCargados = false;
+
+    async function cargarArchivados() {
+        if (archivadosCargados) return;
+        archivadosCargados = true;
+
+        const container = $('#archivadosContainer');
+        try {
+            const response = await authFetch('/recepciones/archivados');
+            if (!response) return;
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            const envios = data.envios || [];
+            $('#contadorArchivados').text(envios.length || '');
+
+            if (envios.length === 0) {
+                container.html('<div class="p-4 text-center text-muted"><i class="fas fa-check-circle mr-2 text-success"></i>No hay envíos archivados</div>');
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover mb-0"><thead class="thead-light"><tr><th>Envío #</th><th>Fecha Envío</th><th>Sucursal</th><th>Items</th><th>Motivo archivo</th><th>Archivado</th><th></th></tr></thead><tbody>';
+            envios.forEach(e => {
+                const fechaEnvio = e.fecha_envio ? new Date(e.fecha_envio).toLocaleDateString('es-AR') : '-';
+                const fechaArch  = e.fecha_archivado ? new Date(e.fecha_archivado).toLocaleDateString('es-AR') : '-';
+                html += `<tr>
+                    <td><strong>#${e.id}</strong></td>
+                    <td>${fechaEnvio}</td>
+                    <td>${e.sucursal_destino || '-'}</td>
+                    <td>${e.total_items || 0}</td>
+                    <td><small class="text-muted">${e.motivo || '-'}</small></td>
+                    <td><small>${fechaArch}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-success" onclick="desarchivarEnvio(${e.id})" title="Restaurar a pendientes">
+                            <i class="fas fa-undo mr-1"></i>Restaurar
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.html(html);
+        } catch (error) {
+            container.html(`<div class="p-4 text-center text-danger"><i class="fas fa-exclamation-triangle mr-2"></i>${error.message}</div>`);
+        }
+    }
+
+    async function desarchivarEnvio(idEnvio) {
+        const result = await Swal.fire({
+            title: 'Restaurar envío #' + idEnvio,
+            text: 'El envío volverá a aparecer en la lista de pendientes.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Restaurar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745'
+        });
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await authFetch('/recepciones/desarchivar/' + idEnvio, { method: 'POST' });
+            if (!response) return;
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            Swal.fire({ icon: 'success', title: 'Envío restaurado', timer: 1500, showConfirmButton: false });
+            archivadosCargados = false;
+            cargarArchivados();
+            cargarEnviosPendientes();
+        } catch (error) {
+            Swal.fire('Error', error.message || 'No se pudo restaurar el envío', 'error');
+        }
     }
 </script>
 </body>

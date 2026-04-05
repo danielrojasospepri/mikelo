@@ -41,11 +41,11 @@ class Envio {
                 ]);
                 $idMovimientoItem = $this->db->lastInsertId();
 
-                // Registrar el estado inicial (NUEVO)
+                // Registrar el estado inicial (ENVIADO - items despachados desde depósito)
                 $stmt = $this->db->prepare("
                     INSERT INTO estados_items_movimientos (
                         id_estados, id_movimientos_items, fecha_alta, usuario_alta
-                    ) VALUES (1, ?, NOW(), ?)
+                    ) VALUES (2, ?, NOW(), ?)
                 ");
                 $stmt->execute([$idMovimientoItem, $_SESSION['usuario'] ?? 'sistema']);
             }
@@ -138,19 +138,22 @@ class Envio {
                         );
                     }
                     
-                    // Obtener el contenedor del item origen
+                    // Obtener el contenedor y el peso del item origen
                     $stmt = $this->db->prepare("
-                        SELECT id_contenedor FROM movimientos_items 
+                        SELECT id_contenedor, cnt_peso FROM movimientos_items 
                         WHERE id = ?
                     ");
                     $stmt->execute([$producto['id_movimientos_items_origen']]);
                     $itemOrigen = $stmt->fetch();
                     $idContenedor = $itemOrigen ? $itemOrigen['id_contenedor'] : null;
+                    // Usar el peso del item origen si no se proveyó explícitamente
+                    $pesoOrigen = $itemOrigen ? (float)$itemOrigen['cnt_peso'] : 0;
                     $idMovItemOrigen = $producto['id_movimientos_items_origen'];
                 } else {
                     // ALTA NUEVA: No hay referencia, ni validación de stock ni contenedor
                     $idContenedor = null;
                     $idMovItemOrigen = null;
+                    $pesoOrigen = 0;
                 }
                 // Insertar el item del movimiento
                 $stmt = $this->db->prepare("
@@ -163,17 +166,17 @@ class Envio {
                     $idMovimiento,
                     isset($producto['id_productos']) ? $producto['id_productos'] : null,
                     isset($producto['cantidad']) ? $producto['cantidad'] : null,
-                    isset($producto['peso']) ? $producto['peso'] : null,
+                    isset($producto['peso']) ? (float)$producto['peso'] : $pesoOrigen,
                     $idMovItemOrigen,
                     $idContenedor
                 ]);
                 $idMovimientoItem = $this->db->lastInsertId();
 
-                // Registrar el estado inicial (NUEVO)
+                // Registrar el estado inicial (ENVIADO - items despachados desde depósito)
                 $stmt = $this->db->prepare("
                     INSERT INTO estados_items_movimientos (
                         id_estados, id_movimientos_items, fecha_alta, usuario_alta
-                    ) VALUES (1, ?, NOW(), ?)
+                    ) VALUES (2, ?, NOW(), ?)
                 ");
                 $stmt->execute([$idMovimientoItem, $_SESSION['usuario'] ?? 'sistema']);
             }

@@ -50,16 +50,16 @@ Modificamos `api/src/Model/Envio.php` para hacer búsqueda INTELIGENTE de produc
 
 ```bash
 # Test PASO 1: Cantidad exacta
-curl "http://localhost/mikelo/api/envios/productos-disponibles?codigo=405&cantidad=1"
+curl "http://localhost/test/api/envios/productos-disponibles?codigo=405&cantidad=1"
 
 # Test PASO 2: Cantidad superior
-curl "http://localhost/mikelo/api/envios/productos-disponibles?codigo=405&cantidad=3"
+curl "http://localhost/test/api/envios/productos-disponibles?codigo=405&cantidad=3"
 
 # Test PASO 3: Manual
-curl "http://localhost/mikelo/api/envios/productos-disponibles"
+curl "http://localhost/test/api/envios/productos-disponibles"
 
 # Test Peso
-curl "http://localhost/mikelo/api/envios/productos-disponibles?peso=6.355"
+curl "http://localhost/test/api/envios/productos-disponibles?peso=6.355"
 ```
 
 ### Opción C: REST Client en VSCode

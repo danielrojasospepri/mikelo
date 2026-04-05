@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. – Manual de Usuario</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <style>
+        /* ============================================================
+           ESTILOS MANUAL
+        ============================================================ */
+        .manual-hero {
+            background: linear-gradient(135deg, #c0392b 0%, #f4a83a 100%);
+            color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .manual-hero h1 { font-size: 2rem; margin-bottom: 0.3rem; }
+        .manual-hero p  { margin-bottom: 0; opacity: 0.9; }
+
+        .role-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.5);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Sección de módulo */
+        .module-section { margin-bottom: 3rem; }
+        .module-section-header {
+            border-left: 5px solid #c0392b;
+            padding-left: 12px;
+            margin-bottom: 1.5rem;
+        }
+        .module-section-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0;
+            color: #343a40;
+        }
+        .module-section-header p { margin: 0; color: #6c757d; font-size: 0.9rem; }
+
+        /* Card de módulo */
+        .module-card { margin-bottom: 1.5rem; }
+        .module-card .card-header {
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .module-card .card-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            color: #343a40;
+        }
+        .module-card .card-header .module-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #fff;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+
+        /* Colores por sección */
+        .icon-planta    { background: #17a2b8; }
+        .icon-sucursal  { background: #28a745; }
+        .icon-admin     { background: #c0392b; }
+
+        /* Placeholder de captura */
+        .screenshot-placeholder {
+            background: #f1f3f5;
+            border: 2px dashed #adb5bd;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            color: #868e96;
+            margin: 1rem 0;
+        }
+        .screenshot-placeholder i { font-size: 2rem; display: block; margin-bottom: 8px; }
+        .screenshot-placeholder small { display: block; margin-top: 6px; font-size: 0.75rem; color: #adb5bd; }
+
+        /* Pasos */
+        .steps-list { padding-left: 0; list-style: none; counter-reset: step-counter; }
+        .steps-list li {
+            counter-increment: step-counter;
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .steps-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0; top: 0;
+            background: #c0392b;
+            color: #fff;
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* Notas */
+        .note-box {
+            border-left: 4px solid #f4a83a;
+            background: #fff8ee;
+            padding: 10px 14px;
+            border-radius: 0 4px 4px 0;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+        .note-box.info  { border-color: #17a2b8; background: #e8f7f9; }
+        .note-box.warn  { border-color: #ffc107; background: #fff9e6; }
+        .note-box.danger{ border-color: #dc3545; background: #fdecea; }
+
+        /* Tabla de roles */
+        .roles-table th { background: #343a40; color: #fff; }
+        .check-yes { color: #28a745; font-weight: bold; }
+        .check-no  { color: #adb5bd; }
+
+        /* Sidebar mini en manual */
+        @media (min-width: 992px) {
+            .manual-toc {
+                position: sticky;
+                top: 70px;
+                max-height: calc(100vh - 90px);
+                overflow-y: auto;
+            }
+        }
+        .toc-list { list-style: none; padding: 0; margin: 0; }
+        .toc-list li a {
+            display: block;
+            padding: 6px 12px;
+            color: #495057;
+            font-size: 0.875rem;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .toc-list li a:hover { background: #f8f9fa; color: #c0392b; }
+        .toc-list .toc-section { font-weight: 700; font-size: 0.75rem; text-transform: uppercase;
+            color: #adb5bd; padding: 10px 12px 2px; letter-spacing: 0.05em; }
+
+        /* Print */
+        @media print {
+            .main-sidebar, .main-header, .no-print, .manual-toc-col { display: none !important; }
+            .content-wrapper { margin-left: 0 !important; }
+            .manual-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; }
+            .module-card { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a></li>
+            <li class="nav-item d-none d-sm-inline-block"><a href="#" class="nav-link">Manual de Usuario</a></li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item no-print">
+                <button class="btn btn-sm btn-outline-secondary ml-2" onclick="window.print()">
+                    <i class="fas fa-print mr-1"></i>Imprimir / Exportar PDF
+                </button>
+            </li>
+            <li class="nav-item no-print">
+                <a href="javascript:history.back()" class="nav-link">
+                    <i class="fas fa-arrow-left mr-1"></i>Volver
+                </a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle mr-1"></i>
+                    <span id="userName">Usuario</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <span class="dropdown-item-text">
+                        <small class="text-muted" id="userSucursalInfo">-</small>
+                    </span>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index.html" class="brand-link">
+            <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity:.8">
+            <span class="brand-text font-weight-light">&nbsp;J . A . R . V . I . S</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="stock_sucursal.html" class="nav-link"><i class="nav-icon fas fa-boxes"></i><p>Mi Stock</p></a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="baja_stock.html" class="nav-link"><i class="nav-icon fas fa-minus-circle"></i><p>Baja de Stock</p></a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="stock_minimo.html" class="nav-link"><i class="nav-icon fas fa-tachometer-alt"></i><p>Stock Mínimo</p></a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="carga_inicial_sucursal.html" class="nav-link"><i class="nav-icon fas fa-warehouse"></i><p>Carga de Stock Inicial</p></a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="pedidos_sucursal.html" class="nav-link"><i class="nav-icon fas fa-clipboard-list"></i><p>Mis Pedidos</p></a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="recepciones.html" class="nav-link"><i class="nav-icon fas fa-truck-loading"></i><p>Recepciones</p></a>
+                    </li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_produccion.html" class="nav-link"><i class="nav-icon fas fa-industry"></i><p>Pedidos Pendientes</p></a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link"><i class="nav-icon fas fa-exclamation-triangle"></i><p>Panel Faltantes</p></a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="index.html" class="nav-link"><i class="nav-icon fas fa-home"></i><p>Panel Principal</p></a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="alta_deposito.html" class="nav-link"><i class="nav-icon fas fa-plus-circle"></i><p>Alta en Depósito</p></a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="envios.html" class="nav-link"><i class="nav-icon fas fa-truck"></i><p>Envíos</p></a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="stock_deposito.html" class="nav-link"><i class="nav-icon fas fa-warehouse"></i><p>Stock Depósito</p></a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link"><i class="nav-icon fas fa-box-open"></i><p>Productos / Familias</p></a>
+                    </li>
+                    <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="usuarios.html" class="nav-link"><i class="nav-icon fas fa-users-cog"></i><p>Usuarios</p></a>
+                    </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link"><i class="nav-icon fas fa-store-alt"></i><p>Sucursales</p></a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link active"><i class="nav-icon fas fa-book"></i><p>Manual de Usuario</p></a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()"><i class="nav-icon fas fa-sign-out-alt"></i><p>Cerrar Sesión</p></a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-book mr-2"></i>Manual de Usuario</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Inicio</a></li>
+                            <li class="breadcrumb-item active">Manual</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+
+                    <!-- Contenido principal -->
+                    <div class="col-lg-9 manual-col">
+
+                        <!-- Hero -->
+                        <div class="manual-hero">
+                            <h1><i class="fas fa-ice-cream mr-2"></i>J . A . R . V . I . S</h1>
+                            <p>Sistema de gestión de inventario — Mikelo, Neuquén</p>
+                            <div id="heroBadge" class="role-badge"><i class="fas fa-user mr-1"></i>Cargando perfil…</div>
+                        </div>
+
+                        <!-- ==================== SECCIÓN INTRODUCCIÓN ==================== -->
+                        <div class="module-section">
+                            <div class="module-section-header">
+                                <h2><i class="fas fa-info-circle mr-2"></i>Introducción al sistema</h2>
+                                <p>Conceptos generales y navegación</p>
+                            </div>
+
+                            <div class="card module-card">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-admin"><i class="fas fa-compass"></i></span>
+                                        ¿Qué es J.A.R.V.I.S.?
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p>J.A.R.V.I.S. es el sistema de gestión de inventario y logística de <strong>Mikelo</strong>.
+                                    Centraliza el control del depósito, los envíos a sucursales y la gestión de pedidos, permitiendo
+                                    trazabilidad completa de cada producto desde el ingreso al depósito hasta la entrega en cada franquicia.</p>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-warehouse text-primary"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Depósito central</span>
+                                                    <span class="info-box-number">1 ubicación</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-store text-success"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Sucursales</span>
+                                                    <span class="info-box-number">Múltiples franquicias</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-barcode text-warning"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Escáner</span>
+                                                    <span class="info-box-number">Soporte código de barras</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Vista general del sistema
+                                        <small>Reemplazar con imagen real: screenshot_inicio.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card module-card">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-admin"><i class="fas fa-sign-in-alt"></i></span>
+                                        Iniciar sesión
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p>Para acceder al sistema se requiere usuario y contraseña asignados por el administrador.</p>
+                                    <ol class="steps-list">
+                                        <li>Ingresar a la URL del sistema.</li>
+                                        <li>Completar los campos <strong>Usuario</strong> y <strong>Contraseña</strong>.</li>
+                                        <li>Hacer clic en <strong>Ingresar al Sistema</strong>.</li>
+                                        <li>El sistema redirige automáticamente al módulo correspondiente según el perfil del usuario.</li>
+                                    </ol>
+                                    <div class="note-box">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Los usuarios de <strong>planta</strong> son redirigidos al Panel Principal. Los usuarios de <strong>sucursal</strong> son redirigidos a Mis Pedidos.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Pantalla de login
+                                        <small>Reemplazar con imagen real: screenshot_login.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla de roles (solo admin) -->
+                            <div id="seccionTablaRoles" style="display:none">
+                                <div class="card module-card">
+                                    <div class="card-header">
+                                        <h3>
+                                            <span class="module-icon icon-admin"><i class="fas fa-user-shield"></i></span>
+                                            Perfiles de usuario y accesos
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>El sistema cuenta con los siguientes perfiles, cada uno con acceso a distintos módulos:</p>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm roles-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Módulo</th>
+                                                        <th class="text-center">Admin</th>
+                                                        <th class="text-center">Planta Jefe</th>
+                                                        <th class="text-center">Planta Operario</th>
+                                                        <th class="text-center">Franq. Admin</th>
+                                                        <th class="text-center">Franq. Empleado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td colspan="6" class="bg-light"><strong>PLANTA / DEPÓSITO</strong></td></tr>
+                                                    <tr>
+                                                        <td>Panel Producción</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Panel Faltantes</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Movimientos</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Alta en Depósito</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Stock Depósito</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr><td colspan="6" class="bg-light"><strong>MI SUCURSAL</strong></td></tr>
+                                                    <tr>
+                                                        <td>Mis Pedidos</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Recepciones</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Mi Stock</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Baja de Stock</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td>
+                                                    </tr>
+                                                    <tr><td colspan="6" class="bg-light"><strong>PLANTA — Solo Jefe / Admin</strong></td></tr>
+                                                    <tr>
+                                                        <td>Envíos</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Productos / Familias</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-yes">✔</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr><td colspan="6" class="bg-light"><strong>MI SUCURSAL — Solo Franq. Admin</strong></td></tr>
+                                                    <tr>
+                                                        <td>Stock Mínimo</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Carga Inicial de Stock</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr><td colspan="6" class="bg-light"><strong>ADMINISTRACIÓN — Solo Admin</strong></td></tr>
+                                                    <tr>
+                                                        <td>Usuarios</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Sucursales</td>
+                                                        <td class="text-center check-yes">✔</td><td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                        <td class="text-center check-no">—</td><td class="text-center check-no">—</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ==================== SECCIÓN SUCURSAL ==================== -->
+                        <div class="module-section" id="seccionSucursal" style="display:none">
+                            <div class="module-section-header">
+                                <h2><i class="fas fa-store mr-2" style="color:#28a745"></i>Módulos de Sucursal</h2>
+                                <p>Funciones disponibles para el personal de franquicia</p>
+                            </div>
+
+                            <!-- Mi Stock -->
+                            <div class="card module-card" id="mod-stock-sucursal">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-sucursal"><i class="fas fa-boxes"></i></span>
+                                        Mi Stock
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Visualiza el inventario actual de la sucursal. Muestra cada producto con su código, descripción y cantidad disponible en el local.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para conocer el estado actual del stock antes de realizar un pedido, o para verificar que un envío fue recibido correctamente.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder desde el menú lateral <em>Mi Stock</em>.</li>
+                                        <li>La tabla se carga automáticamente con el stock de la sucursal asignada al usuario.</li>
+                                        <li>Se pueden filtrar productos por nombre o código usando el campo de búsqueda.</li>
+                                    </ol>
+                                    <div class="note-box info">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        El stock se actualiza automáticamente al confirmar una recepción o registrar una baja.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Stock Sucursal
+                                        <small>Reemplazar con imagen real: screenshot_stock_sucursal.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mis Pedidos -->
+                            <div class="card module-card" id="mod-pedidos">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-sucursal"><i class="fas fa-clipboard-list"></i></span>
+                                        Mis Pedidos
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Permite crear solicitudes de productos al depósito central. Los pedidos quedan en estado <span class="badge badge-warning">SOLICITADO</span> hasta que planta los procesa y genera un envío.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para solicitar reposición de stock cuando los niveles están bajos o se anticipa alta demanda.</p>
+                                    <h6 class="mt-3">Crear un pedido nuevo:</h6>
+                                    <ol class="steps-list">
+                                        <li>Hacer clic en <strong>Nuevo Pedido</strong>.</li>
+                                        <li>Seleccionar los productos y las cantidades requeridas. Se puede escanear el código de barras de cada producto.</li>
+                                        <li>Confirmar con <strong>Enviar Pedido</strong>.</li>
+                                        <li>El pedido aparecerá en la lista con estado <span class="badge badge-warning">SOLICITADO</span>.</li>
+                                    </ol>
+                                    <h6 class="mt-3">Estados posibles de un pedido:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <table class="table table-sm table-bordered">
+                                                <tr><td><span class="badge badge-warning">SOLICITADO</span></td><td>Enviado, esperando respuesta de planta</td></tr>
+                                                <tr><td><span class="badge badge-info">ENVIADO</span></td><td>Planta despachó el envío</td></tr>
+                                                <tr><td><span class="badge badge-success">RECIBIDO</span></td><td>Confirmado en recepción</td></tr>
+                                                <tr><td><span class="badge badge-danger">CANCELADO</span></td><td>Pedido cancelado</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Lista de pedidos y modal de nuevo pedido
+                                        <small>Reemplazar con imagen real: screenshot_pedidos.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recepciones -->
+                            <div class="card module-card" id="mod-recepciones">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-sucursal"><i class="fas fa-truck-loading"></i></span>
+                                        Recepciones
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Permite confirmar la recepción de los envíos despachados desde el depósito. Al confirmar, el stock de la sucursal se actualiza automáticamente.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para registrar formalmente que la mercadería llegó al local, indicando las cantidades reales recibidas (que pueden diferir de lo enviado).</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Recepciones</em> desde el menú.</li>
+                                        <li>En la pestaña <strong>Envíos Pendientes</strong> aparecen los envíos que aún no fueron confirmados.</li>
+                                        <li>Hacer clic en <strong>Recibir</strong> en el envío correspondiente.</li>
+                                        <li>Verificar cada ítem: indicar la cantidad <em>realmente recibida</em> (no modificar si coincide).</li>
+                                        <li>Opcionalmente agregar observaciones.</li>
+                                        <li>Confirmar con <strong>Confirmar Recepción</strong>.</li>
+                                    </ol>
+                                    <div class="note-box warn">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Si hay diferencia entre lo enviado y lo recibido, registrar la cantidad real. El sistema guarda la diferencia para el seguimiento.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Recepciones - envíos pendientes y confirmación
+                                        <small>Reemplazar con imagen real: screenshot_recepciones.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Carga Inicial de Stock (solo Franquicia Admin) -->
+                            <div class="card module-card" id="mod-carga-inicial" data-require-franquicia-admin>
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-sucursal"><i class="fas fa-warehouse"></i></span>
+                                        Carga Inicial de Stock
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Permite registrar el inventario inicial de una sucursal cuando comienza a operar, o corregir el stock en caso de un inventario físico. Solo disponible para el perfil <strong>Franquicia Admin</strong>.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para cargar el stock real existente en el local cuando se da de alta una sucursal, o después de realizar un conteo físico que detectó diferencias con el sistema.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Carga de Stock Inicial</em> desde el menú lateral.</li>
+                                        <li>Seleccionar el producto (búsqueda o escáner de código de barras).</li>
+                                        <li>Ingresar la cantidad real existente en el local.</li>
+                                        <li>Repetir para cada producto presente en la sucursal.</li>
+                                        <li>Confirmar. El sistema establece esas cantidades como punto de partida del inventario.</li>
+                                    </ol>
+                                    <div class="note-box warn">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Usar esta función solo cuando el stock en el sistema no refleja la realidad del local. Para movimientos normales usar <strong>Baja de Stock</strong> o <strong>Recepciones</strong>.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Carga Inicial de Stock
+                                        <small>Reemplazar con imagen real: screenshot_carga_inicial.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stock Mínimo (solo Franquicia Admin) -->
+                            <div class="card module-card" id="mod-stock-minimo" data-require-franquicia-admin>
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-sucursal"><i class="fas fa-tachometer-alt"></i></span>
+                                        Stock Mínimo
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Define el umbral de alerta de stock para cada producto de la sucursal. Cuando el stock cae por debajo de ese valor, el producto aparece marcado como faltante para facilitar la planificación de pedidos. Solo disponible para el perfil <strong>Franquicia Admin</strong>.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para recibir alertas cuando un producto está por agotarse, y así generar el pedido de reposición con anticipación.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Stock Mínimo</em> desde el menú lateral.</li>
+                                        <li>Buscar el producto a configurar.</li>
+                                        <li>Ingresar el valor de <strong>stock mínimo</strong> (cantidad que dispara la alerta) y, opcionalmente, el <strong>stock óptimo</strong> (cantidad ideal a pedir para llegar).</li>
+                                        <li>Guardar. El cambio tiene efecto inmediato.</li>
+                                    </ol>
+                                    <div class="note-box info">
+                                        <i class="fas fa-lightbulb mr-1"></i>
+                                        Configurar el stock mínimo considerando el tiempo que tarda el pedido en llegar (planta procesa el pedido y genera el envío). Así el producto nunca se agota.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Configuración de Stock Mínimo
+                                        <small>Reemplazar con imagen real: screenshot_stock_minimo.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Baja de Stock -->
+                            <div class="card module-card" id="mod-baja">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-sucursal"><i class="fas fa-minus-circle"></i></span>
+                                        Baja de Stock
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Registra consumo, pérdida o cualquier egreso de productos del stock de la sucursal que no corresponda a una venta registrada en otro sistema.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para mantener el inventario actualizado cuando hay productos vencidos, rotos, consumidos en el local o devoluciones.</p>
+                                    <ol class="steps-list">
+                                        <li>Seleccionar el producto (por búsqueda o escáner).</li>
+                                        <li>Ingresar la cantidad a dar de baja.</li>
+                                        <li>Seleccionar el motivo de baja.</li>
+                                        <li>Confirmar la operación.</li>
+                                    </ol>
+                                    <div class="note-box danger">
+                                        <i class="fas fa-exclamation-circle mr-1"></i>
+                                        Esta operación <strong>no tiene marcha atrás</strong>. Verificar cantidades antes de confirmar.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Baja de Stock
+                                        <small>Reemplazar con imagen real: screenshot_baja_stock.png</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ==================== SECCIÓN PLANTA ==================== -->
+                        <div class="module-section" id="seccionPlanta" style="display:none">
+                            <div class="module-section-header">
+                                <h2><i class="fas fa-industry mr-2" style="color:#17a2b8"></i>Módulos de Planta / Depósito</h2>
+                                <p>Funciones disponibles para el personal del depósito central</p>
+                            </div>
+
+                            <!-- Panel Producción -->
+                            <div class="card module-card" id="mod-panel-produccion">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-industry"></i></span>
+                                        Panel Producción
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Vista centralizada de los pedidos pendientes recibidos de las sucursales. Permite generar envíos en respuesta a cada pedido.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Es el módulo principal del operador de depósito. Desde aquí se controla el flujo de pedidos y despachos.</p>
+                                    <ol class="steps-list">
+                                        <li>Al ingresar se listan los pedidos con estado <span class="badge badge-warning">SOLICITADO</span>.</li>
+                                        <li>Hacer clic en un pedido para ver su detalle (productos, cantidades, sucursal).</li>
+                                        <li>Verificar el stock disponible para cada ítem (se muestra en verde si hay suficiente, en rojo si no).</li>
+                                        <li>Ajustar cantidades si el stock no alcanza para el total solicitado.</li>
+                                        <li>Hacer clic en <strong>Generar Envío</strong> para despachar.</li>
+                                        <li>El pedido pasa a <span class="badge badge-info">ENVIADO</span> y se crea el movimiento de stock correspondiente.</li>
+                                    </ol>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Panel Producción - lista de pedidos y detalle
+                                        <small>Reemplazar con imagen real: screenshot_panel_produccion.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel Faltantes -->
+                            <div class="card module-card" id="mod-panel-faltantes">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-exclamation-triangle"></i></span>
+                                        Panel Faltantes
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Muestra los productos cuyo stock en el depósito está por debajo del mínimo configurado. Sirve de alerta para planificar la producción.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Panel Faltantes</em>.</li>
+                                        <li>La lista muestra producto, stock actual, stock mínimo y la diferencia.</li>
+                                        <li>Coordinar con producción para reponer los productos críticos.</li>
+                                    </ol>
+                                    <div class="note-box info">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Los umbrales de stock mínimo del depósito se configuran directamente en la base de datos. El <strong>Stock Mínimo</strong> de cada sucursal lo configura el Franquicia Admin desde su menú.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Panel Faltantes
+                                        <small>Reemplazar con imagen real: screenshot_panel_faltantes.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Alta en Depósito -->
+                            <div class="card module-card" id="mod-alta-deposito">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-plus-circle"></i></span>
+                                        Alta en Depósito
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Registra el ingreso de productos al depósito central. Soporta carga mediante escáner de código de barras o ingreso manual.</p>
+                                    <p><strong>Formatos de código de barras admitidos:</strong></p>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead><tr><th>Tipo</th><th>Formato</th><th>Ejemplo</th></tr></thead>
+                                            <tbody>
+                                                <tr><td>Por unidades</td><td>20 + PPPPP + CCCCC</td><td><code>2000123 00050</code> → 50 unidades del producto 123</td></tr>
+                                                <tr><td>Por peso</td><td>21 + PPPPP + PPPPP</td><td><code>2100123 01500</code> → 1.5 kg del producto 123</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <ol class="steps-list">
+                                        <li>Activar el escáner o buscar el producto manualmente.</li>
+                                        <li>Ingresar la cantidad o escanear el código.</li>
+                                        <li>Opcionalmente asignar un contenedor (ej: bandeja, caja).</li>
+                                        <li>Confirmar la carga. El stock del depósito se actualiza de inmediato.</li>
+                                    </ol>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Alta en Depósito con escáner activo
+                                        <small>Reemplazar con imagen real: screenshot_alta_deposito.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Envíos -->
+                            <div class="card module-card" id="mod-envios">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-truck"></i></span>
+                                        Envíos
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Listado histórico de todos los envíos realizados desde el depósito a las sucursales. Permite crear envíos manuales (sin pedido previo) y consultar el estado de cada despacho.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Envíos</em> desde el menú.</li>
+                                        <li>Para crear un envío manual: clic en <strong>Nuevo Envío</strong>, seleccionar sucursal de destino, agregar productos y cantidades.</li>
+                                        <li>Confirmar. El envío queda en estado <span class="badge badge-info">ENVIADO</span> y se descuenta del stock del depósito.</li>
+                                    </ol>
+                                    <div class="note-box">
+                                        <i class="fas fa-star mr-1"></i>
+                                        Los envíos generados desde el Panel Producción (en respuesta a un pedido) también aparecen aquí.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Lista de envíos
+                                        <small>Reemplazar con imagen real: screenshot_envios.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Movimientos -->
+                            <div class="card module-card" id="mod-movimientos">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-exchange-alt"></i></span>
+                                        Movimientos
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Historial completo de todos los movimientos de inventario del depósito: altas, envíos, bajas y ajustes. Cada registro es trazable con fecha, usuario y productos involucrados.</p>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Historial de movimientos
+                                        <small>Reemplazar con imagen real: screenshot_movimientos.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Productos / Familias (solo Planta Jefe + Admin) -->
+                            <div class="card module-card" id="mod-productos-abm" data-require-planta-jefe>
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-box-open"></i></span>
+                                        Productos / Familias
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> ABM (Alta, Baja, Modificación) del catálogo de productos y sus familias (categorías). Disponible únicamente para <strong>Planta Jefe</strong> y <strong>Administrador</strong>.</p>
+                                    <p><strong>¿Para qué se usa?</strong> Para incorporar productos nuevos al sistema, actualizar datos (descripción, código, peso) o dar de baja productos que ya no se fabrican.</p>
+                                    <h6 class="mt-3">Gestión de Productos:</h6>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Productos / Familias</em> desde el menú lateral.</li>
+                                        <li>Para agregar: clic en <strong>Nuevo Producto</strong>, completar código, descripción, familia y peso unitario.</li>
+                                        <li>Para modificar: clic en el ícono de edición (<i class="fas fa-edit"></i>) en la fila del producto.</li>
+                                        <li>Para dar de baja: clic en el ícono de eliminar (<i class="fas fa-trash"></i>). Solo se puede eliminar si el producto no tiene movimientos asociados.</li>
+                                    </ol>
+                                    <h6 class="mt-3">Gestión de Familias:</h6>
+                                    <ol class="steps-list">
+                                        <li>Desde la misma pantalla, acceder a la pestaña <strong>Familias</strong>.</li>
+                                        <li>Agregar o renombrar familias según sea necesario.</li>
+                                        <li>Las familias se usan para filtrar y agrupar productos en todo el sistema.</li>
+                                    </ol>
+                                    <div class="note-box info">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        El <strong>código de producto</strong> es el utilizado en los códigos de barras. No se puede cambiar si el producto ya tiene movimientos registrados.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: ABM Productos y Familias
+                                        <small>Reemplazar con imagen real: screenshot_productos_abm.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stock Depósito -->
+                            <div class="card module-card" id="mod-stock-deposito">
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-planta"><i class="fas fa-warehouse"></i></span>
+                                        Stock Depósito
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Consulta en tiempo real del inventario existente en el depósito central. Permite ver el stock disponible para cada producto, con filtros por nombre o código.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Stock Depósito</em>.</li>
+                                        <li>La tabla muestra todos los productos con su stock actual.</li>
+                                        <li>Los productos en rojo tienen stock por debajo del mínimo.</li>
+                                        <li>Se puede exportar el listado para su uso externo.</li>
+                                    </ol>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Stock Depósito
+                                        <small>Reemplazar con imagen real: screenshot_stock_deposito.png</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ==================== SECCIÓN ADMINISTRACIÓN ==================== -->
+                        <div class="module-section" id="seccionAdmin" style="display:none">
+                            <div class="module-section-header">
+                                <h2><i class="fas fa-cogs mr-2" style="color:#c0392b"></i>Módulos de Administración</h2>
+                                <p>Funciones exclusivas del perfil Administrador</p>
+                            </div>
+
+                            <!-- Usuarios -->
+                            <div class="card module-card" id="mod-usuarios" data-require-admin>
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-admin"><i class="fas fa-users-cog"></i></span>
+                                        Gestión de Usuarios
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> ABM completo de usuarios del sistema. Permite dar de alta nuevos usuarios, asignarles rol y sucursal, y activar o desactivar cuentas existentes.</p>
+                                    <h6>Perfiles disponibles:</h6>
+                                    <ul>
+                                        <li><strong>Admin (nivel 10):</strong> Acceso total al sistema.</li>
+                                        <li><strong>Planta Jefe (nivel 20):</strong> Depósito + visualización de sucursales.</li>
+                                        <li><strong>Planta Operario (nivel 25):</strong> Operaciones de depósito.</li>
+                                        <li><strong>Franquicia Admin (nivel 30):</strong> Gestión completa de una sucursal.</li>
+                                        <li><strong>Franquicia Empleado (nivel 40):</strong> Operaciones básicas de sucursal.</li>
+                                    </ul>
+                                    <ol class="steps-list">
+                                        <li>Clic en <strong>Nuevo Usuario</strong>.</li>
+                                        <li>Completar: nombre de usuario, nombre completo, contraseña y rol.</li>
+                                        <li>Para perfiles de franquicia: asignar la sucursal correspondiente.</li>
+                                        <li>Guardar. El usuario puede iniciar sesión de inmediato.</li>
+                                    </ol>
+                                    <div class="note-box danger">
+                                        <i class="fas fa-shield-alt mr-1"></i>
+                                        Solo el Administrador puede crear, modificar o eliminar usuarios. Esta pantalla no es visible para ningún otro perfil.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Gestión de Usuarios
+                                        <small>Reemplazar con imagen real: screenshot_usuarios.png</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sucursales -->
+                            <div class="card module-card" id="mod-sucursales" data-require-admin>
+                                <div class="card-header">
+                                    <h3>
+                                        <span class="module-icon icon-admin"><i class="fas fa-store-alt"></i></span>
+                                        Sucursales
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Descripción:</strong> Gestión del catálogo de sucursales/franquicias. Permite dar de alta nuevas ubicaciones, modificar datos y desactivar sucursales que cerraron.</p>
+                                    <ol class="steps-list">
+                                        <li>Acceder a <em>Sucursales</em> desde el menú de Administración.</li>
+                                        <li>Para agregar: clic en <strong>Nueva Sucursal</strong>, completar nombre y tipo (propia o franquicia).</li>
+                                        <li>Una vez creada la sucursal, asignar los usuarios correspondientes desde <strong>Gestión de Usuarios</strong>.</li>
+                                    </ol>
+                                    <div class="note-box info">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Los envíos del depósito solo pueden dirigirse a sucursales activas. Desactivar una sucursal no elimina su historial.
+                                    </div>
+                                    <div class="screenshot-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        Captura de pantalla: Gestión de Sucursales
+                                        <small>Reemplazar con imagen real: screenshot_sucursales.png</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="alert alert-secondary mt-4 no-print">
+                            <i class="fas fa-print mr-2"></i>
+                            Para guardar este manual como PDF, usar el botón <strong>Imprimir / Exportar PDF</strong> y seleccionar "Guardar como PDF" en el diálogo de impresión.
+                        </div>
+
+                    </div><!-- /col-lg-9 -->
+
+                    <!-- Tabla de contenidos -->
+                    <div class="col-lg-3 manual-toc-col no-print">
+                        <div class="card manual-toc">
+                            <div class="card-header py-2">
+                                <h6 class="m-0"><i class="fas fa-list mr-1"></i>Contenido</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <ul class="toc-list" id="tocList">
+                                    <li><a href="#seccionIntro"><i class="fas fa-info-circle mr-1 text-muted"></i>Introducción</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /row -->
+            </div>
+        </section>
+    </div><!-- /content-wrapper -->
+
+    <footer class="main-footer">
+        <strong>J.A.R.V.I.S.</strong> — Mikelo, Neuquén &nbsp;|&nbsp;
+        <span id="footerRole"></span>
+    </footer>
+
+</div><!-- /wrapper -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="js/auth.js"></script>
+<script>
+(function() {
+    // Auth guard - redirige si no está autenticado
+    if (!MikeloAuth.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    MikeloAuth.updateUI();
+    const user = MikeloAuth.getUser();
+    const nivel = user ? user.rol_nivel : 99;
+
+    // Badge del hero
+    const roleNames = {
+        10: 'Administrador',
+        20: 'Planta — Jefe',
+        25: 'Planta — Operario',
+        30: 'Franquicia Admin',
+        40: 'Franquicia Empleado'
+    };
+    const roleName = roleNames[nivel] || ('Nivel ' + nivel);
+    document.getElementById('heroBadge').innerHTML =
+        '<i class="fas fa-user mr-1"></i>' + (user ? user.nombre || user.usuario : '') +
+        ' &nbsp;|&nbsp; ' + roleName;
+    document.getElementById('footerRole').textContent = roleName;
+
+    // --- Mostrar secciones del manual según rol ---
+    // El sidebar ya lo maneja auth.js updateUI() via data-require-*
+
+    // Planta (nivel <= 25) o Admin
+    if (nivel <= 25) {
+        document.getElementById('seccionPlanta').style.display = '';
+        // Ocultar módulo Envíos del manual para Operario
+        if (nivel > 20) {
+            var mEnvios = document.getElementById('mod-envios');
+            if (mEnvios) mEnvios.style.display = 'none';
+        }
+    }
+
+    // Franquicia (nivel >= 30) o Admin
+    if (nivel >= 30 || nivel <= 10) {
+        document.getElementById('seccionSucursal').style.display = '';
+    }
+
+    // Admin accede a todo
+    if (nivel <= 10) {
+        document.getElementById('seccionAdmin').style.display = '';
+        document.getElementById('seccionTablaRoles').style.display = '';
+    }
+
+    // --- Tabla de contenidos dinámica ---
+    var toc = document.getElementById('tocList');
+    toc.innerHTML = '';
+
+    function addTocItem(href, icon, text, sectionId) {
+        var sec = document.getElementById(sectionId);
+        if (!sec || sec.style.display === 'none') return;
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="#' + href + '"><i class="' + icon + ' mr-1 text-muted"></i>' + text + '</a>';
+        toc.appendChild(li);
+    }
+
+    // Intro siempre
+    var li = document.createElement('li');
+    li.innerHTML = '<a href="javascript:scrollTo(0,0)"><i class="fas fa-info-circle mr-1 text-muted"></i>Introducción</a>';
+    toc.appendChild(li);
+
+    if (nivel <= 25 || nivel <= 10) {
+        var h = document.createElement('li');
+        h.innerHTML = '<span class="toc-section">Planta / Depósito</span>';
+        toc.appendChild(h);
+        var plantaItems = [
+            ['mod-panel-produccion','fas fa-industry','Panel Producción'],
+            ['mod-panel-faltantes','fas fa-exclamation-triangle','Panel Faltantes'],
+            ['mod-alta-deposito','fas fa-plus-circle','Alta en Depósito'],
+            ['mod-movimientos','fas fa-exchange-alt','Movimientos']
+        ];
+        // Envíos y Productos/Familias: solo Planta Jefe y Admin
+        if (nivel <= 20) {
+            plantaItems.splice(3, 0, ['mod-envios','fas fa-truck','Envíos']);
+            plantaItems.push(['mod-productos-abm','fas fa-box-open','Productos / Familias']);
+        }
+        // Stock Depósito siempre al final (después de Productos/Familias en el DOM)
+        plantaItems.push(['mod-stock-deposito','fas fa-warehouse','Stock Depósito']);
+        plantaItems.forEach(function(item){
+            var li = document.createElement('li');
+            li.innerHTML = '<a href="#' + item[0] + '"><i class="' + item[1] + ' mr-1 text-muted"></i>' + item[2] + '</a>';
+            toc.appendChild(li);
+        });
+    }
+
+    if (nivel >= 30 || nivel <= 10) {
+        var h = document.createElement('li');
+        h.innerHTML = '<span class="toc-section">Sucursal</span>';
+        toc.appendChild(h);
+        [
+            ['mod-stock-sucursal','fas fa-boxes','Mi Stock'],
+            ['mod-pedidos','fas fa-clipboard-list','Mis Pedidos'],
+            ['mod-recepciones','fas fa-truck-loading','Recepciones'],
+            ['mod-baja','fas fa-minus-circle','Baja de Stock']
+        ].forEach(function(item){
+            var li = document.createElement('li');
+            li.innerHTML = '<a href="#' + item[0] + '"><i class="' + item[1] + ' mr-1 text-muted"></i>' + item[2] + '</a>';
+            toc.appendChild(li);
+        });
+    }
+
+    if (nivel <= 10) {
+        var h = document.createElement('li');
+        h.innerHTML = '<span class="toc-section">Administración</span>';
+        toc.appendChild(h);
+        var adminItems = [
+            ['mod-usuarios','fas fa-users-cog','Usuarios'],
+            ['mod-sucursales','fas fa-store-alt','Sucursales']
+        ];
+        adminItems.forEach(function(item){
+            var li = document.createElement('li');
+            li.innerHTML = '<a href="#' + item[0] + '"><i class="' + item[1] + ' mr-1 text-muted"></i>' + item[2] + '</a>';
+            toc.appendChild(li);
+        });
+    }
+
+    // Smooth scroll
+    document.addEventListener('click', function(e) {
+        var a = e.target.closest('a[href^="#"]');
+        if (a) {
+            var target = document.getElementById(a.getAttribute('href').slice(1));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    });
+
+})();
+</script>
+</body>
+</html>

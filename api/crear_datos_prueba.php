@@ -103,10 +103,10 @@ try {
     }
     
     echo "\n=== PROBANDO EXPORTACIÓN ===\n";
-    echo "URL para probar PDF de detalle: http://localhost/mikelo/api/envios/1/pdf\n";
-    echo "URL para probar Excel de detalle: http://localhost/mikelo/api/envios/1/excel\n";
-    echo "URL para probar PDF de lista: http://localhost/mikelo/api/envios/pdf\n";
-    echo "URL para probar Excel de lista: http://localhost/mikelo/api/envios/excel\n";
+    echo "URL para probar PDF de detalle: http://localhost/test/api/envios/1/pdf\n";
+    echo "URL para probar Excel de detalle: http://localhost/test/api/envios/1/excel\n";
+    echo "URL para probar PDF de lista: http://localhost/test/api/envios/pdf\n";
+    echo "URL para probar Excel de lista: http://localhost/test/api/envios/excel\n";
     
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";

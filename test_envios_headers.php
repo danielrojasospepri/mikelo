@@ -1,5 +1,5 @@
 <?php
-$url = 'http://localhost/mikelo/api/envios/pdf';
+$url = 'http://localhost/test/api/envios/pdf';
 
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

@@ -150,10 +150,10 @@ $TABLA_HEADER_ALTO = '10mm';
 ### Paso 1: Generar PDF de prueba
 ```bash
 # Endpoint API
-GET http://localhost/mikelo/api/envios/{id}/pdf-preimpreso
+GET http://localhost/test/api/envios/{id}/pdf-preimpreso
 
 # Ejemplo con envío #1
-GET http://localhost/mikelo/api/envios/1/pdf-preimpreso
+GET http://localhost/test/api/envios/1/pdf-preimpreso
 ```
 
 ### Paso 2: Verificar en PDF

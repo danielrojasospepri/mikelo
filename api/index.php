@@ -1,7 +1,9 @@
 <?php
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// Mostrar errores solo en desarrollo local
+$esLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1', '::1']);
+ini_set('display_errors', $esLocal ? 1 : 0);
+ini_set('display_startup_errors', $esLocal ? 1 : 0);
 error_reporting(E_ALL);
 
 // Configurar zona horaria para Buenos Aires 
@@ -23,8 +25,14 @@ use App\Controller\StockDepositoController;
 use App\Controller\ContenedorController;
 
 $app = AppFactory::create();
-$app->setBasePath('/mikelo/api');
-// $app->setBasePath('/test/api'); // Para testing local
+// Auto-detectar base path usando SCRIPT_FILENAME relativo a DOCUMENT_ROOT
+// (más confiable que SCRIPT_NAME en LiteSpeed/Hostinger y otros servidores)
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_FILENAME']));
+$docRoot   = str_replace('\\', '/', rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/'));
+$basePath  = ($docRoot && strpos($scriptDir, $docRoot) === 0)
+    ? rtrim(substr($scriptDir, strlen($docRoot)), '/')
+    : rtrim(str_ireplace('index.php', '', $_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$app->setBasePath($basePath);
 $app->addBodyParsingMiddleware();
 
 // Agregar middleware para debug de rutas

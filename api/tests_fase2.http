@@ -2,7 +2,7 @@
 ### Usar con REST Client de VS Code o similar
 ### Ajustar @baseUrl según tu entorno
 
-@baseUrl = http://localhost/mikelo/api
+@baseUrl = http://localhost/test/api
 
 ### =====================================================
 ### 1. TEST DE CONEXIÓN

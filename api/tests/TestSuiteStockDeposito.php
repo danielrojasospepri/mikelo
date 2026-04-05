@@ -220,7 +220,7 @@ class TestSuiteStockDeposito {
         
         try {
             // Simular request a la API
-            $url = 'http://localhost/mikelo/api/stock-deposito/pdf';
+            $url = 'http://localhost/test/api/stock-deposito/pdf';
             
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -265,7 +265,7 @@ class TestSuiteStockDeposito {
         
         try {
             // Simular request a la API
-            $url = 'http://localhost/mikelo/api/stock-deposito/excel';
+            $url = 'http://localhost/test/api/stock-deposito/excel';
             
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -399,7 +399,7 @@ class TestSuiteStockDeposito {
         $this->iniciarTest("9. Exportación PDF Envíos (Respuesta Binaria)");
         
         try {
-            $url = 'http://localhost/mikelo/api/envios/pdf';
+            $url = 'http://localhost/test/api/envios/pdf';
             
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -442,7 +442,7 @@ class TestSuiteStockDeposito {
         $this->iniciarTest("10. Headers de Respuesta Binaria");
         
         try {
-            $url = 'http://localhost/mikelo/api/stock-deposito/pdf';
+            $url = 'http://localhost/test/api/stock-deposito/pdf';
             
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

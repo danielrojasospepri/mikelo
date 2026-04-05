@@ -4,7 +4,7 @@ echo "=== Test completo del endpoint productos-disponibles ===\n\n";
 
 // Primero hacer login
 echo "1. Haciendo login...\n";
-$ch = curl_init('https://localhost/mikelo/api/auth/login');
+$ch = curl_init('https://localhost/test/api/auth/login');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch, CURLOPT_POST, true);
@@ -31,7 +31,7 @@ echo "Token obtenido: " . substr($token, 0, 30) . "...\n\n";
 
 // Ahora probar productos-disponibles
 echo "2. Consultando productos disponibles...\n";
-$ch = curl_init('https://localhost/mikelo/api/pedidos/productos-disponibles');
+$ch = curl_init('https://localhost/test/api/pedidos/productos-disponibles');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);

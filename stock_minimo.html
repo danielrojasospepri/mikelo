@@ -47,11 +47,20 @@
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <span class="nav-link" id="sucursalActual">
-                        <i class="fas fa-store mr-1"></i>
-                        <span id="nombreSucursal">Cargando...</span>
-                    </span>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <i class="fas fa-user-circle mr-1"></i>
+                        <span id="userName">Usuario</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <span class="dropdown-item-text">
+                            <small class="text-muted" id="userSucursalInfo">-</small>
+                        </span>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                        </a>
+                    </div>
                 </li>
             </ul>
         </nav>
@@ -66,48 +75,104 @@
             <div class="sidebar">
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                        <li class="nav-header">MI SUCURSAL</li>
-                        <li class="nav-item">
+                        <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                        <li class="nav-item" data-require-franquicia>
                             <a href="stock_sucursal.html" class="nav-link">
                                 <i class="nav-icon fas fa-boxes"></i>
                                 <p>Mi Stock</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
                             <a href="baja_stock.html" class="nav-link">
                                 <i class="nav-icon fas fa-minus-circle"></i>
                                 <p>Baja de Stock</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia-admin>
                             <a href="stock_minimo.html" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>Stock Mínimo</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia-admin>
+                            <a href="carga_inicial_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Carga de Stock Inicial</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
                             <a href="pedidos_sucursal.html" class="nav-link">
                                 <i class="nav-icon fas fa-clipboard-list"></i>
                                 <p>Mis Pedidos</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
                             <a href="recepciones.html" class="nav-link">
                                 <i class="nav-icon fas fa-truck-loading"></i>
                                 <p>Recepciones</p>
                             </a>
                         </li>
-                        <li class="nav-header" data-require-planta>PLANTA</li>
+                        <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
                         <li class="nav-item" data-require-planta>
                             <a href="panel_produccion.html" class="nav-link">
                                 <i class="nav-icon fas fa-industry"></i>
-                                <p>Panel Producción</p>
+                                <p>Pedidos Pendientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_faltantes.html" class="nav-link">
+                                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                                <p>Panel Faltantes</p>
                             </a>
                         </li>
                         <li class="nav-item" data-require-planta>
                             <a href="index.html" class="nav-link">
                                 <i class="nav-icon fas fa-home"></i>
                                 <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="alta_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Alta en Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="envios.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Envíos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="stock_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="productos_abm.html" class="nav-link">
+                                <i class="nav-icon fas fa-box-open"></i>
+                                <p>Productos / Familias</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="usuarios.html" class="nav-link">
+                                <i class="nav-icon fas fa-users-cog"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="sucursales.html" class="nav-link">
+                                <i class="nav-icon fas fa-store-alt"></i>
+                                <p>Sucursales</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">AYUDA</li>
+                        <li class="nav-item">
+                            <a href="manual.html" class="nav-link">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>Manual de Usuario</p>
                             </a>
                         </li>
                         <li class="nav-header">SESIÓN</li>
@@ -198,7 +263,7 @@
                                     <div class="form-group">
                                         <label>Producto</label>
                                         <select class="form-control" id="selectProducto" style="width: 100%;">
-                                            <option value="">Buscar producto...</option>
+                                            <option value=""></option>
                                         </select>
                                     </div>
                                 </div>
@@ -294,10 +359,10 @@
             const autenticado = await MikeloAuth.requireAuth();
             if (!autenticado) return;
 
-            // Solo franquicia admin puede configurar
-            if (!MikeloAuth.isFranquiciaAdmin() && !MikeloAuth.isAdmin()) {
-                Swal.fire('Acceso Denegado', 'Solo el administrador de sucursal puede configurar mínimos', 'error')
-                    .then(() => window.location.href = 'stock_sucursal.html');
+            // Acceso: Admin, Planta Jefe, Franquicia Admin
+            if (!MikeloAuth.isFranquiciaAdmin()) {
+                Swal.fire('Acceso Denegado', 'No tiene permisos para acceder a esta sección', 'error')
+                    .then(() => window.location.href = 'index.html');
                 return;
             }
 
@@ -316,23 +381,31 @@
         function initSelect2() {
             $('#selectProducto').select2({
                 theme: 'bootstrap4',
-                placeholder: 'Buscar producto...',
+                placeholder: 'Buscar por código o nombre...',
                 allowClear: true,
+                minimumInputLength: 2,
+                language: { inputTooShort: () => 'Ingrese al menos 2 caracteres para buscar' },
                 ajax: {
-                    url: '/mikelo/api/productos',
+                    url: function() { return MikeloAuth.API_BASE + '/productos/buscar'; },
                     dataType: 'json',
                     delay: 300,
-                    headers: MikeloAuth.getAuthHeaders(),
+                    transport: function(params, success, failure) {
+                        fetch(params.url + '?' + $.param(params.data), {
+                            headers: MikeloAuth.getAuthHeaders()
+                        })
+                        .then(r => r.json())
+                        .then(success)
+                        .catch(failure);
+                    },
                     data: function(params) {
                         return { q: params.term };
                     },
                     processResults: function(data) {
-                        if (data.error) return { results: [] };
-                        const productos = data.productos || data;
+                        if (!data.success) return { results: [] };
                         return {
-                            results: productos.map(p => ({
-                                id: p.id_producto || p.id,
-                                text: `${p.codigo} - ${p.producto || p.descripcion}`
+                            results: (data.data || []).map(p => ({
+                                id: p.id,
+                                text: `${p.codigo} - ${p.descripcion}`
                             }))
                         };
                     }

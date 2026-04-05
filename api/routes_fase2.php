@@ -19,8 +19,10 @@
 
 use App\Controller\AuthController;
 use App\Controller\PedidoController;
+use App\Controller\ProductoController;
 use App\Controller\RecepcionController;
 use App\Controller\StockSucursalController;
+use App\Controller\UbicacionController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\NivelRol;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -112,6 +114,11 @@ $app->put('/pedidos/{id}/anular', function (Request $request, Response $response
     return $controller->anular($request, $response, $args);
 })->add(new AuthMiddleware($db));
 
+$app->put('/pedidos/{id}/recibir', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new PedidoController($db);
+    return $controller->recibir($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
 // ============================================================================
 // RUTAS DE RECEPCIONES (requieren autenticación)
 // ============================================================================
@@ -137,6 +144,21 @@ $app->post('/recepciones', function (Request $request, Response $response) use (
 $app->get('/recepciones/envio/{idEnvio}', function (Request $request, Response $response, $args) use ($db) {
     $controller = new RecepcionController($db);
     return $controller->detalleEnvio($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
+$app->post('/recepciones/archivar/{idEnvio}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new RecepcionController($db);
+    return $controller->archivar($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
+$app->get('/recepciones/archivados', function (Request $request, Response $response) use ($db) {
+    $controller = new RecepcionController($db);
+    return $controller->archivados($request, $response);
+})->add(new AuthMiddleware($db));
+
+$app->post('/recepciones/desarchivar/{idEnvio}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new RecepcionController($db);
+    return $controller->desarchivar($request, $response, $args);
 })->add(new AuthMiddleware($db));
 
 $app->get('/recepciones/{id}', function (Request $request, Response $response, $args) use ($db) {
@@ -181,13 +203,41 @@ $app->post('/stock-sucursal/baja', function (Request $request, Response $respons
     return $controller->registrarBaja($request, $response);
 })->add(new AuthMiddleware($db, NivelRol::FRANQUICIA_EMPLEADO));
 
+// Baja de bandeja por escaneo de código de barras (valida contra recepcion_items, previene doble-baja)
+$app->post('/stock-sucursal/baja-barcode', function (Request $request, Response $response) use ($db) {
+    $controller = new StockSucursalController($db);
+    return $controller->registrarBajaBarcode($request, $response);
+})->add(new AuthMiddleware($db, NivelRol::FRANQUICIA_EMPLEADO));
+
+// Baja de múltiples bandejas seleccionadas manualmente (valida recepcion_item_ids)
+$app->post('/stock-sucursal/baja-bandejas', function (Request $request, Response $response) use ($db) {
+    $controller = new StockSucursalController($db);
+    return $controller->registrarBajaBandejas($request, $response);
+})->add(new AuthMiddleware($db, NivelRol::FRANQUICIA_EMPLEADO));
+
 // Ajustes de stock (FRANQUICIA_ADMIN puede hacer inventario)
 $app->post('/stock-sucursal/ajuste', function (Request $request, Response $response) use ($db) {
     $controller = new StockSucursalController($db);
     return $controller->registrarAjuste($request, $response);
 })->add(new AuthMiddleware($db, NivelRol::FRANQUICIA_ADMIN));
 
+// Carga inicial de stock (FRANQUICIA_ADMIN lleva el inventario inicial)
+$app->get('/stock-sucursal/carga-inicial', function (Request $request, Response $response) use ($db) {
+    $controller = new StockSucursalController($db);
+    return $controller->obtenerProductosCargaInicial($request, $response);
+})->add(new AuthMiddleware($db, NivelRol::FRANQUICIA_ADMIN));
+
+$app->post('/stock-sucursal/carga-inicial', function (Request $request, Response $response) use ($db) {
+    $controller = new StockSucursalController($db);
+    return $controller->cargaInicial($request, $response);
+})->add(new AuthMiddleware($db, NivelRol::FRANQUICIA_ADMIN));
+
 // Rutas con parámetros
+$app->get('/stock-sucursal/bandejas/{idProducto}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new StockSucursalController($db);
+    return $controller->obtenerBandejas($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
 $app->get('/stock-sucursal/producto/{idProducto}', function (Request $request, Response $response, $args) use ($db) {
     $controller = new StockSucursalController($db);
     return $controller->stockProducto($request, $response, $args);
@@ -441,30 +491,75 @@ $app->get('/roles', function (Request $request, Response $response) use ($db) {
 });
 
 // ============================================================================
-// SUCURSALES - Listar sucursales (para selects)
+// ============================================================================
+// SUCURSALES ABM (GET público para selects; POST/PUT solo admin)
 // ============================================================================
 
 $app->get('/sucursales', function (Request $request, Response $response) use ($db) {
-    try {
-        $stmt = $db->prepare("
-            SELECT id, nombre, domicilio, telefono, tipo_ubicacion
-            FROM ubicaciones 
-            WHERE tipo_ubicacion = 'sucursal'
-            ORDER BY nombre
-        ");
-        $stmt->execute();
-        $sucursales = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        
-        $response->getBody()->write(json_encode([
-            'error' => false,
-            'sucursales' => $sucursales
-        ]));
-        return $response->withHeader('Content-Type', 'application/json');
-    } catch (\Exception $e) {
-        $response->getBody()->write(json_encode([
-            'error' => true,
-            'mensaje' => $e->getMessage()
-        ]));
-        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-    }
-});
+    $controller = new UbicacionController($db);
+    return $controller->listarSucursales($request, $response);
+})->add(new AuthMiddleware($db));
+
+$app->post('/sucursales', function (Request $request, Response $response) use ($db) {
+    $controller = new UbicacionController($db);
+    return $controller->crearSucursal($request, $response);
+})->add(new AuthMiddleware($db, NivelRol::ADMIN));
+
+// Rutas con parámetro al final
+$app->get('/sucursales/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new UbicacionController($db);
+    return $controller->obtenerSucursal($request, $response, $args);
+})->add(new AuthMiddleware($db, NivelRol::ADMIN));
+
+$app->put('/sucursales/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new UbicacionController($db);
+    return $controller->actualizarSucursal($request, $response, $args);
+})->add(new AuthMiddleware($db, NivelRol::ADMIN));
+
+// ============================================================================
+// RUTAS ABM PRODUCTOS (requieren autenticación, planta jefe)
+// ============================================================================
+
+$app->get('/productos', function (Request $request, Response $response) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->listar($request, $response);
+})->add(new AuthMiddleware($db));
+
+$app->post('/productos', function (Request $request, Response $response) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->crear($request, $response);
+})->add(new AuthMiddleware($db));
+
+$app->put('/productos/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->actualizar($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
+$app->delete('/productos/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->eliminar($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
+// ============================================================================
+// RUTAS ABM FAMILIAS (tipo_producto) (requieren autenticación)
+// ============================================================================
+
+$app->get('/familias', function (Request $request, Response $response) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->listarFamilias($request, $response);
+})->add(new AuthMiddleware($db));
+
+$app->post('/familias', function (Request $request, Response $response) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->crearFamilia($request, $response);
+})->add(new AuthMiddleware($db));
+
+$app->put('/familias/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->actualizarFamilia($request, $response, $args);
+})->add(new AuthMiddleware($db));
+
+$app->delete('/familias/{id}', function (Request $request, Response $response, $args) use ($db) {
+    $controller = new ProductoController($db);
+    return $controller->eliminarFamilia($request, $response, $args);
+})->add(new AuthMiddleware($db));

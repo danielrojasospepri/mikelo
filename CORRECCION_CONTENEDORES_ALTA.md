@@ -50,7 +50,7 @@ data.data.forEach(contenedor => {
 
 ## URLs de Prueba
 - **Módulo**: http://localhost/mikelo/alta_deposito.html
-- **API**: http://localhost/mikelo/api/contenedores
+- **API**: http://localhost/test/api/contenedores
 
 ## Archivos Modificados
 - ✅ `api/index.php` - Corregida consulta SQL y estructura de respuesta

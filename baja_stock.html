@@ -57,6 +57,35 @@
             right: 20px;
             z-index: 1000;
         }
+
+        /* Bandeja cards (productos por peso) */
+        .card-bandeja {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid #dee2e6 !important;
+            user-select: none;
+        }
+        .card-bandeja:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.13);
+        }
+        .card-bandeja.selected {
+            border-color: #007bff !important;
+            background-color: #e7f3ff;
+        }
+        .card-bandeja .check-icon {
+            display: none;
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 1.1rem;
+        }
+        .card-bandeja.selected .check-icon {
+            display: block;
+        }
+        .card-bandeja .card-body {
+            position: relative;
+        }
         
         @media (max-width: 768px) {
             .tipo-baja-card {
@@ -75,11 +104,20 @@
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <span class="nav-link" id="sucursalActual">
-                        <i class="fas fa-store mr-1"></i>
-                        <span id="nombreSucursal">Cargando...</span>
-                    </span>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <i class="fas fa-user-circle mr-1"></i>
+                        <span id="userName">Usuario</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <span class="dropdown-item-text">
+                            <small class="text-muted" id="userSucursalInfo">-</small>
+                        </span>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                        </a>
+                    </div>
                 </li>
             </ul>
         </nav>
@@ -94,42 +132,104 @@
             <div class="sidebar">
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                        <li class="nav-header">MI SUCURSAL</li>
-                        <li class="nav-item">
+                        <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                        <li class="nav-item" data-require-franquicia>
                             <a href="stock_sucursal.html" class="nav-link">
                                 <i class="nav-icon fas fa-boxes"></i>
                                 <p>Mi Stock</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
                             <a href="baja_stock.html" class="nav-link active">
                                 <i class="nav-icon fas fa-minus-circle"></i>
                                 <p>Baja de Stock</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia-admin>
+                            <a href="stock_minimo.html" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Stock Mínimo</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia-admin>
+                            <a href="carga_inicial_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Carga de Stock Inicial</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
                             <a href="pedidos_sucursal.html" class="nav-link">
                                 <i class="nav-icon fas fa-clipboard-list"></i>
                                 <p>Mis Pedidos</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
                             <a href="recepciones.html" class="nav-link">
                                 <i class="nav-icon fas fa-truck-loading"></i>
                                 <p>Recepciones</p>
                             </a>
                         </li>
-                        <li class="nav-header" data-require-planta>PLANTA</li>
+                        <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
                         <li class="nav-item" data-require-planta>
                             <a href="panel_produccion.html" class="nav-link">
                                 <i class="nav-icon fas fa-industry"></i>
-                                <p>Panel Producción</p>
+                                <p>Pedidos Pendientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_faltantes.html" class="nav-link">
+                                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                                <p>Panel Faltantes</p>
                             </a>
                         </li>
                         <li class="nav-item" data-require-planta>
                             <a href="index.html" class="nav-link">
                                 <i class="nav-icon fas fa-home"></i>
                                 <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="alta_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Alta en Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="envios.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Envíos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="stock_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="productos_abm.html" class="nav-link">
+                                <i class="nav-icon fas fa-box-open"></i>
+                                <p>Productos / Familias</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="usuarios.html" class="nav-link">
+                                <i class="nav-icon fas fa-users-cog"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="sucursales.html" class="nav-link">
+                                <i class="nav-icon fas fa-store-alt"></i>
+                                <p>Sucursales</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">AYUDA</li>
+                        <li class="nav-item">
+                            <a href="manual.html" class="nav-link">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>Manual de Usuario</p>
                             </a>
                         </li>
                         <li class="nav-header">SESIÓN</li>
@@ -249,7 +349,7 @@
                         </div>
                     </div>
 
-                    <!-- Paso 3: Cantidad y Confirmar -->
+                    <!-- Paso 3A: Cantidad (productos por UNIDADES) -->
                     <div class="card card-outline card-success" id="pasoCantidad" style="display: none;">
                         <div class="card-header">
                             <h3 class="card-title"><i class="fas fa-3 mr-2"></i>Cantidad y Observaciones</h3>
@@ -258,16 +358,21 @@
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Cantidad a dar de baja</label>
-                                        <input type="number" class="form-control form-control-lg" id="cantidad" 
-                                               min="0.001" step="0.001" placeholder="0">
+                                        <label id="labelCantidad">Cantidad a dar de baja</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" id="cantidad"
+                                                   min="1" step="1" placeholder="0">
+                                            <div class="input-group-append">
+                                                <span class="input-group-text" id="sufijoCantidad">u</span>
+                                            </div>
+                                        </div>
                                         <small class="text-muted">Máximo disponible: <span id="maxCantidad">0</span></small>
                                     </div>
                                 </div>
                                 <div class="col-md-8">
                                     <div class="form-group">
                                         <label>Observaciones (opcional)</label>
-                                        <textarea class="form-control" id="observaciones" rows="2" 
+                                        <textarea class="form-control" id="observaciones" rows="2"
                                                   placeholder="Motivo de la baja, detalles adicionales..."></textarea>
                                     </div>
                                 </div>
@@ -285,11 +390,59 @@
                         </div>
                     </div>
 
-                    <!-- Últimas bajas registradas -->
+                    <!-- Paso 3B: Selección de Bandejas (productos por PESO) -->
+                    <div class="card card-outline card-success" id="pasoBandejas" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-3 mr-2"></i>Seleccionar Bandejas</h3>
+                            <div class="card-tools">
+                                <span class="badge badge-primary" id="bandejaResumen" style="font-size: 0.85rem; display: none; padding: 5px 10px;">0 bandejas <span style='opacity:.7'>·</span> 0.000 kg</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="bandejasLista">
+                                <div class="col-12 text-center text-muted py-3">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>Cargando bandejas...
+                                </div>
+                            </div>
+                            <hr class="mt-1">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                        <label>Observaciones (opcional)</label>
+                                        <textarea class="form-control" id="observacionesBandejas" rows="2"
+                                                  placeholder="Motivo de la baja, detalles adicionales..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-start">
+                                    <div class="w-100 pt-4">
+                                        <div class="alert py-2 mb-2" id="resumenSeleccionBandejas" role="alert">
+                                            Seleccione las bandejas a dar de baja
+                                        </div>
+                                        <button class="btn btn-danger btn-lg btn-block" onclick="confirmarBaja()" id="btnConfirmarBandejas" disabled>
+                                            <i class="fas fa-check mr-2"></i>Confirmar Baja
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-block mt-1" onclick="limpiarFormulario()">
+                                            <i class="fas fa-times mr-2"></i>Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historial de movimientos -->
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-history mr-2"></i>Últimas Bajas</h3>
-                            <div class="card-tools">
+                            <h3 class="card-title"><i class="fas fa-history mr-2"></i>Historial de Movimientos</h3>
+                            <div class="card-tools d-flex align-items-center">
+                                <div class="mr-2" style="min-width:260px;">
+                                    <select id="filtroHistorialProducto" class="form-control form-control-sm" style="width:100%;">
+                                        <option value="">Todos los productos...</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-default mr-1" onclick="limpiarFiltroHistorial()" title="Ver todos">
+                                    <i class="fas fa-times"></i>
+                                </button>
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
@@ -302,7 +455,7 @@
                                         <th>Fecha</th>
                                         <th>Producto</th>
                                         <th>Tipo</th>
-                                        <th class="text-right">Cantidad</th>
+                                        <th class="text-right">Cantidad / Peso</th>
                                         <th>Observaciones</th>
                                     </tr>
                                 </thead>
@@ -339,6 +492,7 @@
         let tipoBajaSeleccionado = null;
         let productoSeleccionado = null;
         let stockProducto = 0;
+        let esProductoPeso = false;
         let idSucursal = null;
 
         // Inicialización
@@ -367,6 +521,7 @@
 
             // Inicializar Select2
             initSelect2();
+            initFiltroHistorial();
 
             // Cargar historial
             cargarHistorial();
@@ -377,13 +532,20 @@
                 theme: 'bootstrap4',
                 placeholder: 'Buscar por código o nombre...',
                 allowClear: true,
+                minimumInputLength: 1,
+                language: { inputTooShort: () => 'Ingrese al menos 1 carácter para buscar' },
                 ajax: {
-                    url: function() {
-                        return `/mikelo/api/stock-sucursal/buscar`;
-                    },
+                    url: function() { return MikeloAuth.API_BASE + '/stock-sucursal/buscar'; },
                     dataType: 'json',
                     delay: 300,
-                    headers: MikeloAuth.getAuthHeaders(),
+                    transport: function(params, success, failure) {
+                        fetch(params.url + '?' + $.param(params.data), {
+                            headers: MikeloAuth.getAuthHeaders()
+                        })
+                        .then(r => r.json())
+                        .then(success)
+                        .catch(failure);
+                    },
                     data: function(params) {
                         return {
                             q: params.term,
@@ -393,7 +555,7 @@
                     processResults: function(data) {
                         if (data.error) return { results: [] };
                         return {
-                            results: data.productos.map(p => ({
+                            results: (data.resultados || []).map(p => ({
                                 id: p.id_producto,
                                 text: `${p.codigo} - ${p.producto}`,
                                 producto: p
@@ -425,29 +587,63 @@
 
         function seleccionarProducto(producto) {
             productoSeleccionado = producto;
-            stockProducto = parseFloat(producto.cantidad) || 0;
+
+            // Detectar si es producto de peso o de unidades
+            esProductoPeso = parseFloat(producto.peso) > 0;
+            stockProducto  = esProductoPeso
+                ? parseFloat(producto.peso)    || 0
+                : parseFloat(producto.cantidad) || 0;
+
+            const decimales = esProductoPeso ? 3 : 0;
+            const unidad    = esProductoPeso ? ' kg' : ' u';
 
             $('#productoNombre').text(producto.producto);
             $('#productoCodigo').text(producto.codigo);
             $('#productoFamilia').text(producto.familia ? ` - ${producto.familia}` : '');
-            $('#stockActual').text(stockProducto.toFixed(3));
-            $('#maxCantidad').text(stockProducto.toFixed(3));
+            $('#stockActual').text(stockProducto.toFixed(decimales) + unidad);
+            $('#maxCantidad').text(stockProducto.toFixed(decimales) + unidad);
             $('#cantidad').attr('max', stockProducto);
 
             $('#productoInfo').slideDown();
-            $('#pasoCantidad').slideDown();
-            
-            // Enfocar en cantidad
-            setTimeout(() => $('#cantidad').focus(), 300);
+
+            if (esProductoPeso) {
+                // Productos por peso: mostrar lista de bandejas
+                $('#pasoCantidad').hide();
+                $('#pasoBandejas').slideDown();
+                cargarBandejas(producto.id_producto);
+            } else {
+                // Productos por unidades: mostrar campo de cantidad
+                $('#pasoBandejas').hide();
+                $('#pasoCantidad').slideDown();
+                setTimeout(() => $('#cantidad').focus(), 300);
+            }
+
+            // Auto-filtrar historial por este producto
+            cargarHistorial(producto.id_producto);
+            // Sincronizar el select de filtro del historial
+            const optExiste = $('#filtroHistorialProducto option[value="' + producto.id_producto + '"]');
+            if (optExiste.length === 0) {
+                const opt = new Option(`${producto.codigo} - ${producto.producto}`, producto.id_producto, true, true);
+                $('#filtroHistorialProducto').append(opt).trigger('change');
+            } else {
+                $('#filtroHistorialProducto').val(producto.id_producto).trigger('change');
+            }
         }
 
         function limpiarProducto() {
             productoSeleccionado = null;
+            esProductoPeso = false;
             stockProducto = 0;
             $('#productoInfo').slideUp();
             $('#pasoCantidad').slideUp();
+            $('#pasoBandejas').slideUp();
+            $('#bandejasLista').html('');
             $('#cantidad').val('');
             $('#observaciones').val('');
+            $('#observacionesBandejas').val('');
+            // Resetear filtro de historial
+            $('#filtroHistorialProducto').val(null).trigger('change');
+            cargarHistorial();
         }
 
         function limpiarFormulario() {
@@ -460,8 +656,12 @@
             $('#pasoProducto').slideUp();
             $('#productoInfo').slideUp();
             $('#pasoCantidad').slideUp();
+            $('#pasoBandejas').slideUp();
+            $('#bandejasLista').html('');
+            $('#bandejaResumen').hide();
             $('#cantidad').val('');
             $('#observaciones').val('');
+            $('#observacionesBandejas').val('');
         }
 
         async function confirmarBaja() {
@@ -475,83 +675,264 @@
                 return;
             }
 
-            const cantidad = parseFloat($('#cantidad').val());
-            if (!cantidad || cantidad <= 0) {
-                Swal.fire('Error', 'Ingrese una cantidad válida', 'warning');
-                return;
-            }
-
-            if (cantidad > stockProducto) {
-                Swal.fire('Error', `La cantidad no puede superar el stock disponible (${stockProducto})`, 'warning');
-                return;
-            }
-
-            // Confirmar
             const tipoTexto = {
                 'BAJA_VENTA': 'Venta',
                 'BAJA_MERMA': 'Merma',
                 'AJUSTE_NEGATIVO': 'Ajuste'
             };
 
-            const result = await Swal.fire({
-                title: '¿Confirmar baja?',
-                html: `
-                    <p><strong>Producto:</strong> ${productoSeleccionado.producto}</p>
-                    <p><strong>Tipo:</strong> ${tipoTexto[tipoBajaSeleccionado]}</p>
-                    <p><strong>Cantidad:</strong> ${cantidad}</p>
-                    <p><strong>Stock después:</strong> ${(stockProducto - cantidad).toFixed(3)}</p>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, confirmar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#dc3545'
-            });
+            let cantidadBaja, pesoBaja, observacionBaja;
 
-            if (!result.isConfirmed) return;
+            if (esProductoPeso) {
+                // ── Productos por peso: baja por bandejas seleccionadas ──
+                const seleccionadas = $('.card-bandeja.selected');
+                if (seleccionadas.length === 0) {
+                    Swal.fire('Error', 'Seleccione al menos una bandeja', 'warning');
+                    return;
+                }
+                cantidadBaja = seleccionadas.length;
+                pesoBaja = 0;
+                seleccionadas.each(function() { pesoBaja += parseFloat($(this).data('peso')) || 0; });
+                pesoBaja = Math.round(pesoBaja * 1000) / 1000;
+                observacionBaja = $('#observacionesBandejas').val().trim() || null;
 
-            // Enviar
-            try {
-                $('#btnConfirmar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...');
-
-                const response = await MikeloAuth.fetch('/stock-sucursal/baja', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        id_producto: productoSeleccionado.id_producto,
-                        cantidad: cantidad,
-                        tipo_baja: tipoBajaSeleccionado,
-                        observaciones: $('#observaciones').val() || null
-                    })
+                const result = await Swal.fire({
+                    title: '¿Confirmar baja?',
+                    html: `
+                        <p><strong>Producto:</strong> ${productoSeleccionado.producto}</p>
+                        <p><strong>Tipo:</strong> ${tipoTexto[tipoBajaSeleccionado]}</p>
+                        <p><strong>Bandejas:</strong> ${cantidadBaja}</p>
+                        <p><strong>Peso total:</strong> ${pesoBaja.toFixed(3)} kg</p>
+                        <p><strong>Stock después:</strong> ${(stockProducto - pesoBaja).toFixed(3)} kg</p>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545'
                 });
+                if (!result.isConfirmed) return;
 
-                const data = await response.json();
+                try {
+                    $('#btnConfirmarBandejas').prop('disabled', true)
+                        .html('<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...');
 
-                if (data.error) {
-                    throw new Error(data.mensaje);
+                    const ids = seleccionadas.map(function() {
+                        return parseInt($(this).data('rid'));
+                    }).get();
+
+                    const response = await MikeloAuth.fetch('/stock-sucursal/baja-bandejas', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            id_producto:        productoSeleccionado.id_producto,
+                            recepcion_item_ids: ids,
+                            tipo_baja:          tipoBajaSeleccionado,
+                            observaciones:      observacionBaja
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.mensaje);
+
+                    Swal.fire({
+                        title: '¡Baja Registrada!',
+                        html: `
+                            <p>Stock anterior: <strong>${parseFloat(data.stock_anterior).toFixed(3)} kg</strong></p>
+                            <p>Stock actual: <strong>${parseFloat(data.stock_actual).toFixed(3)} kg</strong></p>
+                        `,
+                        icon: 'success'
+                    });
+                    limpiarFormulario();
+                    cargarHistorial();
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                } finally {
+                    $('#btnConfirmarBandejas').prop('disabled', false)
+                        .html('<i class="fas fa-check mr-2"></i>Confirmar Baja');
                 }
 
-                Swal.fire({
-                    title: '¡Baja Registrada!',
+            } else {
+                // ── Productos por unidades: lógica original ──
+                const cantidad = parseFloat($('#cantidad').val());
+                observacionBaja = $('#observaciones').val().trim() || null;
+
+                if (!cantidad || cantidad <= 0) {
+                    Swal.fire('Error', 'Ingrese una cantidad válida', 'warning');
+                    return;
+                }
+                if (cantidad > stockProducto) {
+                    Swal.fire('Error', `La cantidad no puede superar el stock disponible (${Math.round(stockProducto)} u)`, 'warning');
+                    return;
+                }
+
+                const result = await Swal.fire({
+                    title: '¿Confirmar baja?',
                     html: `
-                        <p>Stock anterior: <strong>${data.stock_anterior}</strong></p>
-                        <p>Stock actual: <strong>${data.stock_actual}</strong></p>
+                        <p><strong>Producto:</strong> ${productoSeleccionado.producto}</p>
+                        <p><strong>Tipo:</strong> ${tipoTexto[tipoBajaSeleccionado]}</p>
+                        <p><strong>Cantidad:</strong> ${Math.round(cantidad)} u</p>
+                        <p><strong>Stock después:</strong> ${Math.round(stockProducto - cantidad)} u</p>
                     `,
-                    icon: 'success'
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545'
                 });
+                if (!result.isConfirmed) return;
 
-                limpiarFormulario();
-                cargarHistorial();
+                try {
+                    $('#btnConfirmar').prop('disabled', true)
+                        .html('<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...');
 
-            } catch (error) {
-                Swal.fire('Error', error.message, 'error');
-            } finally {
-                $('#btnConfirmar').prop('disabled', false).html('<i class="fas fa-check mr-2"></i>Confirmar Baja');
+                    const response = await MikeloAuth.fetch('/stock-sucursal/baja', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            id_producto:   productoSeleccionado.id_producto,
+                            cantidad:      cantidad,
+                            peso:          0,
+                            tipo_baja:     tipoBajaSeleccionado,
+                            observaciones: observacionBaja
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.mensaje);
+
+                    Swal.fire({
+                        title: '¡Baja Registrada!',
+                        html: `
+                            <p>Stock anterior: <strong>${Math.round(parseFloat(data.stock_anterior))} u</strong></p>
+                            <p>Stock actual: <strong>${Math.round(parseFloat(data.stock_actual))} u</strong></p>
+                        `,
+                        icon: 'success'
+                    });
+                    limpiarFormulario();
+                    cargarHistorial();
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                } finally {
+                    $('#btnConfirmar').prop('disabled', false)
+                        .html('<i class="fas fa-check mr-2"></i>Confirmar Baja');
+                }
             }
         }
 
-        async function cargarHistorial() {
+        async function cargarBandejas(idProducto) {
+            $('#bandejasLista').html('<div class="col-12 text-center text-muted py-3"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando bandejas...</div>');
+            $('#btnConfirmarBandejas').prop('disabled', true);
+            $('#bandejaResumen').hide();
+
             try {
-                const response = await MikeloAuth.fetch(`/stock-sucursal/historial?limite=10`);
+                const url = `/stock-sucursal/bandejas/${idProducto}${idSucursal ? '?id_sucursal=' + idSucursal : ''}`;
+                const resp = await MikeloAuth.fetch(url);
+                const data = await resp.json();
+
+                if (data.error || !data.bandejas || data.bandejas.length === 0) {
+                    $('#bandejasLista').html('<div class="col-12 text-center text-muted py-3"><i class="fas fa-inbox fa-2x mb-2"></i><br>No hay bandejas disponibles</div>');
+                    return;
+                }
+
+                let html = '';
+                data.bandejas.forEach((b, i) => {
+                    html += `
+                        <div class="col-md-2 col-sm-3 col-4 mb-3">
+                            <div class="card border card-bandeja" data-rid="${b.id}" data-peso="${b.peso.toFixed(3)}" onclick="toggleBandeja(this)">
+                                <div class="card-body text-center py-2 px-1">
+                                    <i class="fas fa-check-circle text-success check-icon"></i>
+                                    <i class="fas fa-layer-group fa-2x text-secondary mb-1 d-block"></i>
+                                    <div class="small text-muted">Bandeja ${i + 1}</div>
+                                    <div class="font-weight-bold text-primary">${b.peso.toFixed(3)} kg</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                $('#bandejasLista').html(html);
+                actualizarResumenBandejas();
+
+            } catch (err) {
+                console.error('Error cargando bandejas:', err);
+                $('#bandejasLista').html('<div class="col-12 text-center text-danger py-3">Error al cargar bandejas</div>');
+            }
+        }
+
+        function toggleBandeja(card) {
+            $(card).toggleClass('selected');
+            actualizarResumenBandejas();
+        }
+
+        function actualizarResumenBandejas() {
+            const $sel = $('.card-bandeja.selected');
+            const count = $sel.length;
+            let totalPeso = 0;
+            $sel.each(function() { totalPeso += parseFloat($(this).data('peso')) || 0; });
+            totalPeso = Math.round(totalPeso * 1000) / 1000;
+
+            if (count === 0) {
+                $('#resumenSeleccionBandejas')
+                    .text('Seleccione las bandejas a dar de baja')
+                    .removeClass('alert-success alert-warning').addClass('alert-info');
+                $('#btnConfirmarBandejas').prop('disabled', true);
+                $('#bandejaResumen').hide();
+            } else {
+                $('#resumenSeleccionBandejas')
+                    .html(`<strong>${count} bandeja${count > 1 ? 's' : ''}</strong> seleccionada${count > 1 ? 's' : ''} &nbsp;&rarr;&nbsp; <strong>${totalPeso.toFixed(3)} kg</strong>`)
+                    .removeClass('alert-info alert-warning').addClass('alert-success');
+                $('#btnConfirmarBandejas').prop('disabled', false);
+                $('#bandejaResumen').text(`${count} bandeja${count > 1 ? 's' : ''} · ${totalPeso.toFixed(3)} kg`).show();
+            }
+        }
+
+        function initFiltroHistorial() {
+            $('#filtroHistorialProducto').select2({
+                theme: 'bootstrap4',
+                placeholder: 'Filtrar por producto...',
+                allowClear: true,
+                minimumInputLength: 1,
+                language: { inputTooShort: () => 'Ingrese al menos 1 carácter' },
+                ajax: {
+                    url: function() { return MikeloAuth.API_BASE + '/stock-sucursal/buscar'; },
+                    dataType: 'json',
+                    delay: 300,
+                    transport: function(params, success, failure) {
+                        fetch(params.url + '?' + $.param(params.data), {
+                            headers: MikeloAuth.getAuthHeaders()
+                        })
+                        .then(r => r.json())
+                        .then(success)
+                        .catch(failure);
+                    },
+                    data: function(params) {
+                        return { q: params.term, id_sucursal: idSucursal };
+                    },
+                    processResults: function(data) {
+                        if (data.error) return { results: [] };
+                        return {
+                            results: (data.resultados || []).map(p => ({
+                                id: p.id_producto,
+                                text: `${p.codigo} - ${p.producto}`,
+                                producto: p
+                            }))
+                        };
+                    }
+                }
+            }).on('select2:select', function(e) {
+                cargarHistorial(e.params.data.id);
+            }).on('select2:clear', function() {
+                cargarHistorial();
+            });
+        }
+
+        function limpiarFiltroHistorial() {
+            $('#filtroHistorialProducto').val(null).trigger('change');
+            cargarHistorial();
+        }
+
+        async function cargarHistorial(idProducto) {
+            try {
+                const limite = idProducto ? 50 : 20;
+                const filtro = idProducto ? `&id_producto=${idProducto}` : '';
+                const response = await MikeloAuth.fetch(`/stock-sucursal/historial?limite=${limite}${filtro}`);
                 const data = await response.json();
 
                 if (data.error || !data.movimientos || data.movimientos.length === 0) {
@@ -585,8 +966,13 @@
                             <td>${fecha}</td>
                             <td>${m.codigo} - ${m.producto}</td>
                             <td>${tipoBadge[m.tipo_movimiento] || m.tipo_movimiento}</td>
-                            <td class="text-right ${parseFloat(m.cantidad) < 0 ? 'text-danger' : 'text-success'}">
-                                ${parseFloat(m.cantidad).toFixed(3)}
+                            <td class="text-right ${
+                                (parseFloat(m.peso) < 0 || parseFloat(m.cantidad) < 0) ? 'text-danger' : 'text-success'
+                            }">
+                                ${parseFloat(m.peso) !== 0
+                                    ? (parseFloat(m.peso) > 0 ? '+' : '') + parseFloat(m.peso).toFixed(3) + ' kg'
+                                    : (parseFloat(m.cantidad) > 0 ? '+' : '') + Math.round(parseFloat(m.cantidad)) + ' u'
+                                }
                             </td>
                             <td class="text-muted small">${m.observaciones || '-'}</td>
                         </tr>
@@ -608,7 +994,190 @@
         }
 
         function abrirEscaner() {
-            Swal.fire('Próximamente', 'El escaneo de código de barras estará disponible pronto', 'info');
+            Swal.fire({
+                title: '<i class="fas fa-barcode mr-2"></i>Escanear Código de Barras',
+                html: `
+                    <p class="text-muted small mb-2">Escanee el código con el lector o ingréselo manualmente</p>
+                    <input id="inputBarcode" class="swal2-input" placeholder="Escanear o ingresar código..." autocomplete="off">
+                    <div id="barcodeResult" class="mt-2 text-muted small" style="min-height:20px"></div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: 'Buscar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                focusConfirm: false,
+                didOpen: () => {
+                    const input = document.getElementById('inputBarcode');
+                    input.focus();
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            Swal.clickConfirm();
+                        }
+                    });
+                },
+                preConfirm: () => {
+                    const val = document.getElementById('inputBarcode').value.trim();
+                    if (!val) {
+                        Swal.showValidationMessage('Ingrese o escanee un código');
+                        return false;
+                    }
+                    return val;
+                }
+            }).then(async (result) => {
+                if (!result.isConfirmed || !result.value) return;
+
+                const codigo = result.value.replace(/\s/g, '');
+                let codigoBuscar = codigo;
+                let tipoParsed = null;   // 20 = unidades, 21 = peso
+                let pesoParsed = null;
+                let cantidadParsed = null;
+
+                // Parsear formato Mikelo: TT(2) + CCCCC(5) + VVVVV(5) [+ dígito control(1)] = 12 ó 13 dígitos
+                if ((codigo.length === 12 || codigo.length === 13) && /^\d+$/.test(codigo)) {
+                    tipoParsed   = parseInt(codigo.substring(0, 2));
+                    codigoBuscar = parseInt(codigo.substring(2, 7), 10).toString();
+                    const rawVal = parseInt(codigo.substring(7, 12), 10);
+                    if (tipoParsed === 21) {
+                        pesoParsed = parseFloat((rawVal / 1000).toFixed(3));
+                    } else if (tipoParsed === 20) {
+                        cantidadParsed = rawVal;
+                    }
+                }
+
+                try {
+                    const resp = await MikeloAuth.fetch(
+                        `/stock-sucursal/buscar?q=${encodeURIComponent(codigoBuscar)}&id_sucursal=${idSucursal}`
+                    );
+                    if (!resp) return;
+                    const data = await resp.json();
+
+                    if (data.error || !data.resultados || data.resultados.length === 0) {
+                        Swal.fire('Sin resultados', `No se encontró el producto con código ${codigoBuscar}`, 'warning');
+                        return;
+                    }
+
+                    const producto = data.resultados.find(p => p.codigo == codigoBuscar) || data.resultados[0];
+                    const esPesoProducto = parseFloat(producto.peso) > 0;
+
+                    if (tipoParsed === 21 && pesoParsed > 0 && esPesoProducto) {
+                        // ── Producto por PESO: baja directa desde el código escaneado ──
+                        await procesarBajaBarcodePeso(producto, pesoParsed);
+                    } else {
+                        // ── Producto por UNIDADES: selección normal con pre-relleno ──
+                        const option = new Option(
+                            `${producto.codigo} - ${producto.producto}`,
+                            producto.id_producto, true, true
+                        );
+                        $(option).data('producto', producto);
+                        $('#selectProducto').append(option).trigger('change');
+                        seleccionarProducto(producto);
+
+                        if (tipoParsed === 20 && cantidadParsed > 0) {
+                            setTimeout(() => $('#cantidad').val(cantidadParsed), 300);
+                        }
+                    }
+
+                } catch (err) {
+                    Swal.fire('Error', 'Error al buscar el producto', 'error');
+                }
+            });
+        }
+
+        async function procesarBajaBarcodePeso(producto, peso) {
+            if (!tipoBajaSeleccionado) {
+                Swal.fire('Atención', 'Seleccione primero el tipo de baja (Venta / Merma / Ajuste)', 'warning');
+                return;
+            }
+
+            const tipoTexto = {
+                'BAJA_VENTA': 'Venta',
+                'BAJA_MERMA': 'Merma',
+                'AJUSTE_NEGATIVO': 'Ajuste'
+            };
+
+            const pesoDisponible = parseFloat(producto.peso) || 0;
+            if (peso > pesoDisponible + 0.001) {
+                Swal.fire(
+                    'Stock insuficiente',
+                    `El peso escaneado (${peso.toFixed(3)} kg) supera el stock disponible (${pesoDisponible.toFixed(3)} kg)`,
+                    'warning'
+                );
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: '<i class="fas fa-barcode mr-2"></i>Confirmar baja',
+                html: `
+                    <table class="table table-sm table-bordered mt-2 text-left">
+                        <tr><th class="bg-light">Producto</th><td>${producto.producto}</td></tr>
+                        <tr><th class="bg-light">Código</th><td>${producto.codigo}</td></tr>
+                        <tr><th class="bg-light">Tipo</th><td>${tipoTexto[tipoBajaSeleccionado]}</td></tr>
+                        <tr><th class="bg-light">Peso</th><td><strong class="text-danger">${peso.toFixed(3)} kg</strong></td></tr>
+                        <tr><th class="bg-light">Stock luego</th><td>${(pesoDisponible - peso).toFixed(3)} kg</td></tr>
+                    </table>
+                    <div class="text-left mt-2">
+                        <label class="small font-weight-bold">Observaciones <span class="text-muted font-weight-normal">(opcional)</span></label>
+                        <textarea id="obsBarcode" class="swal2-textarea" style="height:60px" placeholder="Motivo de la baja..."></textarea>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check mr-1"></i>Confirmar Baja',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                focusConfirm: false
+            });
+
+            if (!result.isConfirmed) return;
+
+            const observaciones = document.getElementById('obsBarcode')?.value?.trim() || null;
+
+            try {
+                Swal.fire({
+                    title: 'Registrando baja...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                const response = await MikeloAuth.fetch('/stock-sucursal/baja-barcode', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        id_producto:   producto.id_producto,
+                        peso:          peso,
+                        tipo_baja:     tipoBajaSeleccionado,
+                        observaciones: observaciones
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.mensaje);
+
+                Swal.fire({
+                    title: '¡Baja Registrada!',
+                    html: `
+                        <p class="mb-1"><strong>${producto.codigo} — ${producto.producto}</strong></p>
+                        <p class="mb-1">Peso bajado: <strong class="text-danger">${peso.toFixed(3)} kg</strong></p>
+                        <p class="mb-1">Stock anterior: ${parseFloat(data.stock_anterior).toFixed(3)} kg</p>
+                        <p class="mb-0">Stock actual: <strong>${parseFloat(data.stock_actual).toFixed(3)} kg</strong></p>
+                    `,
+                    icon: 'success'
+                });
+
+                // Actualizar historial y el select si ya estaba seleccionado este producto
+                cargarHistorial(producto.id_producto);
+
+                // Refrescar pasoBandejas si el mismo producto ya estaba abierto
+                if (productoSeleccionado && productoSeleccionado.id_producto === producto.id_producto) {
+                    productoSeleccionado.peso = parseFloat(data.stock_actual);
+                    stockProducto = parseFloat(data.stock_actual);
+                    $('#stockActual').text(stockProducto.toFixed(3) + ' kg');
+                    cargarBandejas(producto.id_producto);
+                }
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
         }
     </script>
 </body>

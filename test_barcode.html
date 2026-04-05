@@ -87,7 +87,7 @@
             const resultDiv = document.getElementById('apiResult');
             resultDiv.innerHTML = '⏳ Cargando...';
             
-            fetch('/mikelo/api/envios/productos-disponibles')
+            fetch('/test/api/envios/productos-disponibles')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -110,7 +110,7 @@
             const resultDiv = document.getElementById('apiResult');
             resultDiv.innerHTML = '⏳ Cargando con filtro...';
             
-            fetch('/mikelo/api/envios/productos-disponibles?codigo=1')
+            fetch('/test/api/envios/productos-disponibles?codigo=1')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -136,7 +136,7 @@
                 const parsed = parseBarcode(barcode);
                 resultDiv.innerHTML = '⏳ Buscando producto...';
                 
-                let url = `/mikelo/api/envios/productos-disponibles?codigo=${parsed.codigoProducto}`;
+                let url = `/test/api/envios/productos-disponibles?codigo=${parsed.codigoProducto}`;
                 if (parsed.esPeso) {
                     url += `&peso=${parsed.cantidadPeso}`;
                 } else {

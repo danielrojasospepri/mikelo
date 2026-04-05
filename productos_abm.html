@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikelo - ABM Productos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .content-wrapper { min-height: calc(100vh - 57px); }
+        .badge-activo { background-color: #28a745; color:#fff; }
+        .badge-inactivo { background-color: #dc3545; color:#fff; }
+        .table td { vertical-align: middle; }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle mr-1"></i>
+                    <span id="userName">Usuario</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <span class="dropdown-item-text">
+                        <small class="text-muted" id="userSucursalInfo">-</small>
+                    </span>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index.html" class="brand-link">
+            <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="stock_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-boxes"></i><p>Mi Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="baja_stock.html" class="nav-link">
+                            <i class="nav-icon fas fa-minus-circle"></i><p>Baja de Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="pedidos_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-clipboard-list"></i><p>Mis Pedidos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="recepciones.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck-loading"></i><p>Recepciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_produccion.html" class="nav-link">
+                            <i class="nav-icon fas fa-industry"></i><p>Pedidos Pendientes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link">
+                            <i class="nav-icon fas fa-exclamation-triangle"></i><p>Panel Faltantes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="index.html" class="nav-link">
+                            <i class="nav-icon fas fa-home"></i><p>Panel Principal</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="alta_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i><p>Alta en Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="envios.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck"></i><p>Envíos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="stock_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i><p>Stock Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link active">
+                            <i class="nav-icon fas fa-box-open"></i><p>Productos / Familias</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="usuarios.html" class="nav-link">
+                            <i class="nav-icon fas fa-users-cog"></i><p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link">
+                            <i class="nav-icon fas fa-store-alt"></i><p>Sucursales</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link">
+                            <i class="nav-icon fas fa-book"></i><p>Manual de Usuario</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                            <i class="nav-icon fas fa-sign-out-alt"></i><p>Cerrar Sesión</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-box-open mr-2"></i>Productos y Familias</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <!-- Stats row -->
+                <div class="row" id="statsRow">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-info"><i class="fas fa-boxes"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Productos</span>
+                                <span class="info-box-number" id="statTotal">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Activos</span>
+                                <span class="info-box-number" id="statActivos">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-danger"><i class="fas fa-ban"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Inactivos</span>
+                                <span class="info-box-number" id="statInactivos">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-warning"><i class="fas fa-tags"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Familias</span>
+                                <span class="info-box-number" id="statFamilias">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <ul class="nav nav-tabs" id="abmTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#tabProductos">
+                            <i class="fas fa-boxes mr-1"></i>Productos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabFamilias">
+                            <i class="fas fa-tags mr-1"></i>Familias de Productos
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- ── Tab Productos ───────────────────────────────── -->
+                    <div class="tab-pane fade show active" id="tabProductos">
+                        <div class="card card-outline card-primary mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Listado de Productos</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-primary btn-sm" onclick="abrirModalProducto()">
+                                        <i class="fas fa-plus mr-1"></i>Nuevo Producto
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="tablaProductos" class="table table-bordered table-striped table-sm">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Descripción</th>
+                                                <th>Familia</th>
+                                                <th class="text-center">Cant. Predef.</th>
+                                                <th class="text-center">Estado</th>
+                                                <th class="text-center">Franquicias</th>
+                                                <th class="text-center" style="width:110px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bodyProductos">
+                                            <tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab Familias ───────────────────────────────── -->
+                    <div class="tab-pane fade" id="tabFamilias">
+                        <div class="card card-outline card-warning mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Familias de Productos</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-warning btn-sm" onclick="abrirModalFamilia()">
+                                        <i class="fas fa-plus mr-1"></i>Nueva Familia
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="tablaFamilias" class="table table-bordered table-striped table-sm">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Nombre</th>
+                                                <th>Descripción</th>
+                                                <th class="text-center">Productos</th>
+                                                <th class="text-center" style="width:110px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bodyFamilias">
+                                            <tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /tab-content -->
+            </div>
+        </section>
+    </div><!-- /content-wrapper -->
+
+    <footer class="main-footer">
+        <strong>Mikelo</strong> &copy; 2025
+    </footer>
+</div><!-- /wrapper -->
+
+<!-- ════════════════════════════════════════════════════════
+     Modal Producto
+════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-box mr-2"></i><span id="modalProductoTitulo">Nuevo Producto</span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form id="formProducto" onsubmit="guardarProducto(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="prodId">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Código <span class="text-danger">*</span></label>
+                                <input type="text" id="prodCodigo" class="form-control" required maxlength="50" placeholder="Ej: 00100">
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label>Descripción <span class="text-danger">*</span></label>
+                                <input type="text" id="prodDescripcion" class="form-control" required maxlength="255" placeholder="Nombre del producto">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Familia</label>
+                                <select id="prodFamilia" class="form-control">
+                                    <option value="">— Sin familia —</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Cantidad Predefinida</label>
+                                <input type="number" id="prodCantidad" class="form-control" value="0" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <select id="prodActivo" class="form-control">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Disponible para Franquicias</label>
+                                <select id="prodFranquicias" class="form-control">
+                                    <option value="1">Sí</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Observaciones</label>
+                                <input type="text" id="prodObservaciones" class="form-control" maxlength="255" placeholder="Opcional">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarProducto">
+                        <i class="fas fa-save mr-1"></i>Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     Modal Familia
+════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalFamilia" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-tags mr-2"></i><span id="modalFamiliaTitulo">Nueva Familia</span></h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form id="formFamilia" onsubmit="guardarFamilia(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="famId">
+                    <div class="form-group">
+                        <label>Nombre <span class="text-danger">*</span></label>
+                        <input type="text" id="famNombre" class="form-control" required maxlength="100" placeholder="Ej: Helados de Crema">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="famDescripcion" class="form-control" rows="3" placeholder="Descripción opcional"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning" id="btnGuardarFamilia">
+                        <i class="fas fa-save mr-1"></i>Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="js/auth.js"></script>
+
+<script>
+    let dtProductos = null;
+    let dtFamilias  = null;
+    let familiasList = [];
+
+    // ── Init ──────────────────────────────────────────────────────────────
+    $(document).ready(async function() {
+        const ok = await MikeloAuth.requireAuth();
+        if (!ok) return;
+
+        // Solo planta jefe o admin
+        if (!MikeloAuth.isPlantaJefe()) {
+            Swal.fire('Acceso denegado', 'Esta sección es solo para Jefe de Planta o Administrador.', 'error')
+                .then(() => { window.location.href = 'index.html'; });
+            return;
+        }
+
+        MikeloAuth.updateUI();
+        await Promise.all([cargarProductos(), cargarFamilias()]);
+    });
+
+    // ── Productos ─────────────────────────────────────────────────────────
+    async function cargarProductos() {
+        try {
+            const resp = await authFetch('/productos');
+            if (!resp) return;
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error);
+
+            const productos = data.data || [];
+            actualizarStats(productos);
+            renderTablaProductos(productos);
+        } catch (e) {
+            $('#bodyProductos').html(`<tr><td colspan="7" class="text-center text-danger"><i class="fas fa-exclamation-triangle mr-1"></i>${e.message}</td></tr>`);
+        }
+    }
+
+    function actualizarStats(productos) {
+        const total    = productos.length;
+        const activos  = productos.filter(p => parseInt(p.activo) === 1).length;
+        const inactivos = total - activos;
+        $('#statTotal').text(total);
+        $('#statActivos').text(activos);
+        $('#statInactivos').text(inactivos);
+    }
+
+    function renderTablaProductos(productos) {
+        if (dtProductos) { dtProductos.destroy(); }
+
+        const rows = productos.map(p => `
+            <tr>
+                <td><code>${escHtml(p.codigo)}</code></td>
+                <td>${escHtml(p.descripcion)}</td>
+                <td>${escHtml(p.familia || '—')}</td>
+                <td class="text-center">${p.cantidad_predefinida || 0}</td>
+                <td class="text-center">
+                    <span class="badge ${parseInt(p.activo) === 1 ? 'badge-activo' : 'badge-inactivo'}">
+                        ${parseInt(p.activo) === 1 ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    ${parseInt(p.disponible_franquicias) === 1
+                        ? '<span class="badge badge-success">Sí</span>'
+                        : '<span class="badge badge-secondary">No</span>'}
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-xs btn-info mr-1" onclick="editarProducto(${p.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-xs btn-danger" onclick="eliminarProducto(${p.id}, '${escAttr(p.descripcion)}')" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+
+        $('#bodyProductos').html(rows || '<tr><td colspan="7" class="text-center text-muted">Sin productos</td></tr>');
+
+        dtProductos = $('#tablaProductos').DataTable({
+            destroy: true,
+            language: dtLang(),
+            pageLength: 25,
+            order: [[0, 'asc']],
+            columnDefs: [{ orderable: false, targets: [6] }]
+        });
+    }
+
+    function abrirModalProducto(prod = null) {
+        $('#formProducto')[0].reset();
+        if (prod) {
+            $('#modalProductoTitulo').text('Editar Producto');
+            $('#prodId').val(prod.id);
+            $('#prodCodigo').val(prod.codigo);
+            $('#prodDescripcion').val(prod.descripcion);
+            $('#prodFamilia').val(prod.id_tipo_producto || '');
+            $('#prodCantidad').val(prod.cantidad_predefinida || 0);
+            $('#prodActivo').val(prod.activo);
+            $('#prodFranquicias').val(prod.disponible_franquicias);
+            $('#prodObservaciones').val(prod.observaciones || '');
+        } else {
+            $('#modalProductoTitulo').text('Nuevo Producto');
+            $('#prodId').val('');
+        }
+        $('#modalProducto').modal('show');
+    }
+
+    async function editarProducto(id) {
+        try {
+            // Buscar en la tabla actual vía API
+            const resp = await authFetch('/productos');
+            if (!resp) return;
+            const data = await resp.json();
+            const prod = (data.data || []).find(p => parseInt(p.id) === id);
+            if (!prod) { Swal.fire('Error', 'Producto no encontrado', 'error'); return; }
+            abrirModalProducto(prod);
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    async function guardarProducto(e) {
+        e.preventDefault();
+        const id = $('#prodId').val();
+        const payload = {
+            codigo:               $('#prodCodigo').val().trim(),
+            descripcion:          $('#prodDescripcion').val().trim(),
+            id_tipo_producto:     $('#prodFamilia').val() || null,
+            cantidad_predefinida: parseInt($('#prodCantidad').val()) || 0,
+            activo:               parseInt($('#prodActivo').val()),
+            disponible_franquicias: parseInt($('#prodFranquicias').val()),
+            observaciones:        $('#prodObservaciones').val().trim() || null
+        };
+
+        const $btn = $('#btnGuardarProducto');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
+
+        try {
+            const method = id ? 'PUT' : 'POST';
+            const url    = id ? '/productos/' + id : '/productos';
+            const resp = await authFetch(url, { method, body: JSON.stringify(payload) });
+            if (!resp) return;
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error);
+
+            $('#modalProducto').modal('hide');
+            Swal.fire({ icon: 'success', title: data.mensaje, timer: 1800, showConfirmButton: false });
+            await cargarProductos();
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        } finally {
+            $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar');
+        }
+    }
+
+    async function eliminarProducto(id, nombre) {
+        const { isConfirmed } = await Swal.fire({
+            title: '¿Eliminar producto?',
+            html: `<strong>${nombre}</strong><br><small class="text-muted">Si tiene movimientos asociados, se desactivará en su lugar.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!isConfirmed) return;
+
+        try {
+            const resp = await authFetch('/productos/' + id, { method: 'DELETE' });
+            if (!resp) return;
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error);
+            Swal.fire({ icon: 'success', title: data.mensaje, timer: 1800, showConfirmButton: false });
+            await cargarProductos();
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    // ── Familias ──────────────────────────────────────────────────────────
+    async function cargarFamilias() {
+        try {
+            const resp = await authFetch('/familias');
+            if (!resp) return;
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error);
+
+            familiasList = data.data || [];
+            $('#statFamilias').text(familiasList.length);
+            poblarSelectFamilias();
+            renderTablaFamilias(familiasList);
+        } catch (e) {
+            $('#bodyFamilias').html(`<tr><td colspan="5" class="text-center text-danger">${e.message}</td></tr>`);
+        }
+    }
+
+    function poblarSelectFamilias() {
+        const sel = $('#prodFamilia');
+        const current = sel.val();
+        sel.find('option:not(:first)').remove();
+        familiasList.forEach(f => {
+            sel.append(`<option value="${f.id}">${escHtml(f.nombre)}</option>`);
+        });
+        sel.val(current);
+    }
+
+    function renderTablaFamilias(familias) {
+        if (dtFamilias) { dtFamilias.destroy(); }
+
+        const rows = familias.map(f => `
+            <tr>
+                <td>${f.id}</td>
+                <td><strong>${escHtml(f.nombre)}</strong></td>
+                <td>${escHtml(f.descripcion || '—')}</td>
+                <td class="text-center"><span class="badge badge-info">${f.cantidad_productos || 0}</span></td>
+                <td class="text-center">
+                    <button class="btn btn-xs btn-info mr-1" onclick="editarFamilia(${f.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-xs btn-danger" onclick="eliminarFamilia(${f.id}, '${escAttr(f.nombre)}')" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+
+        $('#bodyFamilias').html(rows || '<tr><td colspan="5" class="text-center text-muted">Sin familias</td></tr>');
+
+        dtFamilias = $('#tablaFamilias').DataTable({
+            destroy: true,
+            language: dtLang(),
+            pageLength: 25,
+            order: [[1, 'asc']],
+            columnDefs: [{ orderable: false, targets: [4] }]
+        });
+    }
+
+    function abrirModalFamilia(fam = null) {
+        $('#formFamilia')[0].reset();
+        if (fam) {
+            $('#modalFamiliaTitulo').text('Editar Familia');
+            $('#famId').val(fam.id);
+            $('#famNombre').val(fam.nombre);
+            $('#famDescripcion').val(fam.descripcion || '');
+        } else {
+            $('#modalFamiliaTitulo').text('Nueva Familia');
+            $('#famId').val('');
+        }
+        $('#modalFamilia').modal('show');
+    }
+
+    function editarFamilia(id) {
+        const fam = familiasList.find(f => parseInt(f.id) === id);
+        if (!fam) { Swal.fire('Error', 'Familia no encontrada', 'error'); return; }
+        abrirModalFamilia(fam);
+    }
+
+    async function guardarFamilia(e) {
+        e.preventDefault();
+        const id = $('#famId').val();
+        const payload = {
+            nombre:      $('#famNombre').val().trim(),
+            descripcion: $('#famDescripcion').val().trim() || null
+        };
+
+        const $btn = $('#btnGuardarFamilia');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
+
+        try {
+            const method = id ? 'PUT' : 'POST';
+            const url    = id ? '/familias/' + id : '/familias';
+            const resp = await authFetch(url, { method, body: JSON.stringify(payload) });
+            if (!resp) return;
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error);
+
+            $('#modalFamilia').modal('hide');
+            Swal.fire({ icon: 'success', title: data.mensaje, timer: 1800, showConfirmButton: false });
+            await cargarFamilias();
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        } finally {
+            $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar');
+        }
+    }
+
+    async function eliminarFamilia(id, nombre) {
+        const { isConfirmed } = await Swal.fire({
+            title: '¿Eliminar familia?',
+            html: `<strong>${nombre}</strong><br><small class="text-muted">Solo se puede eliminar si no tiene productos asignados.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!isConfirmed) return;
+
+        try {
+            const resp = await authFetch('/familias/' + id, { method: 'DELETE' });
+            if (!resp) return;
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error);
+            Swal.fire({ icon: 'success', title: data.mensaje, timer: 1800, showConfirmButton: false });
+            await cargarFamilias();
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escAttr(str) {
+        if (!str) return '';
+        return String(str).replace(/'/g,"\\'");
+    }
+    function dtLang() {
+        return {
+            lengthMenu: 'Mostrar _MENU_ registros',
+            zeroRecords: 'No se encontraron registros',
+            info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+            infoEmpty: 'Sin registros',
+            infoFiltered: '(filtrado de _MAX_ totales)',
+            search: 'Buscar:',
+            paginate: { first:'Primero', last:'Último', next:'Siguiente', previous:'Anterior' }
+        };
+    }
+</script>
+</body>
+</html>

@@ -13,6 +13,7 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <link rel="stylesheet" href="css/styles.css">
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
@@ -53,8 +54,7 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right">
                     <span class="dropdown-item-text">
-                        <small class="text-muted" id="userRole">Rol</small><br>
-                        <small class="text-muted" id="userSucursal">Sucursal</small>
+                        <small class="text-muted" id="userSucursalInfo">-</small>
                     </span>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
@@ -74,36 +74,54 @@
         <div class="sidebar">
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column">
-                    <li class="nav-header">MI SUCURSAL</li>
-                    <li class="nav-item">
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
                         <a href="stock_sucursal.html" class="nav-link">
                             <i class="nav-icon fas fa-boxes"></i>
                             <p>Mi Stock</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
                         <a href="baja_stock.html" class="nav-link">
                             <i class="nav-icon fas fa-minus-circle"></i>
                             <p>Baja de Stock</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="stock_minimo.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Stock Mínimo</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="carga_inicial_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Carga de Stock Inicial</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
                         <a href="pedidos_sucursal.html" class="nav-link active">
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>Mis Pedidos</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
                         <a href="recepciones.html" class="nav-link">
                             <i class="nav-icon fas fa-truck-loading"></i>
                             <p>Recepciones</p>
                         </a>
                     </li>
-                    <li class="nav-header" data-require-planta>PLANTA</li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
                     <li class="nav-item" data-require-planta>
                         <a href="panel_produccion.html" class="nav-link">
                             <i class="nav-icon fas fa-industry"></i>
-                            <p>Panel Producción</p>
+                            <p>Pedidos Pendientes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link">
+                            <i class="nav-icon fas fa-exclamation-triangle"></i>
+                            <p>Panel Faltantes</p>
                         </a>
                     </li>
                     <li class="nav-item" data-require-planta>
@@ -112,11 +130,55 @@
                             <p>Panel Principal</p>
                         </a>
                     </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="alta_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>Alta en Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="envios.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Envíos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="stock_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Stock Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link">
+                            <i class="nav-icon fas fa-box-open"></i>
+                            <p>Productos / Familias</p>
+                        </a>
+                    </li>
                     <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
                     <li class="nav-item" data-require-admin>
                         <a href="usuarios.html" class="nav-link">
                             <i class="nav-icon fas fa-users-cog"></i>
                             <p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link">
+                            <i class="nav-icon fas fa-store-alt"></i>
+                            <p>Sucursales</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link">
+                            <i class="nav-icon fas fa-book"></i>
+                            <p>Manual de Usuario</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>Cerrar Sesión</p>
                         </a>
                     </li>
                 </ul>
@@ -163,6 +225,7 @@
                                         <option value="PENDIENTE">Pendiente</option>
                                         <option value="EN_PROCESO">En Proceso</option>
                                         <option value="ENVIADO">Enviado</option>
+                                        <option value="RECIBIDO_PARCIAL">Recibido Parcial</option>
                                         <option value="RECIBIDO">Recibido</option>
                                         <option value="ANULADO">Anulado</option>
                                     </select>
@@ -246,6 +309,17 @@
             </div>
             <form id="formNuevoPedido">
                 <div class="modal-body">
+                    <!-- Selector de sucursal (visible para admin o usuarios con múltiples sucursales) -->
+                    <div class="row" id="divSucursalPedido" style="display:none;">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label><i class="fas fa-store mr-1 text-primary"></i>Sucursal que realiza el pedido</label>
+                                <select id="pedidoSucursal" name="pedidoSucursal" class="form-control">
+                                    <option value="">Seleccione una sucursal...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -355,6 +429,7 @@
     let dataTable = null;
     let productosDisponibles = [];
     let itemsPedido = [];
+    let sucursalesDisponibles = [];
 
     $(document).ready(async function() {
         // Verificar autenticación
@@ -363,6 +438,16 @@
 
         // Actualizar UI
         MikeloAuth.updateUI();
+
+        // Adaptar etiquetas según rol
+        const _userRol = MikeloAuth.getUser();
+        if (_userRol && _userRol.rol_nivel >= 30) {
+            const optEnviado = document.querySelector('#filtroEstado option[value="ENVIADO"]');
+            if (optEnviado) optEnviado.textContent = 'Envío en proceso';
+        }
+
+        // Preparar selector de sucursal según rol
+        await cargarSucursalesParaPedido();
 
         // Cargar datos
         await cargarProductosDisponibles();
@@ -385,9 +470,61 @@
         });
     }
 
-    async function cargarProductosDisponibles() {
+    async function cargarSucursalesParaPedido() {
         try {
-            const response = await authFetch('/pedidos/productos-disponibles');
+            const user = MikeloAuth.getUser();
+            if (!user) return;
+
+            const esAdmin = user.rol_nivel <= 10;
+            const tieneMultiples = user.sucursales && user.sucursales.length > 1;
+
+            if (!esAdmin && !tieneMultiples) {
+                // Usuario con una sola sucursal: no mostrar selector, nunca requerido
+                $('#pedidoSucursal').prop('required', false);
+                return;
+            }
+
+            // Cargar sucursales disponibles
+            const response = await authFetch('/sucursales');
+            if (!response) return;
+            const data = await response.json();
+            sucursalesDisponibles = data.sucursales || data || [];
+
+            const $select = $('#pedidoSucursal');
+            $select.empty().append('<option value="">Seleccione una sucursal...</option>');
+            sucursalesDisponibles.forEach(s => {
+                $select.append(`<option value="${s.id}">${s.nombre}</option>`);
+            });
+
+            // Mostrar el selector
+            $('#divSucursalPedido').show();
+            // El campo es requerido solo cuando es visible
+            $select.prop('required', true);
+
+            // Recargar productos cuando cambia la sucursal seleccionada
+            $select.off('change.productos').on('change.productos', async function() {
+                const idSel = parseInt($(this).val()) || null;
+                if (idSel) {
+                    await cargarProductosDisponibles(idSel);
+                    initSelect2();
+                }
+            });
+
+        } catch (error) {
+            console.error('Error cargando sucursales:', error);
+        }
+    }
+
+    async function cargarProductosDisponibles(idSucursal = null) {
+        try {
+            if (!idSucursal) {
+                const suc = MikeloAuth.getSucursalPrincipal();
+                idSucursal = suc?.id ?? null;
+            }
+            const url = idSucursal
+                ? `/pedidos/productos-disponibles?id_sucursal=${idSucursal}`
+                : '/pedidos/productos-disponibles';
+            const response = await authFetch(url);
             if (!response) return;
 
             const data = await response.json();
@@ -426,9 +563,8 @@
     }
 
     function renderizarPedidos(pedidos) {
-        if (dataTable) {
-            dataTable.destroy();
-        }
+        // destroy:true en DataTable options ya maneja la destrucción
+        dataTable = null;
 
         const tbody = $('#pedidosBody');
         tbody.empty();
@@ -473,8 +609,15 @@
         });
 
         dataTable = $('#tablaPedidos').DataTable({
+            destroy: true,
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'No se encontraron registros',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros totales)',
+                search: 'Buscar:',
+                paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' }
             },
             pageLength: 25,
             order: [[0, 'desc']]
@@ -486,10 +629,21 @@
             'PENDIENTE': 'badge-warning',
             'EN_PROCESO': 'badge-info',
             'ENVIADO': 'badge-primary',
+            'RECIBIDO_PARCIAL': 'badge-warning',
             'RECIBIDO': 'badge-success',
             'ANULADO': 'badge-danger'
         };
-        return `<span class="badge estado-badge ${badges[estado] || 'badge-secondary'}">${estado}</span>`;
+        const _u = MikeloAuth.getUser();
+        const esSucursal = _u && _u.rol_nivel >= 30;
+        const labels = {
+            'PENDIENTE': 'Pendiente',
+            'EN_PROCESO': 'En Proceso',
+            'ENVIADO': esSucursal ? 'Envío en proceso' : 'Enviado',
+            'RECIBIDO_PARCIAL': 'Recibido Parcial',
+            'RECIBIDO': 'Recibido',
+            'ANULADO': 'Anulado'
+        };
+        return `<span class="badge estado-badge ${badges[estado] || 'badge-secondary'}">${labels[estado] || estado}</span>`;
     }
 
     function getPrioridadBadge(prioridad) {
@@ -510,6 +664,7 @@
             </tr>
         `);
         $('#selectProducto').val(null).trigger('change');
+        verificarFaltantes(); // Actualizar badge con cantidad de productos bajo mínimo
         $('#modalNuevoPedido').modal('show');
     }
 
@@ -610,6 +765,10 @@
                 }))
             };
 
+            // Si hay selector de sucursal visible, adjuntar la selección
+            const idSucursal = $('#divSucursalPedido').is(':visible') ? $('#pedidoSucursal').val() : null;
+            if (idSucursal) datos.id_sucursal = parseInt(idSucursal);
+
             const response = await authFetch('/pedidos', {
                 method: 'POST',
                 body: JSON.stringify(datos)
@@ -684,10 +843,29 @@
 
             $('#detallePedidoBody').html(html);
             
-            // Botones del footer según estado
+            // Botones del footer según estado y rol
+            const currentUser = MikeloAuth.getUser();
+            const esPlanta = currentUser && currentUser.rol_nivel < 30;
             let footerHtml = '<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>';
+            // Botón Marcar como Enviado: solo para Planta, cuando aún no fue enviado/recibido/anulado
+            if (esPlanta && !['ANULADO', 'RECIBIDO', 'RECIBIDO_PARCIAL'].includes(p.estado)) {
+                footerHtml += `<button type="button" class="btn btn-success" onclick="$('#modalDetallePedido').modal('hide'); setTimeout(() => { window.location.href='envios.html?pedido=${p.id}'; }, 200);">
+                    <i class="fas fa-truck mr-2"></i>Crear Envío
+                </button>`;
+            }
+            if (esPlanta && !['ENVIADO', 'RECIBIDO', 'RECIBIDO_PARCIAL', 'ANULADO'].includes(p.estado)) {
+                footerHtml += `<button type="button" class="btn btn-primary" onclick="marcarEnviadoPedido(${p.id})">
+                    <i class="fas fa-paper-plane mr-2"></i>Marcar como Enviado
+                </button>`;
+            }
+            // Botón Marcar como Recibido: para sucursales (no Planta), cuando no fue recibido/anulado
+            if (!esPlanta && !['RECIBIDO', 'ANULADO'].includes(p.estado)) {
+                footerHtml += `<button type="button" class="btn btn-success" onclick="marcarRecibidoPedido(${p.id})">
+                    <i class="fas fa-check-double mr-2"></i>Marcar como Recibido
+                </button>`;
+            }
             if (p.estado === 'PENDIENTE') {
-                footerHtml += `<button type="button" class="btn btn-danger" onclick="anularPedido(${p.id}); $('#modalDetallePedido').modal('hide');">
+                footerHtml += `<button type="button" class="btn btn-danger" onclick="anularPedido(${p.id})">
                     <i class="fas fa-times mr-2"></i>Anular Pedido
                 </button>`;
             }
@@ -698,6 +876,84 @@
         } catch (error) {
             console.error('Error obteniendo detalle:', error);
             Swal.fire('Error', error.message || 'No se pudo obtener el detalle', 'error');
+        }
+    }
+
+    async function marcarRecibidoPedido(idPedido) {
+        const result = await Swal.fire({
+            title: '¿Confirmar recepción?',
+            text: 'Confirma que los productos de este pedido ya fueron recibidos en la sucursal',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'Sí, confirmar recepción',
+            cancelButtonText: 'Cancelar',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+
+        if (!result.isConfirmed) return;
+
+        $('#modalDetallePedido').modal('hide');
+
+        try {
+            const response = await authFetch(`/pedidos/${idPedido}/recibir`, {
+                method: 'PUT',
+                body: JSON.stringify({})
+            });
+            if (!response) return;
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Recepción confirmada',
+                text: 'El pedido fue marcado como recibido correctamente',
+                timer: 2500,
+                showConfirmButton: false
+            });
+            cargarPedidos();
+
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire('Error', error.message || 'No se pudo actualizar el pedido', 'error');
+        }
+    }
+
+    async function marcarEnviadoPedido(idPedido) {
+        const result = await Swal.fire({
+            title: '¿Marcar como enviado?',
+            text: 'Confirma que este pedido fue enviado a la sucursal',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#007bff',
+            confirmButtonText: 'Sí, marcar enviado',
+            cancelButtonText: 'Cancelar',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+
+        if (!result.isConfirmed) return;
+
+        $('#modalDetallePedido').modal('hide');
+
+        try {
+            const response = await authFetch(`/pedidos/${idPedido}/enviar`, {
+                method: 'PUT',
+                body: JSON.stringify({})
+            });
+            if (!response) return;
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            Swal.fire('Listo', 'Pedido marcado como enviado', 'success');
+            cargarPedidos();
+
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire('Error', error.message || 'No se pudo actualizar el pedido', 'error');
         }
     }
 
@@ -712,10 +968,14 @@
             cancelButtonText: 'Cancelar',
             input: 'text',
             inputLabel: 'Motivo (opcional)',
-            inputPlaceholder: 'Ingrese el motivo de anulación'
+            inputPlaceholder: 'Ingrese el motivo de anulación',
+            allowOutsideClick: false,
+            allowEscapeKey: false
         });
 
         if (!result.isConfirmed) return;
+
+        $('#modalDetallePedido').modal('hide');
 
         try {
             const response = await authFetch(`/pedidos/${idPedido}/anular`, {
@@ -777,36 +1037,55 @@
 
             // Agregar cada faltante al pedido
             let agregados = 0;
+            let noDisponibles = [];
+
             faltantes.forEach(f => {
                 const cantidadRecomendada = Math.ceil(parseFloat(f.cantidad_recomendada) || parseFloat(f.cantidad_faltante) || 1);
                 
-                // Buscar el producto en disponibles
+                // Buscar el producto en disponibles (stock del depósito)
                 const producto = productosDisponibles.find(p => p.id == f.id_producto);
                 
                 // Verificar si ya está en el pedido
                 const existente = itemsPedido.find(i => i.id_producto == f.id_producto);
                 if (existente) {
                     existente.cantidad = Math.max(existente.cantidad, cantidadRecomendada);
-                } else if (producto) {
+                    agregados++;
+                } else {
+                    // Agregar al pedido siempre (el pedido es una solicitud, no requiere stock en depósito)
+                    const nombreProducto = f.producto || (producto ? producto.nombre : f.codigo);
                     itemsPedido.push({
                         id_producto: f.id_producto,
                         codigo: f.codigo,
-                        nombre: f.producto,
+                        nombre: nombreProducto,
                         cantidad: cantidadRecomendada
                     });
                     agregados++;
+                    if (!producto) {
+                        noDisponibles.push(`${f.codigo} - ${nombreProducto}`);
+                    }
                 }
             });
 
             renderizarItemsPedido();
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Faltantes cargados',
-                text: `Se agregaron ${agregados} productos faltantes al pedido`,
-                timer: 2000,
-                showConfirmButton: false
-            });
+            if (noDisponibles.length === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Faltantes cargados',
+                    text: `Se agregaron ${agregados} producto(s) bajo el mínimo configurado al pedido`,
+                    timer: 2500,
+                    showConfirmButton: false
+                });
+            } else {
+                let html = `<p>Se agregaron <strong>${agregados}</strong> producto(s) al pedido.</p>`;
+                html += `<p class="text-info small"><i class="fas fa-info-circle mr-1"></i><strong>${noDisponibles.length}</strong> producto(s) incluidos aunque no tienen stock en depósito actualmente:</p>`;
+                html += `<ul class="text-left small">` + noDisponibles.map(n => `<li>${n}</li>`).join('') + `</ul>`;
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Faltantes cargados',
+                    html: html
+                });
+            }
 
         } catch (error) {
             console.error('Error cargando faltantes:', error);

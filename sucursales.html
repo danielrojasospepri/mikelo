@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikelo - Gestión de Sucursales</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .badge-franquicia   { background-color: #17a2b8; }
+        .badge-propia       { background-color: #6f42c1; }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle mr-1"></i>
+                    <span id="userName">Usuario</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <span class="dropdown-item-text">
+                        <small class="text-muted" id="userSucursalInfo">-</small>
+                    </span>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index.html" class="brand-link">
+            <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="stock_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Mi Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="baja_stock.html" class="nav-link">
+                            <i class="nav-icon fas fa-minus-circle"></i>
+                            <p>Baja de Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="pedidos_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>Mis Pedidos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="recepciones.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck-loading"></i>
+                            <p>Recepciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_produccion.html" class="nav-link">
+                            <i class="nav-icon fas fa-industry"></i>
+                            <p>Pedidos Pendientes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link">
+                            <i class="nav-icon fas fa-exclamation-triangle"></i>
+                            <p>Panel Faltantes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="index.html" class="nav-link">
+                            <i class="nav-icon fas fa-home"></i>
+                            <p>Panel Principal</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="alta_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>Alta en Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="envios.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Envíos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="stock_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Stock Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link">
+                            <i class="nav-icon fas fa-box-open"></i>
+                            <p>Productos / Familias</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="usuarios.html" class="nav-link">
+                            <i class="nav-icon fas fa-users-cog"></i>
+                            <p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link active">
+                            <i class="nav-icon fas fa-store-alt"></i>
+                            <p>Sucursales</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link">
+                            <i class="nav-icon fas fa-book"></i>
+                            <p>Manual de Usuario</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>Cerrar Sesión</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-store-alt mr-2"></i>Gestión de Sucursales</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <button class="btn btn-primary float-sm-right" onclick="abrirModalNuevo()">
+                            <i class="fas fa-plus mr-2"></i>Nueva Sucursal
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-left">
+                            <li class="breadcrumb-item"><a href="index.html">Inicio</a></li>
+                            <li class="breadcrumb-item active">Sucursales</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card card-outline card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-list mr-2"></i>Listado de Sucursales</h3>
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaSucursales" class="table table-bordered table-hover table-striped" style="width:100%">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Razón Social</th>
+                                    <th>Domicilio</th>
+                                    <th>Localidad</th>
+                                    <th>Teléfono</th>
+                                    <th>Email</th>
+                                    <th>Tipo</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaSucursalesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer text-sm">
+        <strong>Mikelo</strong> - Gestión de Sucursales
+    </footer>
+</div>
+
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="modalSucursal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="modalTitulo">Nueva Sucursal</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formSucursal">
+                    <input type="hidden" id="sucursalId">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label>Nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="fNombre" maxlength="500" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tipo</label>
+                                <select class="form-control" id="fFranquicia">
+                                    <option value="1">Franquicia (externa)</option>
+                                    <option value="0">Sucursal propia</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Las franquicias solo ven productos habilitados para franquicias.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Razón Social</label>
+                                <input type="text" class="form-control" id="fRazonSocial" maxlength="255">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>CUIT</label>
+                                <input type="text" class="form-control" id="fCuit" maxlength="20" placeholder="20-12345678-9">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Condición IVA</label>
+                                <select class="form-control" id="fCondicionIva">
+                                    <option value="">-- seleccionar --</option>
+                                    <option>Responsable Inscripto</option>
+                                    <option>Monotributista</option>
+                                    <option>Exento</option>
+                                    <option>Consumidor Final</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Domicilio</label>
+                                <input type="text" class="form-control" id="fDomicilio" maxlength="255">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Localidad</label>
+                                <input type="text" class="form-control" id="fLocalidad" maxlength="100">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Código Postal</label>
+                                <input type="text" class="form-control" id="fCodigoPostal" maxlength="10">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Provincia</label>
+                                <input type="text" class="form-control" id="fProvincia" maxlength="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="text" class="form-control" id="fTelefono" maxlength="50">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" class="form-control" id="fEmail" maxlength="100">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarSucursal()">
+                    <i class="fas fa-save mr-1"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="js/auth.js"></script>
+
+<script>
+    let dataTable = null;
+    let sucursalesData = [];
+
+    $(document).ready(async function() {
+        const authenticated = await MikeloAuth.requireAuth();
+        if (!authenticated) return;
+
+        const user = MikeloAuth.getUser();
+        if (!user || user.rol_nivel > 10) {
+            Swal.fire('Acceso denegado', 'Esta sección es solo para administradores.', 'error')
+                .then(() => { window.location.href = 'index.html'; });
+            return;
+        }
+
+        MikeloAuth.updateUI();
+        await cargarSucursales();
+    });
+
+    async function cargarSucursales() {
+        try {
+            const response = await MikeloAuth.fetch('/sucursales');
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            sucursalesData = data.sucursales || [];
+            renderizarTabla(sucursalesData);
+        } catch (err) {
+            Swal.fire('Error', 'No se pudieron cargar las sucursales: ' + err.message, 'error');
+        }
+    }
+
+    function renderizarTabla(sucursales) {
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+
+        let html = '';
+        sucursales.forEach(s => {
+            const tipo = parseInt(s.franquicia) === 1
+                ? '<span class="badge badge-franquicia">Franquicia</span>'
+                : '<span class="badge badge-propia">Propia</span>';
+            html += `
+                <tr>
+                    <td>${s.id}</td>
+                    <td><strong>${escHtml(s.nombre)}</strong></td>
+                    <td>${escHtml(s.razon_social || '-')}</td>
+                    <td>${escHtml(s.domicilio || '-')}</td>
+                    <td>${escHtml(s.localidad || '-')}</td>
+                    <td>${escHtml(s.telefono || '-')}</td>
+                    <td>${escHtml(s.email || '-')}</td>
+                    <td>${tipo}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-warning" onclick="abrirModalEditar(${s.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        });
+
+        $('#tablaSucursalesBody').html(html);
+
+        dataTable = $('#tablaSucursales').DataTable({
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+            },
+            order: [[0, 'asc']],
+            pageLength: 25
+        });
+    }
+
+    function abrirModalNuevo() {
+        limpiarModal();
+        $('#modalTitulo').text('Nueva Sucursal');
+        $('#modalSucursal').modal('show');
+    }
+
+    async function abrirModalEditar(id) {
+        try {
+            const response = await MikeloAuth.fetch(`/sucursales/${id}`);
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            const s = data.sucursal;
+            limpiarModal();
+            $('#modalTitulo').text('Editar Sucursal');
+            $('#sucursalId').val(s.id);
+            $('#fNombre').val(s.nombre);
+            $('#fFranquicia').val(s.franquicia != null ? String(parseInt(s.franquicia)) : '1');
+            $('#fRazonSocial').val(s.razon_social || '');
+            $('#fCuit').val(s.cuit || '');
+            $('#fCondicionIva').val(s.condicion_iva || '');
+            $('#fDomicilio').val(s.domicilio || '');
+            $('#fLocalidad').val(s.localidad || '');
+            $('#fCodigoPostal').val(s.codigo_postal || '');
+            $('#fProvincia').val(s.provincia || '');
+            $('#fTelefono').val(s.telefono || '');
+            $('#fEmail').val(s.email || '');
+            $('#modalSucursal').modal('show');
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        }
+    }
+
+    function limpiarModal() {
+        $('#sucursalId').val('');
+        $('#formSucursal')[0].reset();
+        $('#fFranquicia').val('1');
+    }
+
+    async function guardarSucursal() {
+        const nombre = $('#fNombre').val().trim();
+        if (!nombre) {
+            Swal.fire('Atención', 'El nombre es requerido.', 'warning');
+            return;
+        }
+
+        const id = $('#sucursalId').val();
+        const payload = {
+            nombre:        nombre,
+            franquicia:    parseInt($('#fFranquicia').val()),
+            razon_social:  $('#fRazonSocial').val().trim() || null,
+            cuit:          $('#fCuit').val().trim() || null,
+            condicion_iva: $('#fCondicionIva').val() || null,
+            domicilio:     $('#fDomicilio').val().trim() || null,
+            localidad:     $('#fLocalidad').val().trim() || null,
+            codigo_postal: $('#fCodigoPostal').val().trim() || null,
+            provincia:     $('#fProvincia').val().trim() || null,
+            telefono:      $('#fTelefono').val().trim() || null,
+            email:         $('#fEmail').val().trim() || null,
+        };
+
+        try {
+            $('#btnGuardar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Guardando...');
+
+            const method   = id ? 'PUT' : 'POST';
+            const endpoint = id ? `/sucursales/${id}` : '/sucursales';
+            const response = await MikeloAuth.fetch(endpoint, {
+                method,
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.mensaje);
+
+            $('#modalSucursal').modal('hide');
+            await cargarSucursales();
+            Swal.fire({
+                title: '¡Listo!',
+                text: data.mensaje,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        } finally {
+            $('#btnGuardar').prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar');
+        }
+    }
+
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+</script>
+</body>
+</html>

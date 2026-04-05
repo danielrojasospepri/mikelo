@@ -2,7 +2,7 @@
 // Test del endpoint productos-disponibles via HTTP
 echo "Probando endpoint HTTP...\n\n";
 
-$ch = curl_init('https://localhost/mikelo/api/pedidos/productos-disponibles');
+$ch = curl_init('https://localhost/test/api/pedidos/productos-disponibles');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer test-token-admin']);

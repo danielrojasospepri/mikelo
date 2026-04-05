@@ -211,7 +211,7 @@ Hostinger (raíz del proyecto):
 ## ⚠️ NOTAS IMPORTANTES
 
 1. **Rutas relativas**: El código usa rutas relativas (`api/...`) que funcionan tanto en:
-   - Local: `localhost/mikelo/api/...`
+   - Local: `localhost/test/api/...`
    - Producción: `tudominio.com/api/...`
 
 2. **No hay diferencia entre local y producción** en cuanto a rutas porque son relativas al documento HTML

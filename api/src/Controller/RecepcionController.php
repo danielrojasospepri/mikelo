@@ -36,8 +36,11 @@ class RecepcionController {
                 ], 400);
             }
 
+            $queryParams = $request->getQueryParams();
+            $fechaDesde = !empty($queryParams['fecha_desde']) ? $queryParams['fecha_desde'] : null;
+
             $recepcionModel = new Recepcion($this->db);
-            $envios = $recepcionModel->listarEnviosPendientes($idSucursal);
+            $envios = $recepcionModel->listarEnviosPendientes($idSucursal, $fechaDesde);
 
             return $this->jsonResponse($response, [
                 'error' => false,
@@ -61,46 +64,20 @@ class RecepcionController {
     public function detalleEnvio(Request $request, Response $response, array $args): Response {
         try {
             $idEnvio = (int)$args['idEnvio'];
-            
-            // Obtener detalle del envío con items
-            $stmt = $this->db->prepare("
-                SELECT 
-                    m.id,
-                    m.fecha,
-                    m.id_ubicaciones as id_sucursal_destino,
-                    u.nombre as sucursal_destino,
-                    m.observaciones
-                FROM movimientos m
-                INNER JOIN ubicaciones u ON m.id_ubicaciones = u.id
-                WHERE m.id = ? AND m.tipo = 'envio'
-            ");
-            $stmt->execute([$idEnvio]);
-            $envio = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+
+            $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+
+            $recepcionModel = new Recepcion($this->db);
+            $envio = $recepcionModel->obtenerDetalleEnvio($idEnvio, $idSucursal);
 
             if (!$envio) {
                 return $this->jsonResponse($response, [
                     'error' => true,
-                    'mensaje' => 'Envío no encontrado'
+                    'mensaje' => 'Envío no encontrado o no corresponde a su sucursal'
                 ], 404);
             }
-
-            // Obtener items del envío
-            $stmt = $this->db->prepare("
-                SELECT 
-                    mi.id as id_movimiento_item,
-                    mi.id_productos,
-                    p.codigo,
-                    p.nombre as producto,
-                    mi.cantidad,
-                    mi.peso,
-                    c.nombre as contenedor
-                FROM movimientos_items mi
-                INNER JOIN productos p ON mi.id_productos = p.id
-                LEFT JOIN contenedores c ON mi.id_contenedores = c.id
-                WHERE mi.id_movimientos = ?
-            ");
-            $stmt->execute([$idEnvio]);
-            $envio['items'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
             return $this->jsonResponse($response, [
                 'error' => false,
@@ -143,40 +120,20 @@ class RecepcionController {
 
             // Obtener sucursal del usuario
             $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
-            
-            if (!$idSucursal) {
+
+            if (!$idSucursal && $usuarioRolNivel >= 30) {
                 return $this->jsonResponse($response, [
                     'error' => true,
                     'mensaje' => 'Usuario no tiene sucursal asignada'
                 ], 400);
             }
 
-            // Verificar que el envío sea para esta sucursal
-            $stmt = $this->db->prepare("
-                SELECT id_ubicaciones FROM movimientos WHERE id = ? AND tipo = 'envio'
-            ");
-            $stmt->execute([$datos['id_envio']]);
-            $envio = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-            if (!$envio) {
-                return $this->jsonResponse($response, [
-                    'error' => true,
-                    'mensaje' => 'Envío no encontrado'
-                ], 404);
-            }
-
-            if ($envio['id_ubicaciones'] != $idSucursal && $usuarioRolNivel >= 30) {
-                return $this->jsonResponse($response, [
-                    'error' => true,
-                    'mensaje' => 'El envío no corresponde a su sucursal'
-                ], 403);
-            }
-
             $recepcionModel = new Recepcion($this->db);
             $idRecepcion = $recepcionModel->confirmar(
                 $datos['id_envio'],
-                $datos['items'],
+                $idSucursal,
                 $usuarioId,
+                $datos['items'],
                 $datos['observaciones'] ?? null
             );
 
@@ -206,51 +163,10 @@ class RecepcionController {
             $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
 
             $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+            $limite = !empty($queryParams['limite']) ? (int)$queryParams['limite'] : 50;
 
-            $sql = "
-                SELECT 
-                    r.id,
-                    r.id_envio,
-                    r.fecha_recepcion,
-                    r.recibido_por,
-                    CONCAT(u.nombre, ' ', COALESCE(u.apellido, '')) as recibido_por_nombre,
-                    r.observaciones,
-                    (SELECT COUNT(*) FROM recepcion_items WHERE id_recepcion = r.id) as total_items
-                FROM recepciones r
-                LEFT JOIN usuarios u ON r.recibido_por = u.id
-                WHERE 1=1
-            ";
-            $params = [];
-
-            // Filtrar por sucursal si es franquicia
-            if ($idSucursal && $usuarioRolNivel >= 30) {
-                $sql .= " AND r.id_envio IN (
-                    SELECT id FROM movimientos WHERE id_ubicaciones = ? AND tipo = 'envio'
-                )";
-                $params[] = $idSucursal;
-            }
-
-            // Filtros opcionales
-            if (!empty($queryParams['fecha_desde'])) {
-                $sql .= " AND r.fecha_recepcion >= ?";
-                $params[] = $queryParams['fecha_desde'];
-            }
-            if (!empty($queryParams['fecha_hasta'])) {
-                $sql .= " AND r.fecha_recepcion <= ?";
-                $params[] = $queryParams['fecha_hasta'] . ' 23:59:59';
-            }
-
-            $sql .= " ORDER BY r.fecha_recepcion DESC";
-
-            if (!empty($queryParams['limite'])) {
-                $sql .= " LIMIT " . (int)$queryParams['limite'];
-            } else {
-                $sql .= " LIMIT 50";
-            }
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
-            $recepciones = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $recepcionModel = new Recepcion($this->db);
+            $recepciones = $recepcionModel->listarPorSucursal($idSucursal, $limite, 0);
 
             return $this->jsonResponse($response, [
                 'error' => false,
@@ -275,16 +191,8 @@ class RecepcionController {
         try {
             $idRecepcion = (int)$args['id'];
 
-            $stmt = $this->db->prepare("
-                SELECT 
-                    r.*,
-                    CONCAT(u.nombre, ' ', COALESCE(u.apellido, '')) as recibido_por_nombre
-                FROM recepciones r
-                LEFT JOIN usuarios u ON r.recibido_por = u.id
-                WHERE r.id = ?
-            ");
-            $stmt->execute([$idRecepcion]);
-            $recepcion = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $recepcionModel = new Recepcion($this->db);
+            $recepcion = $recepcionModel->obtenerPorId($idRecepcion);
 
             if (!$recepcion) {
                 return $this->jsonResponse($response, [
@@ -292,19 +200,6 @@ class RecepcionController {
                     'mensaje' => 'Recepción no encontrada'
                 ], 404);
             }
-
-            // Obtener items
-            $stmt = $this->db->prepare("
-                SELECT 
-                    ri.*,
-                    p.codigo,
-                    p.nombre as producto
-                FROM recepcion_items ri
-                INNER JOIN productos p ON ri.id_producto = p.id
-                WHERE ri.id_recepcion = ?
-            ");
-            $stmt->execute([$idRecepcion]);
-            $recepcion['items'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
             return $this->jsonResponse($response, [
                 'error' => false,
@@ -317,6 +212,82 @@ class RecepcionController {
                 'error' => true,
                 'mensaje' => 'Error al obtener recepción'
             ], 500);
+        }
+    }
+
+    /**
+     * POST /recepciones/archivar/{idEnvio}
+     * Archivar un envío (ocultarlo de pendientes sin recibirlo)
+     */
+    public function archivar(Request $request, Response $response, array $args): Response {
+        try {
+            $idEnvio = (int)$args['idEnvio'];
+            $usuarioId = $request->getAttribute('usuario_id');
+            $datos = $request->getParsedBody();
+            $motivo = $datos['motivo'] ?? null;
+
+            $recepcionModel = new Recepcion($this->db);
+            $recepcionModel->archivarEnvio($idEnvio, $usuarioId, $motivo);
+
+            return $this->jsonResponse($response, [
+                'error' => false,
+                'mensaje' => 'Envío archivado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Error al archivar envío: ' . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error' => true,
+                'mensaje' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * GET /recepciones/archivados
+     * Listar envíos archivados
+     */
+    public function archivados(Request $request, Response $response): Response {
+        try {
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+            $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $usuarioRolNivel);
+
+            $recepcionModel = new Recepcion($this->db);
+            $envios = $recepcionModel->listarArchivados($idSucursal);
+
+            return $this->jsonResponse($response, [
+                'error' => false,
+                'envios' => $envios,
+                'total' => count($envios)
+            ]);
+        } catch (\Exception $e) {
+            return $this->jsonResponse($response, [
+                'error' => true,
+                'mensaje' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /recepciones/desarchivar/{idEnvio}
+     * Restaurar un envío archivado a pendientes
+     */
+    public function desarchivar(Request $request, Response $response, array $args): Response {
+        try {
+            $idEnvio = (int)$args['idEnvio'];
+            $recepcionModel = new Recepcion($this->db);
+            $recepcionModel->desarchivarEnvio($idEnvio);
+
+            return $this->jsonResponse($response, [
+                'error' => false,
+                'mensaje' => 'Envío restaurado a pendientes correctamente'
+            ]);
+        } catch (\Exception $e) {
+            return $this->jsonResponse($response, [
+                'error' => true,
+                'mensaje' => $e->getMessage()
+            ], 400);
         }
     }
 

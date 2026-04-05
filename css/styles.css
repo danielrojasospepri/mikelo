@@ -2,6 +2,14 @@
     min-height: 100vh;
 }
 
+/* Ocultar sidebar hasta que updateUI() revele los items permitidos */
+.nav-sidebar {
+    visibility: hidden;
+}
+.nav-sidebar.sidebar-ready {
+    visibility: visible;
+}
+
 #buscarProducto {
     margin-bottom: 1rem;
 }

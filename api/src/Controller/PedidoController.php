@@ -137,8 +137,11 @@ class PedidoController {
             $usuarioId = $request->getAttribute('usuario_id');
             $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
 
-            // Validar que sea franquicia
-            if ($usuarioRolNivel < 30) {
+            // Admin puede crear pedidos en nombre de cualquier sucursal (para testing y supervisión)
+            $esAdmin = $usuarioRolNivel <= 10;
+
+            // Validar que sea franquicia o admin
+            if (!$esAdmin && $usuarioRolNivel < 30) {
                 return $this->jsonResponse($response, [
                     'error' => true,
                     'mensaje' => 'Solo las franquicias pueden crear pedidos'
@@ -153,25 +156,34 @@ class PedidoController {
                 ], 400);
             }
 
-            // Obtener sucursal del usuario
-            $stmt = $this->db->prepare("
-                SELECT id_sucursal FROM usuario_sucursales 
-                WHERE id_usuario = ? AND es_sucursal_principal = 1
-                LIMIT 1
-            ");
-            $stmt->execute([$usuarioId]);
-            $sucursal = $stmt->fetch(\PDO::FETCH_ASSOC);
-            
-            if (!$sucursal) {
-                return $this->jsonResponse($response, [
-                    'error' => true,
-                    'mensaje' => 'Usuario no tiene sucursal asignada'
-                ], 400);
+            // Obtener sucursal: admin puede pasar id_sucursal explícito, sino usar la del usuario
+            $idSucursal = null;
+
+            if (!empty($datos['id_sucursal'])) {
+                // Sucursal explícita enviada desde el frontend (admin o multi-sucursal)
+                $idSucursal = (int)$datos['id_sucursal'];
+            } else {
+                // Buscar la sucursal principal del usuario
+                $stmt = $this->db->prepare("
+                    SELECT id_sucursal FROM usuario_sucursales 
+                    WHERE id_usuario = ? AND es_sucursal_principal = 1
+                    LIMIT 1
+                ");
+                $stmt->execute([$usuarioId]);
+                $sucursal = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                if (!$sucursal) {
+                    return $this->jsonResponse($response, [
+                        'error' => true,
+                        'mensaje' => 'Usuario no tiene sucursal asignada. Seleccione una sucursal.'
+                    ], 400);
+                }
+                $idSucursal = $sucursal['id_sucursal'];
             }
 
             $pedidoModel = new Pedido($this->db);
             $idPedido = $pedidoModel->crear(
-                $sucursal['id_sucursal'],
+                $idSucursal,
                 $usuarioId,
                 $datos['items'],
                 $datos['observaciones'] ?? null,
@@ -203,15 +215,10 @@ class PedidoController {
             $datos = $request->getParsedBody();
             $usuarioId = $request->getAttribute('usuario_id');
 
-            if (empty($datos['id_envio'])) {
-                return $this->jsonResponse($response, [
-                    'error' => true,
-                    'mensaje' => 'Debe especificar el ID del envío'
-                ], 400);
-            }
+            $idEnvio = !empty($datos['id_envio']) ? (int)$datos['id_envio'] : null;
 
             $pedidoModel = new Pedido($this->db);
-            $pedidoModel->enviar($idPedido, $datos['id_envio'], $usuarioId);
+            $pedidoModel->enviar($idPedido, $idEnvio, $usuarioId);
 
             return $this->jsonResponse($response, [
                 'error' => false,
@@ -247,6 +254,47 @@ class PedidoController {
 
         } catch (\Exception $e) {
             error_log("Error al anular pedido: " . $e->getMessage());
+            return $this->jsonResponse($response, [
+                'error' => true,
+                'mensaje' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * PUT /pedidos/{id}/recibir
+     * Marcar pedido como recibido (sucursal confirma recepción)
+     */
+    public function recibir(Request $request, Response $response, array $args): Response {
+        try {
+            $idPedido = (int)$args['id'];
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioRolNivel = $request->getAttribute('usuario_rol_nivel');
+
+            // Verificar acceso si es franquicia
+            if ($usuarioRolNivel >= 30) {
+                $stmt = $this->db->prepare("SELECT id_sucursal FROM pedidos WHERE id = ?");
+                $stmt->execute([$idPedido]);
+                $pedido = $stmt->fetch(\PDO::FETCH_ASSOC);
+                if (!$pedido) throw new \Exception("Pedido no encontrado");
+
+                $stmt = $this->db->prepare("
+                    SELECT 1 FROM usuario_sucursales WHERE id_usuario = ? AND id_sucursal = ?
+                ");
+                $stmt->execute([$usuarioId, $pedido['id_sucursal']]);
+                if (!$stmt->fetch()) throw new \Exception("No tiene acceso a este pedido");
+            }
+
+            $pedidoModel = new Pedido($this->db);
+            $pedidoModel->marcarRecibido($idPedido, $usuarioId);
+
+            return $this->jsonResponse($response, [
+                'error' => false,
+                'mensaje' => 'Pedido marcado como recibido'
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Error al recibir pedido: " . $e->getMessage());
             return $this->jsonResponse($response, [
                 'error' => true,
                 'mensaje' => $e->getMessage()
@@ -324,10 +372,29 @@ class PedidoController {
      */
     public function productosDisponibles(Request $request, Response $response): Response {
         try {
-            // Obtener TODOS los productos habilitados para franquicias (sin filtrar por stock)
-            // Los pedidos son solicitudes - la planta produce según demanda
+            $queryParams = $request->getQueryParams();
+            $idSucursal  = isset($queryParams['id_sucursal']) ? (int)$queryParams['id_sucursal'] : null;
+
+            // Determinar si la sucursal es franquicia (default: sí, para ser conservador)
+            $esFranquicia = true;
+            if ($idSucursal) {
+                $stmt = $this->db->prepare("
+                    SELECT franquicia FROM ubicaciones
+                    WHERE id = ? AND tipo_ubicacion = 'sucursal'
+                ");
+                $stmt->execute([$idSucursal]);
+                $ub = $stmt->fetch(\PDO::FETCH_ASSOC);
+                if ($ub !== false) {
+                    $esFranquicia = (int)$ub['franquicia'] === 1;
+                }
+            }
+
+            // Si es franquicia solo traer productos habilitados; si es sucursal propia, traer todos
+            $whereFranquicia = $esFranquicia ? "AND p.disponible_franquicias = 1" : "";
+
+            // Obtener productos habilitados (sin filtrar por stock — los pedidos son solicitudes)
             $stmt = $this->db->prepare("
-                SELECT 
+                SELECT
                     p.id,
                     p.codigo,
                     p.descripcion as nombre,
@@ -343,7 +410,7 @@ class PedidoController {
                     ), 0) as stock_disponible
                 FROM productos p
                 LEFT JOIN tipo_producto tp ON p.id_tipo_producto = tp.id
-                LEFT JOIN movimientos_items mi ON mi.id_productos = p.id 
+                LEFT JOIN movimientos_items mi ON mi.id_productos = p.id
                     AND mi.id_movimientos_items_origen IS NULL
                     AND mi.cnt > IFNULL((
                         SELECT IFNULL(SUM(mi3.cnt), 0)
@@ -356,8 +423,7 @@ class PedidoController {
                         WHERE eim.id_movimientos_items = mi.id
                         AND e.nombre = 'BAJA'
                     )
-                WHERE p.disponible_franquicias = 1
-                  AND p.activo = 1
+                WHERE p.activo = 1 $whereFranquicia
                 GROUP BY p.id, p.codigo, p.descripcion, p.id_tipo_producto, tp.nombre, p.disponible_franquicias
                 ORDER BY p.descripcion
             ");

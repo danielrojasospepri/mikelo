@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carga de Stock Inicial - J.A.R.V.I.S</title>
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .input-cantidad {
+            width: 90px;
+            text-align: right;
+        }
+        .fila-modificada {
+            background-color: #fff3cd !important;
+        }
+        .fila-con-stock {
+            background-color: #d4edda !important;
+        }
+        .fila-modificada.fila-con-stock {
+            background-color: #c3e6cb !important;
+        }
+        #buscadorProducto {
+            max-width: 300px;
+        }
+        .badge-familia {
+            font-size: 0.75em;
+        }
+        .contador-cambios {
+            font-weight: bold;
+            color: #856404;
+        }
+        #btnGuardarStock {
+            position: sticky;
+            bottom: 20px;
+        }
+        .sticky-footer-bar {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 12px 16px;
+            z-index: 100;
+            box-shadow: 0 -2px 8px rgba(0,0,0,.1);
+        }
+        .estado-carga {
+            font-size: 0.85em;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <i class="fas fa-user-circle mr-1"></i>
+                        <span id="userName">Usuario</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <span class="dropdown-item-text">
+                            <small class="text-muted" id="userSucursalInfo">-</small>
+                        </span>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                        </a>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="index.html" class="brand-link">
+                <img src="img/logo.png" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">  J . A . R . V . I . S</span>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                        <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="stock_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-boxes"></i>
+                                <p>Mi Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="baja_stock.html" class="nav-link">
+                                <i class="nav-icon fas fa-minus-circle"></i>
+                                <p>Baja de Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia-admin>
+                            <a href="stock_minimo.html" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Stock Mínimo</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia-admin>
+                            <a href="carga_inicial_sucursal.html" class="nav-link active">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Carga de Stock Inicial</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="pedidos_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Mis Pedidos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="recepciones.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck-loading"></i>
+                                <p>Recepciones</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_produccion.html" class="nav-link">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Pedidos Pendientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_faltantes.html" class="nav-link">
+                                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                                <p>Panel Faltantes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="index.html" class="nav-link">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="alta_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Alta en Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="envios.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Envíos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="stock_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="productos_abm.html" class="nav-link">
+                                <i class="nav-icon fas fa-box-open"></i>
+                                <p>Productos / Familias</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="usuarios.html" class="nav-link">
+                                <i class="nav-icon fas fa-users-cog"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="sucursales.html" class="nav-link">
+                                <i class="nav-icon fas fa-store-alt"></i>
+                                <p>Sucursales</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">AYUDA</li>
+                        <li class="nav-item">
+                            <a href="manual.html" class="nav-link">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>Manual de Usuario</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-warehouse mr-2"></i>Carga de Stock Inicial</h1>
+                            <p class="text-muted mb-0" id="nombreSucursal"></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="stock_sucursal.html">Stock</a></li>
+                                <li class="breadcrumb-item active">Carga Inicial</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content">
+                <div class="container-fluid">
+
+                    <!-- Info Cards -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="totalProductos">—</h3>
+                                    <p>Total Productos</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-list"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3 id="totalConStock">—</h3>
+                                    <p>Con Stock Cargado</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-check-circle"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3 id="totalSinStock">—</h3>
+                                    <p>Sin Stock Cargado</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-secondary">
+                                <div class="inner">
+                                    <h3 id="totalModificados">0</h3>
+                                    <p>Modificados (sin guardar)</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-edit"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de contexto -->
+                    <div class="alert alert-info alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>¿Para qué sirve esta pantalla?</strong>
+                        Ingresá la cantidad real de cada producto que tiene la sucursal
+                        <em>en este momento</em>. Esto establece el stock inicial y permite
+                        a partir de aquí registrar recepciones, bajas y pedidos con datos reales.
+                        Podés volver a usar esta pantalla en cualquier momento para corregir el inventario.
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="card card-outline card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-filter mr-1"></i>Filtros
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-end">
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label>Buscar producto</label>
+                                        <input type="text" id="buscadorProducto"
+                                               class="form-control"
+                                               placeholder="Nombre o código...">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-0">
+                                        <label>Familia</label>
+                                        <select id="filtroFamilia" class="form-control">
+                                            <option value="">Todas las familias</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-0">
+                                        <label>Mostrar</label>
+                                        <select id="filtroMostrar" class="form-control">
+                                            <option value="todos">Todos los productos</option>
+                                            <option value="con-stock">Solo con stock cargado</option>
+                                            <option value="sin-stock">Solo sin stock</option>
+                                            <option value="modificados">Solo modificados</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-outline-secondary btn-block" onclick="limpiarFiltros()">
+                                        <i class="fas fa-times mr-1"></i>Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de productos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-table mr-1"></i>
+                                Productos — ingresá la cantidad actual en cada sucursal
+                            </h3>
+                            <div class="card-tools">
+                                <span class="badge badge-warning mr-2" id="badgeModificados" style="display:none;">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    <span id="txtModificados">0</span> sin guardar
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="cargarDatos()" title="Recargar">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0" id="tablaProductos">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th style="width:90px">Código</th>
+                                            <th>Producto</th>
+                                            <th style="width:130px">Familia</th>
+                                            <th style="width:110px" class="text-right">Stock Actual</th>
+                                            <th style="width:130px" class="text-center">Nueva Cantidad</th>
+                                            <th style="width:80px" class="text-center">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                                <p class="mt-2">Cargando productos...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra fija de guardado -->
+                    <div class="sticky-footer-bar" id="barraGuardado" style="display:none;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="estado-carga text-muted">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Tenés <strong id="txtCambiosPendientes">0</strong> cambio(s) sin guardar.
+                                    Al guardar, el stock de la sucursal quedará con las cantidades ingresadas.
+                                </p>
+                            </div>
+                            <div>
+                                <button class="btn btn-secondary mr-2" onclick="descartarCambios()">
+                                    <i class="fas fa-undo mr-1"></i>Descartar
+                                </button>
+                                <button class="btn btn-success btn-lg" id="btnGuardarStock" onclick="guardarStockInicial()">
+                                    <i class="fas fa-save mr-2"></i>Guardar Stock Inicial
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <footer class="main-footer">
+            <strong>J.A.R.V.I.S</strong> - Carga de Stock Inicial de Sucursal
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        // ── Estado ────────────────────────────────────────────────────────────
+        let todosLosProductos = [];   // array completo desde la API
+        let cambiosPendientes = {};   // { id_producto: nuevaCantidad }
+
+        // ── Inicialización ────────────────────────────────────────────────────
+        $(document).ready(async function() {
+            const autenticado = await MikeloAuth.requireAuth();
+            if (!autenticado) return;
+
+            if (!MikeloAuth.isFranquiciaAdmin()) {
+                Swal.fire('Acceso Denegado', 'Solo los administradores de sucursal pueden acceder a esta sección', 'error')
+                    .then(() => window.location.href = 'stock_sucursal.html');
+                return;
+            }
+
+            const sucursal = MikeloAuth.getSucursalPrincipal();
+            if (sucursal) {
+                $('#nombreSucursal').text(sucursal.sucursal || sucursal.nombre || '');
+            }
+
+            MikeloAuth.updateUI();
+
+            // Eventos de filtro en tiempo real
+            $('#buscadorProducto').on('input', aplicarFiltros);
+            $('#filtroFamilia').on('change', aplicarFiltros);
+            $('#filtroMostrar').on('change', aplicarFiltros);
+
+            await cargarDatos();
+        });
+
+        // ── Carga de datos desde la API ───────────────────────────────────────
+        async function cargarDatos() {
+            $('#tablaBody').html(`
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Cargando productos...</p>
+                    </td>
+                </tr>
+            `);
+
+            try {
+                const resp = await MikeloAuth.fetch('/stock-sucursal/carga-inicial');
+                if (!resp) return;
+                const data = await resp.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje || 'Error al cargar productos');
+                }
+
+                todosLosProductos = data.productos || [];
+                cambiosPendientes = {};
+
+                poblarFiltroFamilias(todosLosProductos);
+                actualizarContadores();
+                aplicarFiltros();
+                actualizarBarraGuardado();
+
+            } catch (e) {
+                $('#tablaBody').html(`
+                    <tr>
+                        <td colspan="6" class="text-center text-danger py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p>${e.message}</p>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="cargarDatos()">
+                                <i class="fas fa-sync-alt mr-1"></i>Reintentar
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+
+        // ── Poblar filtro de familias ─────────────────────────────────────────
+        function poblarFiltroFamilias(productos) {
+            const familias = [...new Set(
+                productos.map(p => p.familia).filter(Boolean)
+            )].sort();
+
+            const sel = $('#filtroFamilia');
+            sel.empty().append('<option value="">Todas las familias</option>');
+            familias.forEach(f => sel.append(`<option value="${f}">${f}</option>`));
+        }
+
+        // ── Aplicar filtros ───────────────────────────────────────────────────
+        function aplicarFiltros() {
+            const texto   = $('#buscadorProducto').val().toLowerCase().trim();
+            const familia = $('#filtroFamilia').val();
+            const mostrar = $('#filtroMostrar').val();
+
+            let filtrados = todosLosProductos.filter(p => {
+                if (texto && !p.descripcion.toLowerCase().includes(texto) &&
+                             !p.codigo.toLowerCase().includes(texto)) return false;
+                if (familia && p.familia !== familia) return false;
+
+                const cantActual = parseFloat(p.cantidad_actual) || 0;
+                const cambio = cambiosPendientes.hasOwnProperty(p.id_producto)
+                    ? cambiosPendientes[p.id_producto]
+                    : null;
+                const tieneStock = cantActual > 0 || (cambio !== null && cambio > 0);
+
+                if (mostrar === 'con-stock' && !tieneStock) return false;
+                if (mostrar === 'sin-stock' && tieneStock) return false;
+                if (mostrar === 'modificados' && !cambiosPendientes.hasOwnProperty(p.id_producto)) return false;
+                return true;
+            });
+
+            renderizarTabla(filtrados);
+        }
+
+        // ── Renderizar tabla ──────────────────────────────────────────────────
+        function renderizarTabla(productos) {
+            if (productos.length === 0) {
+                $('#tablaBody').html(`
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>No hay productos que coincidan con los filtros.</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            let familiaActual = null;
+
+            productos.forEach(p => {
+                const cantActual = parseFloat(p.cantidad_actual) || 0;
+                const estaModificado = cambiosPendientes.hasOwnProperty(p.id_producto);
+                const cantMostrar = estaModificado
+                    ? cambiosPendientes[p.id_producto]
+                    : cantActual;
+
+                // Separador de familia
+                if (p.familia !== familiaActual) {
+                    familiaActual = p.familia;
+                    html += `
+                        <tr class="table-secondary">
+                            <td colspan="6" class="py-1 px-3">
+                                <strong><i class="fas fa-layer-group mr-1"></i>${p.familia || 'Sin familia'}</strong>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                const clasesFila = [];
+                if (estaModificado) clasesFila.push('fila-modificada');
+                if (!estaModificado && cantActual > 0) clasesFila.push('fila-con-stock');
+
+                const estadoBadge = estaModificado
+                    ? '<span class="badge badge-warning"><i class="fas fa-edit"></i></span>'
+                    : (cantActual > 0
+                        ? '<span class="badge badge-success"><i class="fas fa-check"></i></span>'
+                        : '<span class="badge badge-light text-muted">—</span>');
+
+                html += `
+                    <tr class="${clasesFila.join(' ')}" data-id="${p.id_producto}">
+                        <td><span class="badge badge-secondary">${escHtml(p.codigo)}</span></td>
+                        <td>${escHtml(p.descripcion)}</td>
+                        <td><small class="text-muted">${escHtml(p.familia || '—')}</small></td>
+                        <td class="text-right ${cantActual > 0 ? 'text-success font-weight-bold' : 'text-muted'}">
+                            ${cantActual > 0 ? cantActual : '—'}
+                        </td>
+                        <td class="text-center">
+                            <input type="number"
+                                   class="form-control form-control-sm input-cantidad d-inline-block"
+                                   data-id="${p.id_producto}"
+                                   data-original="${cantActual}"
+                                   value="${cantMostrar > 0 ? cantMostrar : ''}"
+                                   min="0"
+                                   step="1"
+                                   placeholder="0">
+                        </td>
+                        <td class="text-center">${estadoBadge}</td>
+                    </tr>
+                `;
+            });
+
+            $('#tablaBody').html(html);
+
+            // Vincular eventos de los inputs
+            $('#tablaBody').find('.input-cantidad').off('input').on('input', function() {
+                const idProducto = parseInt($(this).data('id'));
+                const cantOriginal = parseFloat($(this).data('original')) || 0;
+                const cantNueva = parseFloat($(this).val());
+
+                if (isNaN(cantNueva) || $(this).val().trim() === '') {
+                    delete cambiosPendientes[idProducto];
+                } else if (cantNueva !== cantOriginal) {
+                    cambiosPendientes[idProducto] = cantNueva;
+                } else {
+                    delete cambiosPendientes[idProducto];
+                }
+
+                actualizarFilaEstado($(this).closest('tr'), idProducto, cantOriginal, cantNueva);
+                actualizarContadores();
+                actualizarBarraGuardado();
+            });
+        }
+
+        // ── Actualizar estado visual de una fila ──────────────────────────────
+        function actualizarFilaEstado($tr, idProducto, cantOriginal, cantNueva) {
+            const estaModificado = cambiosPendientes.hasOwnProperty(idProducto);
+            const tieneStock = cantOriginal > 0;
+
+            $tr.removeClass('fila-modificada fila-con-stock');
+            if (estaModificado) {
+                $tr.addClass('fila-modificada');
+            } else if (tieneStock) {
+                $tr.addClass('fila-con-stock');
+            }
+
+            const estadoBadge = estaModificado
+                ? '<span class="badge badge-warning"><i class="fas fa-edit"></i></span>'
+                : (cantOriginal > 0
+                    ? '<span class="badge badge-success"><i class="fas fa-check"></i></span>'
+                    : '<span class="badge badge-light text-muted">—</span>');
+            $tr.find('td:last-child').html(estadoBadge);
+        }
+
+        // ── Actualizar contadores (info cards y badge) ─────────────────────────
+        function actualizarContadores() {
+            const total = todosLosProductos.length;
+            const conStock = todosLosProductos.filter(p =>
+                parseFloat(p.cantidad_actual) > 0
+            ).length;
+            const modificados = Object.keys(cambiosPendientes).length;
+
+            $('#totalProductos').text(total);
+            $('#totalConStock').text(conStock);
+            $('#totalSinStock').text(total - conStock);
+            $('#totalModificados').text(modificados);
+            $('#txtModificados').text(modificados);
+
+            if (modificados > 0) {
+                $('#badgeModificados').show();
+            } else {
+                $('#badgeModificados').hide();
+            }
+        }
+
+        // ── Barra de guardado ────────────────────────────────────────────────
+        function actualizarBarraGuardado() {
+            const n = Object.keys(cambiosPendientes).length;
+            if (n > 0) {
+                $('#txtCambiosPendientes').text(n);
+                $('#barraGuardado').show();
+            } else {
+                $('#barraGuardado').hide();
+            }
+        }
+
+        // ── Limpiar filtros ───────────────────────────────────────────────────
+        function limpiarFiltros() {
+            $('#buscadorProducto').val('');
+            $('#filtroFamilia').val('');
+            $('#filtroMostrar').val('todos');
+            aplicarFiltros();
+        }
+
+        // ── Descartar cambios ────────────────────────────────────────────────
+        function descartarCambios() {
+            cambiosPendientes = {};
+            aplicarFiltros();
+            actualizarContadores();
+            actualizarBarraGuardado();
+            Swal.fire({
+                icon: 'info',
+                title: 'Cambios descartados',
+                toast: true,
+                position: 'top-end',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        // ── Guardar stock inicial ─────────────────────────────────────────────
+        async function guardarStockInicial() {
+            const idProductos = Object.keys(cambiosPendientes);
+            if (idProductos.length === 0) {
+                Swal.fire('Sin cambios', 'No hay cantidades modificadas para guardar.', 'info');
+                return;
+            }
+
+            const productosList = idProductos.map(id => ({
+                id_producto: parseInt(id),
+                cantidad: cambiosPendientes[id]
+            }));
+
+            const confirmResult = await Swal.fire({
+                title: '¿Guardar stock inicial?',
+                html: `Se actualizará el stock de <strong>${productosList.length}</strong> producto(s).<br>
+                       <small class="text-muted">Esta operación registra los cambios como ajuste de inventario.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-save mr-1"></i>Sí, guardar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            $('#btnGuardarStock').prop('disabled', true).html(
+                '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...'
+            );
+
+            try {
+                const resp = await MikeloAuth.fetch('/stock-sucursal/carga-inicial', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productos: productosList,
+                        observaciones: 'Carga de stock inicial'
+                    })
+                });
+
+                if (!resp) return;
+                const data = await resp.json();
+
+                if (data.error) {
+                    throw new Error(data.mensaje || 'Error al guardar');
+                }
+
+                let mensajeExtra = '';
+                if (data.errores && data.errores.length > 0) {
+                    mensajeExtra = `<br><small class="text-warning">${data.errores.length} error(es): ${data.errores.slice(0,3).join(', ')}</small>`;
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Stock guardado!',
+                    html: `${data.mensaje}${mensajeExtra}`,
+                    confirmButtonText: 'OK'
+                });
+
+                // Recargar datos para reflejar los cambios guardados
+                await cargarDatos();
+
+            } catch (e) {
+                Swal.fire('Error', e.message || 'No se pudo guardar el stock', 'error');
+            } finally {
+                $('#btnGuardarStock').prop('disabled', false).html(
+                    '<i class="fas fa-save mr-2"></i>Guardar Stock Inicial'
+                );
+            }
+        }
+
+        // ── Helper HTML escape ────────────────────────────────────────────────
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>

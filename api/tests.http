@@ -1,5 +1,5 @@
 ### Variables globales
-@baseUrl = http://localhost/mikelo/api
+@baseUrl = http://localhost/test/api
 @contentType = application/json
 
 ### Test de conexión básica

@@ -4,12 +4,14 @@ $(document).ready(function() {
     let envioActual = null;
     let html5QrcodeScanner = null;
     let timeoutBusqueda = null;
+    let pedidoOrigenId = null;  // ID del pedido desde el que se originó este envío
+    let pedidoItems = [];        // Ítems originales del pedido, para calcular faltantes
 
     // Establecer fechas por defecto
     establecerFechasPorDefecto();
 
     // Inicialización
-    cargarUbicaciones();
+    const promesaUbicaciones = cargarUbicaciones();
     cargarEstados();
     cargarFamilias();
     cargarEnvios();
@@ -152,12 +154,18 @@ $(document).ready(function() {
         // Solo limpiar si no estamos editando
         if (!window._editandoEnvio) {
             limpiarFormularioEnvio();
+            // Mostrar pedidos pendientes para referencia (solo si no viene de ?pedido= param)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('pedido')) {
+                cargarPedidosPendientesPanel();
+            }
         }
     }
 
     function cerrarPanelNuevoEnvio() {
         $('#panelNuevoEnvio').slideUp();
         $('#panelFiltros, #panelTablaEnvios').slideDown();
+        $('#panelPedidosPendientes').empty();
         cargarEnvios(); // Refrescar tabla
     }
 
@@ -166,6 +174,7 @@ $(document).ready(function() {
         $('#sectionBusquedaProductos').show();
         limpiarFormularioEnvio();
         $('#destinoEnvio').focus();
+        $('#panelPedidosPendientes').empty(); // limpiar panel de referencia al crear otro
     }
 
     function limpiarFormularioEnvio() {
@@ -176,9 +185,12 @@ $(document).ready(function() {
         $('#productosEnvio').hide();
         $('#panelPostGuardado').hide();
         $('#estadoOperacionEnvio').hide();
+        $('#panelFaltantesPedido').remove();
         
         productosEnEnvio = [];
         envioActual = null;
+        pedidoOrigenId = null;
+        pedidoItems = [];
         actualizarTablaProductosEnvio();
     }
 
@@ -196,6 +208,93 @@ $(document).ready(function() {
             .show();
         $('#estadoTextoEnvio').text(mensaje);
     }
+
+    // === PEDIDOS PENDIENTES PANEL DE REFERENCIA ===
+
+    async function cargarPedidosPendientesPanel() {
+        const $panel = $('#panelPedidosPendientes');
+        $panel.html(`
+            <div class="alert alert-light border py-2 px-3" id="spinnerPedidosPendientes">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Cargando pedidos pendientes...
+            </div>`);
+
+        try {
+            const resp = await MikeloAuth.fetch('/pedidos?estado=PENDIENTE');
+            if (!resp) { $panel.empty(); return; }
+            const data = await resp.json();
+
+            const pedidos = (data.pedidos || data.data || []).filter(p =>
+                p.estado === 'PENDIENTE' || p.ultimo_estado === 'PENDIENTE'
+            );
+
+            if (pedidos.length === 0) {
+                $panel.empty();
+                return;
+            }
+
+            let filas = pedidos.map(p => {
+                const fecha = p.fecha_pedido || p.fechaAlta || p.fecha || '';
+                const fechaFmt = fecha ? new Date(fecha).toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'}) : '—';
+                const sucursal = p.sucursal || p.nombre_sucursal || 'Sucursal #' + p.id_sucursal;
+                const items = p.cantidad_items || (p.items ? p.items.length : '?');
+                return `
+                    <tr>
+                        <td><span class="badge badge-secondary">#${p.id}</span></td>
+                        <td>${sucursal}</td>
+                        <td class="text-center">${fechaFmt}</td>
+                        <td class="text-center">${items}</td>
+                        <td class="text-center">
+                            <button class="btn btn-xs btn-primary" onclick="usarPedidoPendiente(${p.id})" title="Crear envío para este pedido">
+                                <i class="fas fa-truck mr-1"></i>Usar
+                            </button>
+                        </td>
+                    </tr>`;
+            }).join('');
+
+            $panel.html(`
+                <div class="card card-outline card-warning mb-3" id="cardPedidosPendientes">
+                    <div class="card-header py-2">
+                        <h3 class="card-title">
+                            <i class="fas fa-clipboard-list mr-2"></i>
+                            Pedidos pendientes de envío
+                            <span class="badge badge-warning ml-2">${pedidos.length}</span>
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Minimizar">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width:60px">Pedido</th>
+                                        <th>Sucursal</th>
+                                        <th class="text-center" style="width:110px">Fecha</th>
+                                        <th class="text-center" style="width:70px">Ítems</th>
+                                        <th class="text-center" style="width:80px">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${filas}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small py-1">
+                        <i class="fas fa-info-circle mr-1"></i>Hacé clic en <strong>Usar</strong> para pre-cargar el destino y ver qué falta enviar.
+                    </div>
+                </div>`);
+        } catch(e) {
+            console.warn('No se pudieron cargar pedidos pendientes:', e);
+            $panel.empty();
+        }
+    }
+
+    window.usarPedidoPendiente = function(idPedido) {
+        // Redirigir a la misma página con el parámetro del pedido
+        window.location.href = 'envios_nuevo.html?pedido=' + idPedido;
+    };
 
     // === BÚSQUEDA DE PRODUCTOS ===
 
@@ -393,7 +492,10 @@ $(document).ready(function() {
         }
 
         // PASO 2: Agregar nuevo item (primera vez o siguiente disponible)
-        const cantidadInicial = 1;
+        const cantidadInicial = Math.min(
+            producto._cantidadSugerida || 1,
+            parseFloat(producto.cnt_disponible !== undefined ? producto.cnt_disponible : producto.cnt)
+        );
         const pesoUnitario = producto.cnt_peso / producto.cnt; // Peso por unidad
         const pesoInicial = (pesoUnitario * cantidadInicial).toFixed(3);
 
@@ -423,6 +525,7 @@ $(document).ready(function() {
 
         if (productosEnEnvio.length === 0) {
             $('#productosEnvio').hide();
+            actualizarPanelFaltantes();
             return;
         }
 
@@ -474,6 +577,69 @@ $(document).ready(function() {
         });
 
         $('#productosEnvio').show();
+
+        // Reflejar cambios en el panel de faltantes (si existe)
+        actualizarPanelFaltantes();
+    }
+
+    function actualizarPanelFaltantes() {
+        const $panel = $('#panelFaltantesPedido');
+        if (!$panel.length || pedidoItems.length === 0) return;
+
+        $panel.find('tr[data-id-producto]').each(function() {
+            const $tr         = $(this);
+            const idProducto  = parseInt($tr.data('id-producto'));
+            const cantPedida  = parseFloat($tr.data('cant-pedida')  || 0);
+            const cantEnviada = parseFloat($tr.data('cant-enviada') || 0);
+            const stockDisp   = parseFloat($tr.data('stock-disp')   || 0);
+            const codigo      = $tr.data('codigo');
+
+            // Sumar lo que ya está agregado en el envío para este producto
+            // Usamos == (loose) para evitar mismatch string/número desde la API
+            const enEnvio = productosEnEnvio
+                .filter(p => parseInt(p.id_productos || p.id_producto) == idProducto)
+                .reduce((s, p) => s + parseFloat(p.cantidad || 1), 0);
+
+            const pendienteOriginal = Math.max(0, cantPedida - cantEnviada);
+            const pendienteActual   = Math.max(0, pendienteOriginal - enEnvio);
+            const completo          = pendienteActual === 0;
+
+            // Actualizar celda Pendiente
+            $tr.find('.td-pendiente').html(
+                completo
+                    ? '<span class="badge badge-success"><i class="fas fa-check mr-1"></i>Completo</span>'
+                    : `<strong>${pendienteActual}</strong>`
+            );
+
+            // Colorear fila
+            $tr.removeClass('table-warning table-success');
+            if (completo) {
+                $tr.addClass('table-success');
+            } else if (stockDisp <= 0) {
+                $tr.addClass('table-warning');
+            }
+
+            // Actualizar botón
+            if (completo) {
+                $tr.find('.td-accion').html(
+                    '<button class="btn btn-sm btn-success" disabled>' +
+                    '<i class="fas fa-check"></i> Listo</button>'
+                );
+            } else if (stockDisp > 0) {
+                // Restaurar botón si fue deshabilitado y ahora hay pendiente (ej. se quitó un producto)
+                const $btn = $tr.find('.td-accion .btn-agregar-faltante');
+                if (!$btn.length) {
+                    $tr.find('.td-accion').html(
+                        `<button class="btn btn-sm btn-primary btn-agregar-faltante"` +
+                        ` data-codigo="${codigo}" data-cantidad="${pendienteActual}"` +
+                        ` title="Buscar y agregar al envío">` +
+                        `<i class="fas fa-plus"></i> Agregar</button>`
+                    );
+                } else {
+                    $btn.data('cantidad', pendienteActual);
+                }
+            }
+        });
     }
 
     // Función para actualizar cantidad y recalcular peso
@@ -544,6 +710,10 @@ $(document).ready(function() {
                 return producto;
             })
         };
+        // Si viene de un pedido, vincularlo automáticamente
+        if (pedidoOrigenId) {
+            datosEnvio.id_pedido = pedidoOrigenId;
+        }
 
         console.log('Datos del envío a guardar:', datosEnvio);
 
@@ -557,7 +727,7 @@ $(document).ready(function() {
             exitoMsg = 'Envío editado correctamente';
         }
 
-        fetch(url, {
+        MikeloAuth.fetch(url.replace(/^api\//, '/'), {
             method: method,
             headers: {
                 'Content-Type': 'application/json'
@@ -655,7 +825,7 @@ $(document).ready(function() {
     }
 
     function cargarUbicaciones() {
-        fetch('api/ubicaciones')
+        return fetch('api/ubicaciones')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1281,6 +1451,153 @@ $(document).ready(function() {
             return null;
         }
     }
+
+    // === PRECARGA DESDE PEDIDO (por query param ?pedido=ID) ===
+    (function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pedidoParam = urlParams.get('pedido');
+        if (!pedidoParam) return;
+
+        const idPedido = parseInt(pedidoParam);
+        if (!idPedido) return;
+
+        MikeloAuth.fetch(`/pedidos/${idPedido}`)
+            .then(r => {
+                if (!r) return null; // 401 → MikeloAuth ya redirigió al login
+                return r.json();
+            })
+            .then(async (data) => {
+                if (!data) return;
+                if (data.error || !data.pedido) {
+                    Swal.fire('Error', 'No se pudo cargar el pedido #' + idPedido, 'error');
+                    return;
+                }
+
+                const pedido = data.pedido;
+                pedidoOrigenId = pedido.id;
+                pedidoItems = pedido.items || [];
+
+                // Esperar a que el select de destino esté poblado
+                await promesaUbicaciones;
+
+                // Mostrar panel de nuevo envío y setear destino
+                mostrarPanelNuevoEnvio();
+                $('#destinoEnvio').val(String(pedido.id_sucursal));
+                $('#sectionBusquedaProductos').slideDown();
+                setTimeout(() => $('#buscarProductoEnvio').focus(), 400);
+
+                // ── Construir panel de faltantes ──────────────────────────────
+                const items = pedido.items || [];
+
+                let filasHtml = '';
+                for (const item of items) {
+                    const cantPedida   = parseFloat(item.cantidad || 0);
+                    const stockDisp    = parseFloat(item.stock_disponible || 0);
+                    const cantEnviada  = parseFloat(item.cantidad_enviada || 0);
+                    const pendiente    = Math.max(0, cantPedida - cantEnviada);
+                    const codigo       = item.codigo_producto || item.codigo || '';
+                    const nombre       = item.nombre || item.producto || item.descripcion || codigo;
+
+                    const sinStock     = stockDisp <= 0;
+                    const rowClass     = sinStock ? 'table-warning' : '';
+                    const stockBadge   = sinStock
+                        ? `<span class="badge badge-warning">Sin stock</span>`
+                        : `<strong class="text-success">${stockDisp}</strong>`;
+
+                    const btnAgregar   = sinStock
+                        ? `<button class="btn btn-sm btn-secondary" disabled title="Sin stock disponible">
+                               <i class="fas fa-plus"></i>
+                           </button>`
+                        : `<button class="btn btn-sm btn-primary btn-agregar-faltante"
+                               data-codigo="${codigo}"
+                               data-cantidad="${pendiente}"
+                               title="Buscar y agregar al envío">
+                               <i class="fas fa-plus"></i> Agregar
+                           </button>`;
+
+                    filasHtml += `
+                        <tr class="${rowClass}" data-id-producto="${item.id_producto}" data-cant-pedida="${cantPedida}" data-cant-enviada="${cantEnviada}" data-stock-disp="${stockDisp}" data-codigo="${codigo}">
+                            <td><code>${codigo}</code></td>
+                            <td>${nombre}</td>
+                            <td class="text-center">${cantPedida}</td>
+                            <td class="text-center">${cantEnviada > 0 ? cantEnviada : '-'}</td>
+                            <td class="text-center td-pendiente"><strong>${pendiente}</strong></td>
+                            <td class="text-center td-stock">${stockBadge}</td>
+                            <td class="text-center td-accion">${btnAgregar}</td>
+                        </tr>`;
+                }
+
+                if (!filasHtml) {
+                    filasHtml = '<tr><td colspan="7" class="text-center text-muted">Sin ítems en el pedido</td></tr>';
+                }
+
+                const panelFaltantes = `
+                    <div class="card card-outline card-warning mb-3" id="panelFaltantesPedido">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-clipboard-list mr-2"></i>
+                                Faltante del Pedido <strong>#${pedido.id}</strong>
+                                <span class="ml-2 text-muted" style="font-size:0.9em;">
+                                    — ${pedido.sucursal || 'Sucursal #' + pedido.id_sucursal}
+                                </span>
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Minimizar">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Producto</th>
+                                            <th class="text-center">Pedido</th>
+                                            <th class="text-center">Ya enviado</th>
+                                            <th class="text-center">Pendiente</th>
+                                            <th class="text-center">Stock depósito</th>
+                                            <th class="text-center">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${filasHtml}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted small">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Usá el buscador de abajo para agregar productos al envío. El botón <em>Agregar</em> de cada fila carga automáticamente ese producto.
+                        </div>
+                    </div>`;
+
+                // Insertar el panel ANTES del campo de búsqueda
+                $('#sectionBusquedaProductos').prepend(panelFaltantes);
+
+                // ── Evento: botón Agregar de cada fila de faltantes ──────────
+                $(document).on('click', '.btn-agregar-faltante', function() {
+                    const codigo = $(this).data('codigo');
+
+                    // Poner el código en el buscador y disparar búsqueda normal.
+                    // Así el usuario ve TODOS los batches disponibles (crítico para
+                    // productos por peso, donde cada movimiento_item tiene su propio
+                    // cnt_peso) y elige el correcto, igual que si lo hubiese tipeado.
+                    $('#buscarProductoEnvio').val(codigo);
+                    buscarProductosDisponibles(codigo);
+
+                    // Hacer scroll hasta el buscador para que sea visible
+                    $('html, body').animate({
+                        scrollTop: $('#buscarProductoEnvio').offset().top - 120
+                    }, 300, function() {
+                        $('#buscarProductoEnvio').focus();
+                    });
+                });
+            })
+            .catch(e => {
+                console.error('Error cargando pedido:', e);
+                Swal.fire('Error', 'No se pudieron cargar los datos del pedido', 'error');
+            });
+    })();
 
     // Funciones globales
     window.confirmarEnvio = confirmarEnvio;

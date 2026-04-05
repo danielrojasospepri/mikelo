@@ -4,7 +4,7 @@
  */
 
 // Simular una petición HTTP al endpoint
-$url = 'http://localhost/mikelo/api/stock-deposito/pdf';
+$url = 'http://localhost/test/api/stock-deposito/pdf';
 
 echo "🧪 Probando endpoint: $url\n";
 echo str_repeat("=", 60) . "\n\n";

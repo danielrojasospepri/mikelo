@@ -12,43 +12,63 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(150deg, #c0392b 0%, #e67e22 60%, #f4a83a 100%);
             min-height: 100vh;
         }
         .login-box {
-            width: 400px;
-            margin-top: 10vh;
+            width: 420px;
+            margin-top: 8vh;
         }
         .login-logo {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            text-align: center;
         }
-        .login-logo a {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 700;
+        .logo-icono {
+            font-size: 3.2rem;
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 8px;
         }
-        .login-logo i {
-            color: #ffc107;
+        .logo-jarvis {
+            letter-spacing: 0.35rem;
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+        .logo-empresa {
+            letter-spacing: 0.2rem;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 4px;
+            text-transform: uppercase;
         }
         .card {
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 12px 45px rgba(0,0,0,0.25);
         }
         .card-body {
-            padding: 2rem;
+            padding: 2.2rem;
+        }
+        .login-box-msg {
+            color: #666;
+            font-size: 0.9rem;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #c0392b 0%, #e67e22 100%);
             border: none;
             padding: 12px;
             font-weight: 600;
+            letter-spacing: 0.04rem;
+            border-radius: 8px;
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+            background: linear-gradient(135deg, #a93226 0%, #ca6f1e 100%);
         }
         .input-group-text {
             background: #f8f9fa;
             border-right: none;
+            color: #c0392b;
         }
         .form-control {
             border-left: none;
@@ -61,16 +81,19 @@
             border-radius: 10px;
         }
         .version-info {
-            color: rgba(255,255,255,0.7);
-            font-size: 0.8rem;
-            margin-top: 20px;
+            color: rgba(255,255,255,0.65);
+            font-size: 0.78rem;
+            margin-top: 18px;
+            text-align: center;
         }
     </style>
 </head>
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <a href="#"><i class="fas fa-ice-cream"></i> Mikelo</a>
+            <div class="logo-icono"><i class="fas fa-ice-cream"></i></div>
+            <div class="logo-jarvis">J . A . R . V . I . S</div>
+            <div class="logo-empresa">Mikelo &mdash; Neuquén</div>
         </div>
         
         <div class="card">
@@ -117,10 +140,10 @@
                     </div>
                 </form>
 
-                <div class="text-center version-info">
-                    <small>Sistema de Gestión de Inventario v2.0</small>
-                </div>
             </div>
+        </div>
+        <div class="version-info">
+            Sistema de Gestión de Inventario &mdash; v2.0
         </div>
     </div>
 
@@ -134,10 +157,29 @@
     <script src="js/auth.js"></script>
     
     <script>
-        $(document).ready(function() {
-            // Si ya está autenticado, redirigir
+        $(document).ready(async function() {
+            const carpetaActual = '/' + window.location.pathname.split('/')[1];
+
+            // Limpiar token si: nunca se guardó entorno, o viene de otro entorno (ej: /mikelo → /test)
+            const entornoGuardado = localStorage.getItem('mikelo_entorno');
+            if (!entornoGuardado || entornoGuardado !== carpetaActual) {
+                localStorage.removeItem('mikelo_token');
+                localStorage.removeItem('mikelo_user');
+            }
+            // Guardar entorno actual
+            localStorage.setItem('mikelo_entorno', carpetaActual);
+
+            // Si hay token, validarlo contra el servidor antes de redirigir
             if (MikeloAuth.isAuthenticated()) {
-                redirectByRole();
+                const valid = await MikeloAuth.validateSession();
+                if (valid) {
+                    redirectByRole();
+                    return;
+                } else {
+                    // Token inválido o de otro entorno, limpiar silenciosamente
+                    localStorage.removeItem('mikelo_token');
+                    localStorage.removeItem('mikelo_user');
+                }
             }
 
             // Verificar si la sesión expiró

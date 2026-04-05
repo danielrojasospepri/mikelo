@@ -2,7 +2,7 @@
 # Para usar con REST Client (VSCode) o Postman
 
 @host = http://localhost
-@baseUrl = {{host}}/mikelo/api
+@baseUrl = {{host}}/test/api
 
 ### Test 1: Búsqueda Cantidad Exacta (PASO 1)
 # Pan Salvado código 405, cantidad exacta = 1

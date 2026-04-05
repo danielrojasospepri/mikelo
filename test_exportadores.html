@@ -74,10 +74,10 @@
         <h3>4. Test de URLs Directas</h3>
         <p>Links directos para probar las URLs:</p>
         <div class="downloads">
-            <a href="/mikelo/api/envios/pdf" target="_blank" class="download-link">📄 Lista PDF</a>
-            <a href="/mikelo/api/envios/excel" target="_blank" class="download-link">📊 Lista Excel</a>
-            <a href="/mikelo/api/envios/11/pdf" target="_blank" class="download-link">📄 Remito 11 PDF</a>
-            <a href="/mikelo/api/envios/11/excel" target="_blank" class="download-link">📊 Remito 11 Excel</a>
+            <a href="/test/api/envios/pdf" target="_blank" class="download-link">📄 Lista PDF</a>
+            <a href="/test/api/envios/excel" target="_blank" class="download-link">📊 Lista Excel</a>
+            <a href="/test/api/envios/11/pdf" target="_blank" class="download-link">📄 Remito 11 PDF</a>
+            <a href="/test/api/envios/11/excel" target="_blank" class="download-link">📊 Remito 11 Excel</a>
         </div>
     </div>
 
@@ -93,7 +93,7 @@
             const resultDiv = document.getElementById('apiResult');
             resultDiv.innerHTML = '⏳ Cargando envíos...';
             
-            fetch('/mikelo/api/envios')
+            fetch('/test/api/envios')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -116,13 +116,13 @@
 
         function exportarListaPDF() {
             const filtros = construirFiltros();
-            window.open(`/mikelo/api/envios/pdf?${filtros}`, '_blank');
+            window.open(`/test/api/envios/pdf?${filtros}`, '_blank');
             mostrarMensaje('PDF de lista enviado al navegador', 'success');
         }
 
         function exportarListaExcel() {
             const filtros = construirFiltros();
-            window.open(`/mikelo/api/envios/excel?${filtros}`, '_blank');
+            window.open(`/test/api/envios/excel?${filtros}`, '_blank');
             mostrarMensaje('Excel de lista enviado al navegador', 'success');
         }
 
@@ -132,7 +132,7 @@
                 mostrarMensaje('Debe ingresar un ID de envío', 'error');
                 return;
             }
-            window.open(`/mikelo/api/envios/${envioId}/pdf`, '_blank');
+            window.open(`/test/api/envios/${envioId}/pdf`, '_blank');
             mostrarMensaje(`Remito PDF del envío ${envioId} enviado al navegador`, 'success');
         }
 
@@ -142,7 +142,7 @@
                 mostrarMensaje('Debe ingresar un ID de envío', 'error');
                 return;
             }
-            window.open(`/mikelo/api/envios/${envioId}/excel`, '_blank');
+            window.open(`/test/api/envios/${envioId}/excel`, '_blank');
             mostrarMensaje(`Remito Excel del envío ${envioId} enviado al navegador`, 'success');
         }
 

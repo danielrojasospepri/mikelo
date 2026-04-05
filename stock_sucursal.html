@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         .content-wrapper { min-height: calc(100vh - 57px); }
         .stock-card { transition: all 0.3s; }
@@ -48,8 +49,7 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right">
                     <span class="dropdown-item-text">
-                        <small class="text-muted" id="userRole">Rol</small><br>
-                        <small class="text-muted" id="userSucursal">Sucursal</small>
+                        <small class="text-muted" id="userSucursalInfo">-</small>
                     </span>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
@@ -69,14 +69,14 @@
         <div class="sidebar">
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column">
-                    <li class="nav-header">MI SUCURSAL</li>
-                    <li class="nav-item">
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
                         <a href="stock_sucursal.html" class="nav-link active">
                             <i class="nav-icon fas fa-boxes"></i>
                             <p>Mi Stock</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
                         <a href="baja_stock.html" class="nav-link">
                             <i class="nav-icon fas fa-minus-circle"></i>
                             <p>Baja de Stock</p>
@@ -88,23 +88,35 @@
                             <p>Stock Mínimo</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia-admin>
+                        <a href="carga_inicial_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Carga de Stock Inicial</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
                         <a href="pedidos_sucursal.html" class="nav-link">
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>Mis Pedidos</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
                         <a href="recepciones.html" class="nav-link">
                             <i class="nav-icon fas fa-truck-loading"></i>
                             <p>Recepciones</p>
                         </a>
                     </li>
-                    <li class="nav-header" data-require-planta>PLANTA</li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
                     <li class="nav-item" data-require-planta>
                         <a href="panel_produccion.html" class="nav-link">
                             <i class="nav-icon fas fa-industry"></i>
-                            <p>Panel Producción</p>
+                            <p>Pedidos Pendientes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link">
+                            <i class="nav-icon fas fa-exclamation-triangle"></i>
+                            <p>Panel Faltantes</p>
                         </a>
                     </li>
                     <li class="nav-item" data-require-planta>
@@ -113,11 +125,55 @@
                             <p>Panel Principal</p>
                         </a>
                     </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="alta_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>Alta en Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="envios.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Envíos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="stock_deposito.html" class="nav-link">
+                            <i class="nav-icon fas fa-warehouse"></i>
+                            <p>Stock Depósito</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link">
+                            <i class="nav-icon fas fa-box-open"></i>
+                            <p>Productos / Familias</p>
+                        </a>
+                    </li>
                     <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
                     <li class="nav-item" data-require-admin>
                         <a href="usuarios.html" class="nav-link">
                             <i class="nav-icon fas fa-users-cog"></i>
                             <p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link">
+                            <i class="nav-icon fas fa-store-alt"></i>
+                            <p>Sucursales</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link">
+                            <i class="nav-icon fas fa-book"></i>
+                            <p>Manual de Usuario</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">SESIÓN</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>Cerrar Sesión</p>
                         </a>
                     </li>
                 </ul>
@@ -370,19 +426,19 @@
                 ? new Date(item.ultima_actualizacion).toLocaleDateString('es-AR')
                 : '-';
             
-            const peso = item.peso_total ? (item.peso_total / 1000).toFixed(2) + ' kg' : '-';
-            
+            const esPeso  = parseFloat(item.peso_total) > 0;
+            const pesoStr = esPeso ? parseFloat(item.peso_total).toFixed(3) + ' kg' : '—';
+            const cantBadge = esPeso
+                ? '<span class="text-muted">—</span>'
+                : `<span class="badge badge-stock ${parseFloat(item.cantidad_actual) > 0 ? 'badge-success' : 'badge-danger'}">${Math.round(item.cantidad_actual) || 0}</span>`;
+
             tbody.append(`
                 <tr>
                     <td><code>${item.codigo || '-'}</code></td>
                     <td>${item.producto || item.nombre}</td>
                     <td><span class="badge badge-secondary">${item.tipo_producto || '-'}</span></td>
-                    <td class="text-center">
-                        <span class="badge badge-stock ${item.cantidad_actual > 0 ? 'badge-success' : 'badge-danger'}">
-                            ${item.cantidad_actual || 0}
-                        </span>
-                    </td>
-                    <td class="text-right">${peso}</td>
+                    <td class="text-center">${cantBadge}</td>
+                    <td class="text-right ${esPeso ? 'font-weight-bold text-success' : ''}">${pesoStr}</td>
                     <td class="text-center">${fechaActualizacion}</td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-info" onclick="verHistorial(${item.id_producto})" title="Ver historial">
@@ -395,8 +451,15 @@
 
         // Inicializar DataTable
         dataTable = $('#tablaStock').DataTable({
+            destroy: true,
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'No se encontraron registros',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros totales)',
+                search: 'Buscar:',
+                paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' }
             },
             pageLength: 25,
             order: [[1, 'asc']],
@@ -432,7 +495,7 @@
                             <td>${fecha}</td>
                             <td><span class="badge badge-${tipoClass}">${h.tipo_movimiento}</span></td>
                             <td class="text-right">${signo}${h.cantidad}</td>
-                            <td class="text-right">${h.peso ? (h.peso/1000).toFixed(2) + ' kg' : '-'}</td>
+                            <td class="text-right">${h.peso && parseFloat(h.peso) !== 0 ? parseFloat(h.peso).toFixed(3) + ' kg' : '—'}</td>
                             <td>${h.referencia || '-'}</td>
                         </tr>
                     `);

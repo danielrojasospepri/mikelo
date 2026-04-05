@@ -143,6 +143,23 @@ class Pedido {
     }
 
     /**
+     * Marcar pedido como recibido manualmente (por la sucursal)
+     */
+    public function marcarRecibido($idPedido, $idUsuario) {
+        $stmt = $this->db->prepare("
+            UPDATE pedidos
+            SET estado = 'RECIBIDO'
+            WHERE id = ? AND estado NOT IN ('ANULADO', 'RECIBIDO')
+        ");
+        $stmt->execute([$idPedido]);
+
+        if ($stmt->rowCount() === 0) {
+            throw new \Exception("El pedido no existe, ya está recibido o está anulado");
+        }
+        return true;
+    }
+
+    /**
      * Obtener pedido por ID con sus items
      */
     public function obtenerPorId($idPedido) {
@@ -318,6 +335,58 @@ class Pedido {
     }
 
     /**
+     * Marcar pedido como enviado al asociarle un envío (usado por Planta)
+     */
+    public function enviar($idPedido, $idEnvio, $usuario) {
+        // Verificar que el pedido exista y esté en estado válido
+        $stmt = $this->db->prepare("SELECT id, estado FROM pedidos WHERE id = ?");
+        $stmt->execute([$idPedido]);
+        $pedido = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$pedido) {
+            throw new \Exception("Pedido no encontrado");
+        }
+        if ($pedido['estado'] === 'ANULADO') {
+            throw new \Exception("No se puede enviar un pedido anulado");
+        }
+        if ($pedido['estado'] === 'RECIBIDO') {
+            throw new \Exception("El pedido ya fue recibido");
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Vincular envío al pedido (si se proporcionó id_envio)
+            if ($idEnvio !== null) {
+                $stmt = $this->db->prepare(
+                    "SELECT id FROM pedido_envio WHERE id_pedido = ? AND id_envio = ?"
+                );
+                $stmt->execute([$idPedido, $idEnvio]);
+                if (!$stmt->fetch()) {
+                    $stmt = $this->db->prepare(
+                        "INSERT INTO pedido_envio (id_pedido, id_envio, asociado_por) VALUES (?, ?, ?)"
+                    );
+                    $stmt->execute([$idPedido, $idEnvio, $usuario]);
+                }
+            }
+
+            // Cambiar estado a ENVIADO
+            $stmt = $this->db->prepare(
+                "UPDATE pedidos SET estado = 'ENVIADO'
+                 WHERE id = ? AND estado NOT IN ('ANULADO','RECIBIDO','RECIBIDO_PARCIAL')"
+            );
+            $stmt->execute([$idPedido]);
+
+            $this->db->commit();
+            return true;
+
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Asociar un envío existente a un pedido
      * @param int $idPedido
      * @param int $idEnvio - ID del movimiento (envío existente)
@@ -388,7 +457,8 @@ class Pedido {
         $solicitada = (float) $totales['total_solicitada'];
         $enviada = (float) $totales['total_enviada'];
 
-        // Determinar nuevo estado (PENDIENTE, EN_PROCESO, ENVIADO, RECIBIDO, ANULADO)
+        // Determinar nuevo estado (PENDIENTE, EN_PROCESO, ENVIADO)
+        // Nota: RECIBIDO lo gestiona Recepcion::actualizarEstadoPedidoRecibido()
         $nuevoEstado = 'PENDIENTE';
 
         if ($enviada >= $solicitada) {
@@ -397,8 +467,11 @@ class Pedido {
             $nuevoEstado = 'EN_PROCESO';
         }
 
-        // Actualizar
-        $stmt = $this->db->prepare("UPDATE pedidos SET estado = ? WHERE id = ?");
+        // Actualizar solo si no está ya en RECIBIDO/RECIBIDO_PARCIAL/ANULADO
+        $stmt = $this->db->prepare("
+            UPDATE pedidos SET estado = ? 
+            WHERE id = ? AND estado NOT IN ('RECIBIDO', 'RECIBIDO_PARCIAL', 'ANULADO')
+        ");
         $stmt->execute([$nuevoEstado, $idPedido]);
     }
 

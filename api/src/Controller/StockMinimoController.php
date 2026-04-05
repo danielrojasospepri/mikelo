@@ -21,14 +21,15 @@ class StockMinimoController {
      */
     public function listar(Request $request, Response $response): Response {
         try {
-            $usuario = $request->getAttribute('usuario');
+            $usuarioId = $request->getAttribute('usuario_id');
+            $rolNivel = $request->getAttribute('usuario_rol_nivel');
             $params = $request->getQueryParams();
             
             // Obtener sucursal
             $idSucursal = $params['id_sucursal'] ?? null;
             
-            if (!$idSucursal && !empty($usuario['sucursales'])) {
-                $idSucursal = $usuario['sucursales'][0]['id_sucursal'];
+            if (!$idSucursal) {
+                $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $rolNivel);
             }
             
             if (!$idSucursal) {
@@ -61,14 +62,15 @@ class StockMinimoController {
      */
     public function faltantes(Request $request, Response $response): Response {
         try {
-            $usuario = $request->getAttribute('usuario');
+            $usuarioId = $request->getAttribute('usuario_id');
+            $rolNivel = $request->getAttribute('usuario_rol_nivel');
             $params = $request->getQueryParams();
             
             // Obtener sucursal
             $idSucursal = $params['id_sucursal'] ?? null;
             
-            if (!$idSucursal && !empty($usuario['sucursales'])) {
-                $idSucursal = $usuario['sucursales'][0]['id_sucursal'];
+            if (!$idSucursal) {
+                $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $rolNivel);
             }
             
             if (!$idSucursal) {
@@ -102,7 +104,9 @@ class StockMinimoController {
      */
     public function configurar(Request $request, Response $response): Response {
         try {
-            $usuario = $request->getAttribute('usuario');
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioNombre = $request->getAttribute('usuario_nombre') ?? 'sistema';
+            $rolNivel = $request->getAttribute('usuario_rol_nivel');
             $datos = $request->getParsedBody();
             
             // Validar datos
@@ -116,8 +120,8 @@ class StockMinimoController {
             // Obtener sucursal
             $idSucursal = $datos['id_sucursal'] ?? null;
             
-            if (!$idSucursal && !empty($usuario['sucursales'])) {
-                $idSucursal = $usuario['sucursales'][0]['id_sucursal'];
+            if (!$idSucursal) {
+                $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $rolNivel);
             }
             
             if (!$idSucursal) {
@@ -133,7 +137,7 @@ class StockMinimoController {
                 (int)$datos['id_producto'],
                 (float)$datos['stock_minimo'],
                 isset($datos['stock_optimo']) ? (float)$datos['stock_optimo'] : null,
-                $usuario['nombre_usuario'] ?? 'sistema'
+                $usuarioNombre
             );
 
             return $this->jsonResponse($response, [
@@ -156,7 +160,9 @@ class StockMinimoController {
      */
     public function configurarMultiple(Request $request, Response $response): Response {
         try {
-            $usuario = $request->getAttribute('usuario');
+            $usuarioId = $request->getAttribute('usuario_id');
+            $usuarioNombre = $request->getAttribute('usuario_nombre') ?? 'sistema';
+            $rolNivel = $request->getAttribute('usuario_rol_nivel');
             $datos = $request->getParsedBody();
             
             if (empty($datos['productos']) || !is_array($datos['productos'])) {
@@ -169,8 +175,8 @@ class StockMinimoController {
             // Obtener sucursal
             $idSucursal = $datos['id_sucursal'] ?? null;
             
-            if (!$idSucursal && !empty($usuario['sucursales'])) {
-                $idSucursal = $usuario['sucursales'][0]['id_sucursal'];
+            if (!$idSucursal) {
+                $idSucursal = $this->obtenerSucursalUsuario($usuarioId, $rolNivel);
             }
             
             if (!$idSucursal) {
@@ -184,7 +190,7 @@ class StockMinimoController {
             $configurados = $model->configurarMultiple(
                 $idSucursal,
                 $datos['productos'],
-                $usuario['nombre_usuario'] ?? 'sistema'
+                $usuarioNombre
             );
 
             return $this->jsonResponse($response, [
@@ -248,6 +254,26 @@ class StockMinimoController {
                 'mensaje' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Obtener sucursal principal del usuario (franquicia) desde la BD
+     */
+    private function obtenerSucursalUsuario($usuarioId, $rolNivel) {
+        if ($rolNivel < 30) {
+            // Planta / admin: sin sucursal propia
+            return null;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT id_sucursal FROM usuario_sucursales 
+            WHERE id_usuario = ? 
+            ORDER BY es_sucursal_principal DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$usuarioId]);
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result ? $result['id_sucursal'] : null;
     }
 
     /**

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         .badge-activo { background-color: #28a745; }
         .badge-inactivo { background-color: #dc3545; }
@@ -32,10 +33,10 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right">
                     <span class="dropdown-item-text">
-                        <small class="text-muted" id="userRole">Rol</small>
+                        <small class="text-muted" id="userSucursalInfo">-</small>
                     </span>
                     <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#" onclick="logout()">
+                    <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
                         <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
                     </a>
                 </div>
@@ -52,60 +53,97 @@
         <div class="sidebar">
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                    <li class="nav-header">PLANTA / DEPÓSITO</li>
-                    <li class="nav-item">
-                        <a href="index.html" class="nav-link">
-                            <i class="nav-icon fas fa-exchange-alt"></i>
-                            <p>Movimientos</p>
+                    <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="stock_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Mi Stock</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="baja_stock.html" class="nav-link">
+                            <i class="nav-icon fas fa-minus-circle"></i>
+                            <p>Baja de Stock</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="pedidos_sucursal.html" class="nav-link">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>Mis Pedidos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-franquicia>
+                        <a href="recepciones.html" class="nav-link">
+                            <i class="nav-icon fas fa-truck-loading"></i>
+                            <p>Recepciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_produccion.html" class="nav-link">
+                            <i class="nav-icon fas fa-industry"></i>
+                            <p>Pedidos Pendientes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="panel_faltantes.html" class="nav-link">
+                            <i class="nav-icon fas fa-exclamation-triangle"></i>
+                            <p>Panel Faltantes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
+                        <a href="index.html" class="nav-link">
+                            <i class="nav-icon fas fa-home"></i>
+                            <p>Panel Principal</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-require-planta>
                         <a href="alta_deposito.html" class="nav-link">
                             <i class="nav-icon fas fa-plus-circle"></i>
                             <p>Alta en Depósito</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-planta-jefe>
                         <a href="envios.html" class="nav-link">
                             <i class="nav-icon fas fa-truck"></i>
                             <p>Envíos</p>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" data-require-planta>
                         <a href="stock_deposito.html" class="nav-link">
                             <i class="nav-icon fas fa-warehouse"></i>
                             <p>Stock Depósito</p>
                         </a>
                     </li>
-                    <li class="nav-header">SUCURSALES</li>
-                    <li class="nav-item">
-                        <a href="pedidos_sucursal.html" class="nav-link">
-                            <i class="nav-icon fas fa-shopping-cart"></i>
-                            <p>Pedidos</p>
+                    <li class="nav-item" data-require-planta-jefe>
+                        <a href="productos_abm.html" class="nav-link">
+                            <i class="nav-icon fas fa-box-open"></i>
+                            <p>Productos / Familias</p>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="recepciones.html" class="nav-link">
-                            <i class="nav-icon fas fa-clipboard-check"></i>
-                            <p>Recepciones</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="stock_sucursal.html" class="nav-link">
-                            <i class="nav-icon fas fa-boxes"></i>
-                            <p>Stock Sucursal</p>
-                        </a>
-                    </li>
-                    <li class="nav-header">ADMINISTRACIÓN</li>
-                    <li class="nav-item">
+                    <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                    <li class="nav-item" data-require-admin>
                         <a href="usuarios.html" class="nav-link active">
                             <i class="nav-icon fas fa-users-cog"></i>
                             <p>Usuarios</p>
                         </a>
                     </li>
+                    <li class="nav-item" data-require-admin>
+                        <a href="sucursales.html" class="nav-link">
+                            <i class="nav-icon fas fa-store-alt"></i>
+                            <p>Sucursales</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">AYUDA</li>
+                    <li class="nav-item">
+                        <a href="manual.html" class="nav-link">
+                            <i class="nav-icon fas fa-book"></i>
+                            <p>Manual de Usuario</p>
+                        </a>
+                    </li>
                     <li class="nav-header">SESIÓN</li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="logout()">
+                        <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
                             <i class="nav-icon fas fa-sign-out-alt"></i>
                             <p>Cerrar Sesión</p>
                         </a>
@@ -331,7 +369,7 @@
 <script src="js/auth.js"></script>
 
 <script>
-// MikeloAuth.fetch() ya agrega /mikelo/api como prefijo
+// MikeloAuth.fetch() ya agrega /test/api como prefijo
 // No duplicar la ruta base
 let rolesCache = [];
 let sucursalesCache = [];
@@ -346,14 +384,14 @@ $(document).ready(function() {
     // Verificar rol admin
     const user = MikeloAuth.getUser();
     if (user.rol_nivel > 10) { // Solo ADMIN
-        Swal.fire('Acceso Denegado', 'No tiene permisos para acceder a esta seccion', 'error')
-            .then(() => window.location.href = 'index.html');
+        Swal.fire('Acceso Denegado', 'No tiene permisos para acceder a esta sección', 'error')
+            .then(() => {
+                window.location.href = user.rol_nivel <= 25 ? 'index.html' : 'pedidos_sucursal.html';
+            });
         return;
     }
     
-    // Mostrar nombre de usuario
-    $('#userName').text(user.nombre);
-    $('#userRole').text(user.rol);
+    MikeloAuth.updateUI();
     
     // Inicializar Select2
     $('#usuarioSucursales').select2({

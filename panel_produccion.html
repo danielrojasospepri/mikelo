@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Producción - J.A.R.V.I.S</title>
+    <title>Pedidos Pendientes - J.A.R.V.I.S</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="img/logo.png">
     <link rel="shortcut icon" type="image/png" href="img/logo.png">
@@ -97,6 +97,21 @@
                         <i class="fas fa-sync-alt"></i> Actualizar
                     </a>
                 </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <i class="fas fa-user-circle mr-1"></i>
+                        <span id="userName">Usuario</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <span class="dropdown-item-text">
+                            <small class="text-muted" id="userSucursalInfo">-</small>
+                        </span>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                        </a>
+                    </div>
+                </li>
             </ul>
         </nav>
 
@@ -110,67 +125,92 @@
             <div class="sidebar">
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                        <li class="nav-header">PLANTA / DEPÓSITO</li>
-                        <li class="nav-item">
-                            <a href="panel_produccion.html" class="nav-link active">
-                                <i class="nav-icon fas fa-industry"></i>
-                                <p>Panel Producción</p>
+                        <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="stock_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-boxes"></i>
+                                <p>Mi Stock</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="baja_stock.html" class="nav-link">
+                                <i class="nav-icon fas fa-minus-circle"></i>
+                                <p>Baja de Stock</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="pedidos_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Mis Pedidos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="recepciones.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck-loading"></i>
+                                <p>Recepciones</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_produccion.html" class="nav-link active">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Pedidos Pendientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
                             <a href="panel_faltantes.html" class="nav-link">
                                 <i class="nav-icon fas fa-exclamation-triangle"></i>
                                 <p>Panel Faltantes</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-planta>
                             <a href="index.html" class="nav-link">
-                                <i class="nav-icon fas fa-exchange-alt"></i>
-                                <p>Movimientos</p>
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Panel Principal</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-planta>
                             <a href="alta_deposito.html" class="nav-link">
                                 <i class="nav-icon fas fa-plus-circle"></i>
                                 <p>Alta en Depósito</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-planta-jefe>
                             <a href="envios.html" class="nav-link">
                                 <i class="nav-icon fas fa-truck"></i>
                                 <p>Envíos</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-planta>
                             <a href="stock_deposito.html" class="nav-link">
                                 <i class="nav-icon fas fa-warehouse"></i>
                                 <p>Stock Depósito</p>
                             </a>
                         </li>
-                        <li class="nav-header">SUCURSALES</li>
-                        <li class="nav-item">
-                            <a href="pedidos_sucursal.html" class="nav-link">
-                                <i class="nav-icon fas fa-shopping-cart"></i>
-                                <p>Pedidos</p>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="productos_abm.html" class="nav-link">
+                                <i class="nav-icon fas fa-box-open"></i>
+                                <p>Productos / Familias</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="recepciones.html" class="nav-link">
-                                <i class="nav-icon fas fa-clipboard-check"></i>
-                                <p>Recepciones</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="stock_sucursal.html" class="nav-link">
-                                <i class="nav-icon fas fa-boxes"></i>
-                                <p>Stock Sucursal</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">ADMINISTRACIÓN</li>
-                        <li class="nav-item">
+                        <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                        <li class="nav-item" data-require-admin>
                             <a href="usuarios.html" class="nav-link">
                                 <i class="nav-icon fas fa-users-cog"></i>
                                 <p>Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="sucursales.html" class="nav-link">
+                                <i class="nav-icon fas fa-store-alt"></i>
+                                <p>Sucursales</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">AYUDA</li>
+                        <li class="nav-item">
+                            <a href="manual.html" class="nav-link">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>Manual de Usuario</p>
                             </a>
                         </li>
                         <li class="nav-header">SESIÓN</li>
@@ -192,12 +232,12 @@
                 <div class="container-fluid">
                     <div class="row mb-2">
                         <div class="col-sm-6">
-                            <h1><i class="fas fa-industry mr-2"></i>Panel de Producción</h1>
+                            <h1><i class="fas fa-clipboard-list mr-2"></i>Pedidos Pendientes</h1>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-right">
                                 <li class="breadcrumb-item"><a href="index.html">Inicio</a></li>
-                                <li class="breadcrumb-item active">Panel Producción</li>
+                                <li class="breadcrumb-item active">Pedidos Pendientes</li>
                             </ol>
                         </div>
                     </div>
@@ -387,7 +427,7 @@
     <script src="js/mikelo-notificaciones.js"></script>
 
     <script>
-        const API_URL = '/mikelo/api';
+        const API_URL = MikeloAuth.API_BASE;
         let pedidosData = [];
         let pedidoSeleccionado = null;
 
@@ -399,6 +439,7 @@
                 return;
             }
 
+            MikeloAuth.updateUI();
             const usuario = MikeloAuth.getUser();
 
             // Verificar que sea personal de planta (rol_nivel bajo = más permisos)
@@ -640,9 +681,9 @@
             $('#modalDetallePedido').modal('show');
         }
 
-        // Preparar envío directamente (sin ver detalle primero)
-        async function prepararEnvio(idPedido) {
-            await verDetallePedido(idPedido);
+        // Preparar envío: redirige al módulo de envíos con el pedido precargado
+        function prepararEnvio(idPedido) {
+            window.location.href = 'envios.html?pedido=' + idPedido;
         }
 
         // Crear envío desde el pedido
@@ -697,8 +738,8 @@
 
                 // Crear el envío
                 const envioData = {
-                    id_ubicacion_destino: pedidoSeleccionado.id_sucursal,
-                    items: items.map(i => ({
+                    destino: pedidoSeleccionado.id_sucursal,
+                    productos: items.map(i => ({
                         id_productos: i.id_producto,
                         cantidad: i.cantidad
                     })),

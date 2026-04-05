@@ -1,0 +1,1 @@
+ALTER TABLE `ubicaciones` ADD `franquicia` INT(1) NOT NULL DEFAULT '1' AFTER `email`;

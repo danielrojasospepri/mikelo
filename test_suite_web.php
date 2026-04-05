@@ -157,7 +157,7 @@ $tests_modulo2[] = ejecutarTest('Suma de Cantidades (SUM vs COUNT)', function() 
 
 // Test 5: Exportación PDF Stock
 $tests_modulo2[] = ejecutarTest('Exportación PDF Stock Depósito', function() {
-    $url = 'http://localhost/mikelo/api/stock-deposito/pdf';
+    $url = 'http://localhost/test/api/stock-deposito/pdf';
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -187,7 +187,7 @@ $tests_modulo2[] = ejecutarTest('Exportación PDF Stock Depósito', function() {
 
 // Test 6: Exportación Excel Stock
 $tests_modulo2[] = ejecutarTest('Exportación Excel Stock Depósito', function() {
-    $url = 'http://localhost/mikelo/api/stock-deposito/excel';
+    $url = 'http://localhost/test/api/stock-deposito/excel';
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -278,7 +278,7 @@ $tests_modulo3 = [];
 
 // Test 9: Exportación PDF Envíos
 $tests_modulo3[] = ejecutarTest('Exportación PDF Envíos', function() {
-    $url = 'http://localhost/mikelo/api/envios/pdf';
+    $url = 'http://localhost/test/api/envios/pdf';
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -308,7 +308,7 @@ $tests_modulo3[] = ejecutarTest('Exportación PDF Envíos', function() {
 
 // Test 10: Headers HTTP
 $tests_modulo3[] = ejecutarTest('Headers de Respuesta Binaria', function() {
-    $url = 'http://localhost/mikelo/api/stock-deposito/pdf';
+    $url = 'http://localhost/test/api/stock-deposito/pdf';
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

@@ -26,7 +26,23 @@
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
             </ul>
-           
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <i class="fas fa-user-circle mr-1"></i>
+                        <span id="userName">Usuario</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <span class="dropdown-item-text">
+                            <small class="text-muted" id="userSucursalInfo">-</small>
+                        </span>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" onclick="MikeloAuth.logout()">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                        </a>
+                    </div>
+                </li>
+            </ul>
         </nav>
 
         <!-- Main Sidebar Container -->
@@ -40,84 +56,97 @@
                 <nav class="mt-2">
                    
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                        <li class="nav-header">PLANTA / DEPÓSITO</li>
-                        <li class="nav-item">
-                            <a href="panel_produccion.html" class="nav-link">
-                                <i class="nav-icon fas fa-industry"></i>
-                                <p>Panel Producción</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="panel_faltantes.html" class="nav-link">
-                                <i class="nav-icon fas fa-exclamation-triangle"></i>
-                                <p>Panel Faltantes</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.html" class="nav-link active">
-                                <i class="nav-icon fas fa-exchange-alt"></i>
-                                <p>Movimientos</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="alta_deposito.html" class="nav-link">
-                                <i class="nav-icon fas fa-plus-circle"></i>
-                                <p>Alta en Depósito</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="envios.html" class="nav-link">
-                                <i class="nav-icon fas fa-truck"></i>
-                                <p>Envíos</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="stock_deposito.html" class="nav-link">
-                                <i class="nav-icon fas fa-warehouse"></i>
-                                <p>Stock Depósito</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">SUCURSALES</li>
-                        <li class="nav-item">
-                            <a href="pedidos_sucursal.html" class="nav-link">
-                                <i class="nav-icon fas fa-shopping-cart"></i>
-                                <p>Pedidos</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="recepciones.html" class="nav-link">
-                                <i class="nav-icon fas fa-clipboard-check"></i>
-                                <p>Recepciones</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
+                        <li class="nav-header" data-require-franquicia>MI SUCURSAL</li>
+                        <li class="nav-item" data-require-franquicia>
                             <a href="stock_sucursal.html" class="nav-link">
                                 <i class="nav-icon fas fa-boxes"></i>
-                                <p>Stock Sucursal</p>
+                                <p>Mi Stock</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
                             <a href="baja_stock.html" class="nav-link">
                                 <i class="nav-icon fas fa-minus-circle"></i>
                                 <p>Baja de Stock</p>
                             </a>
                         </li>
-                        <li class="nav-header">ADMINISTRACIÓN</li>
-                        <li class="nav-item">
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="pedidos_sucursal.html" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Mis Pedidos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-franquicia>
+                            <a href="recepciones.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck-loading"></i>
+                                <p>Recepciones</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-planta>PLANTA / DEPÓSITO</li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_produccion.html" class="nav-link">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>Pedidos Pendientes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="panel_faltantes.html" class="nav-link">
+                                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                                <p>Panel Faltantes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="index.html" class="nav-link active">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Panel Principal</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="alta_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Alta en Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="envios.html" class="nav-link">
+                                <i class="nav-icon fas fa-truck"></i>
+                                <p>Envíos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta>
+                            <a href="stock_deposito.html" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>Stock Depósito</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" data-require-planta-jefe>
+                            <a href="productos_abm.html" class="nav-link">
+                                <i class="nav-icon fas fa-box-open"></i>
+                                <p>Productos / Familias</p>
+                            </a>
+                        </li>
+                        <li class="nav-header" data-require-admin>ADMINISTRACIÓN</li>
+                        <li class="nav-item" data-require-admin>
                             <a href="usuarios.html" class="nav-link">
                                 <i class="nav-icon fas fa-users-cog"></i>
                                 <p>Usuarios</p>
                             </a>
                         </li>
+                        <li class="nav-item" data-require-admin>
+                            <a href="sucursales.html" class="nav-link">
+                                <i class="nav-icon fas fa-store-alt"></i>
+                                <p>Sucursales</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">AYUDA</li>
                         <li class="nav-item">
-                            <a href="stock_minimo.html" class="nav-link">
-                                <i class="nav-icon fas fa-sliders-h"></i>
-                                <p>Config Stock Mínimo</p>
+                            <a href="manual.html" class="nav-link">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>Manual de Usuario</p>
                             </a>
                         </li>
                         <li class="nav-header">SESIÓN</li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link" onclick="logout()">
+                            <a href="#" class="nav-link" onclick="MikeloAuth.logout()">
                                 <i class="nav-icon fas fa-sign-out-alt"></i>
                                 <p>Cerrar Sesión</p>
                             </a>
@@ -253,6 +282,21 @@
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/auth.js"></script>
+    <script>
+        // Guard: solo usuarios de planta/admin (nivel <= 25)
+        (function() {
+            if (!MikeloAuth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            var u = MikeloAuth.getUser();
+            if (u && u.rol_nivel > 25) {
+                window.location.href = 'pedidos_sucursal.html';
+                return;
+            }
+            MikeloAuth.updateUI();
+        })();
+    </script>
 
     <script src="js/index.js"></script>
     <script>

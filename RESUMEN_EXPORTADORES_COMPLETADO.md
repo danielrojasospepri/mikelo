@@ -54,10 +54,10 @@ composer require mpdf/mpdf phpoffice/phpspreadsheet
 
 ### Endpoints API
 ```
-GET /mikelo/api/envios/pdf                    # Lista PDF
-GET /mikelo/api/envios/excel                  # Lista Excel
-GET /mikelo/api/envios/{id}/pdf              # Remito PDF
-GET /mikelo/api/envios/{id}/excel            # Remito Excel
+GET /test/api/envios/pdf                    # Lista PDF
+GET /test/api/envios/excel                  # Lista Excel
+GET /test/api/envios/{id}/pdf              # Remito PDF
+GET /test/api/envios/{id}/excel            # Remito Excel
 ```
 
 ### Páginas de Test
